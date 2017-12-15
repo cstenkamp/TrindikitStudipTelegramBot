@@ -21,6 +21,8 @@
 
 from ibis_types import Answer, Ask, WhQ, Pred1
 from nltk import load_parser #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
+from ibis import Grammar
+from trindikit import VERBOSE
 
 ######################################################################
 # CFG grammar based on NLTK
@@ -30,7 +32,7 @@ class CFG_Grammar(Grammar):
     """CFG parser based on NLTK."""
     
     def loadGrammar(self, grammarFilename):
-        self.parser = load_parser(grammarFilename, trace=1, cache=False) #nciht mehr parse.[...]
+        self.parser = load_parser(grammarFilename, trace=1 if VERBOSE["Parse"] else 0, cache=False) #nciht mehr parse.[...]
 
     def interpret(self, input):
         """Parse an input string into a dialogue move or a set of moves."""

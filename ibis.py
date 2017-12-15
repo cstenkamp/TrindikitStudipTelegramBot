@@ -20,7 +20,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, repeat, rule_group
+from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
 
@@ -252,12 +252,17 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,
         self.init_MIVS()
 
     def print_state(self):
-        print("+------------------------ - -  -")
-        self.print_MIVS(prefix="| ")
-        print("|")
-        self.print_IS(prefix="| ")
-        print("+------------------------ - -  -")
-        print()
+        if VERBOSE["IS"] or VERBOSE["MIVS"]:
+            print("+------------------------ - -  -")
+        if VERBOSE["MIVS"]:
+            self.print_MIVS(prefix="| ")
+        if VERBOSE["IS"] and VERBOSE["MIVS"]:
+            print("|")
+        if VERBOSE["MIVS"]:
+            self.print_IS(prefix="| ")
+        if VERBOSE["IS"] or VERBOSE["MIVS"]:            
+            print("+------------------------ - -  -")
+            print()
 
 ######################################################################
 # IBIS-1
@@ -274,16 +279,13 @@ class IBIS1(IBIS):
         maybe(self.downdate_qud)
         maybe(self.load_plan)
         repeat(self.exec_plan)
+        
 
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
                                 integrate_answer, integrate_greet,
                                 integrate_usr_quit, integrate_sys_quit)
-    print("FIRST ###########")
-    print(downdate_qud)
     downdate_qud = rule_group(downdate_qud)
-    print("SECOND ###########")
-    print(downdate_qud)
     load_plan    = rule_group(recover_plan, find_plan)
     exec_plan    = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if)
 

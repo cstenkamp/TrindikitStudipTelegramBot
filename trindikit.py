@@ -30,6 +30,8 @@ import functools
 import collections
 import sys
 
+VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": False, "Precondition": False, "Parse": False}
+
 ######################################################################
 # helper functions
 ######################################################################
@@ -181,7 +183,7 @@ class record(object):
 
     def pprint(self, prefix="", indent="    "):
         """Pretty-print a record to standard output."""
-        print(self.pformat(prefix, indent))
+        print(self.pformat(prefix, indent)) #NICHT abhängig von verbose, sind nur IS und MVIS
     
     def pformat(self, prefix="", indent="    "):
         """Pretty-format a record, i.e., return a pretty-printed string."""
@@ -447,7 +449,9 @@ class Type(object):
 #        return cmp(type(self), type(other)) or cmp(self.content, other.content)
     
     def __eq__(self, other):
-        return (type(self) == type(other)) or (self.content == other.content)
+        first = type(self) == type(other)
+        second = self.content == other.content
+        return first and second
         
     
     def __hash__(self):
@@ -517,8 +521,6 @@ def maybe(*rules):
     instance is applied to every rule. Otherwise the rules are applied
     without arguments.
     """
-    print("1 ##################################################")
-    print(rules)
     try:
         return do(*rules)
     except PreconditionFailure:
@@ -592,8 +594,9 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance." % funcname
             new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
         result = function(**new_kw)
-        print("-->", funcname)
-        print()
+        if VERBOSE["UpdateRules"]:
+            print("-->", funcname)
+            print()
         return result
     
     if not rule.__doc__:
@@ -646,9 +649,11 @@ def precondition(test):
         if result:
             if isinstance(result, record):
                 for key, value in list(result.asdict().items()):
-                    print("...", key, "=", value)
+                    if VERBOSE["Precondition"]:
+                        print("...", key, "=", value)
             else:
-                print("...", result)
+                if VERBOSE["Precondition"]:
+                    print("...", result)
         return result
     except StopIteration:
         raise PreconditionFailure
