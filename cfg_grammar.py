@@ -19,8 +19,8 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis import *
-from nltk import *
+from ibis_types import Answer, Ask, WhQ, Pred1
+from nltk import load_parser #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 
 ######################################################################
 # CFG grammar based on NLTK
@@ -30,7 +30,7 @@ class CFG_Grammar(Grammar):
     """CFG parser based on NLTK."""
     
     def loadGrammar(self, grammarFilename):
-        self.parser = parse.load_parser(grammarFilename, trace=1, cache=False)
+        self.parser = load_parser(grammarFilename, trace=1, cache=False) #nciht mehr parse.[...]
 
     def interpret(self, input):
         """Parse an input string into a dialogue move or a set of moves."""
@@ -42,9 +42,12 @@ class CFG_Grammar(Grammar):
 
     def parseString(self, input):
         tokens = input.split()
-        trees = self.parser.nbest_parse(tokens)
-        sem = trees[0].node['sem']
-        return self.sem2move(sem)
+#        trees = self.parser.nbest_parse(tokens) #ist jetzt ein Iterator!
+#        sem = trees[0].node['sem'] #...der auch anders funktioniert >.<
+        trees = next(self.parser.parse(tokens))
+        sem = trees[0].label()['sem']        
+        return self.sem2move(sem) 
+
 
     def sem2move(self, sem):
         try: return Answer(sem['Answer'])

@@ -20,8 +20,8 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import *
-from ibis_types import *
+from trindikit import update_rule, precondition, Speaker, ProgramState, Move, R, record
+from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB
 
 ######################################################################
 # IBIS update rules

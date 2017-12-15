@@ -20,9 +20,9 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import *
-from ibis_types import *
-from ibis_rules import *
+from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, repeat, rule_group
+from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet
+from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
 
 ######################################################################
 # IBIS grammar
@@ -129,11 +129,11 @@ class Domain(object):
 
     def add_plan(self, trigger, plan):
         """Add a plan to the domain."""
-        assert isinstance(trigger, (Question, basestring)), \
+        assert isinstance(trigger, (Question, str)), \
             "The plan trigger %s must be a Question" % trigger
-        if isinstance(trigger, basestring):
+        if isinstance(trigger, str):
             trigger = Question(trigger)
-        assert not self.plans.has_key(trigger), \
+        assert trigger not in self.plans, \
             "There is already a plan with trigger %s" % trigger
         trigger._typecheck(self)
         for m in plan:
@@ -252,12 +252,12 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,
         self.init_MIVS()
 
     def print_state(self):
-        print "+------------------------ - -  -"
+        print("+------------------------ - -  -")
         self.print_MIVS(prefix="| ")
-        print "|"
+        print("|")
         self.print_IS(prefix="| ")
-        print "+------------------------ - -  -"
-        print
+        print("+------------------------ - -  -")
+        print()
 
 ######################################################################
 # IBIS-1

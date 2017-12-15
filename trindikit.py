@@ -36,7 +36,7 @@ import sys
 
 def is_sequence(seq):
     """True if the argument is a sequence, but not a string type."""
-    return hasattr(seq, '__iter__') and not isinstance(seq, basestring)
+    return hasattr(seq, '__iter__') and not isinstance(seq, str)
 
 def add_to_docstring(docstring, *newlines):
     """Add extra information to a docstring, returning the result.
@@ -129,7 +129,7 @@ class record(object):
     
     def __init__(self, **kw):
         typedict = self.__dict__[_TYPEDICT] = {}
-        for key, value in kw.items():
+        for key, value in list(kw.items()):
             if isinstance(value, type):
                 typedict[key] = value
             else:
@@ -151,7 +151,7 @@ class record(object):
             else:
                 raise TypeError("%s is not an instance of %s" % (value, keytype))
         except KeyError:
-            keys = ", ".join(typedict.keys())
+            keys = ", ".join(list(typedict.keys()))
             raise KeyError("%s is not among the possible keys: %s" % (key, keys))
 
     def __getattr__(self, key):
@@ -181,12 +181,12 @@ class record(object):
 
     def pprint(self, prefix="", indent="    "):
         """Pretty-print a record to standard output."""
-        print self.pformat(prefix, indent)
+        print(self.pformat(prefix, indent))
     
     def pformat(self, prefix="", indent="    "):
         """Pretty-format a record, i.e., return a pretty-printed string."""
         result = ""
-        for key, value in self.asdict().items():
+        for key, value in list(self.asdict().items()):
             if result: result += '\n'
             result += prefix + key + ': '
             if isinstance(value, record):
@@ -196,10 +196,10 @@ class record(object):
         return result
     
     def __str__(self):
-        return "{" + "; ".join("%s = %s" % kv for kv in self.asdict().items()) + "}"
+        return "{" + "; ".join("%s = %s" % kv for kv in list(self.asdict().items())) + "}"
 
     def __repr__(self):
-        return "record(" + "; ".join("%s = %r" % kv for kv in self.asdict().items()) + ")"
+        return "record(" + "; ".join("%s = %r" % kv for kv in list(self.asdict().items())) + ")"
 
 def R(**kw):
     """Synonym for records. For the lazy ones."""
@@ -430,7 +430,7 @@ class Type(object):
     def __init__(self, content):
         if isinstance(content, self.contentclass):
             self.content = content
-        elif isinstance(content, basestring):
+        elif isinstance(content, str):
             self.content = self.contentclass(content)
         else:
             raise TypeError("%r must be of type %r" % (content, self.contentclass))
@@ -443,8 +443,12 @@ class Type(object):
     def __repr__(self):
         return "%s(%r)" % (type(self).__name__, self.content)
     
-    def __cmp__(self, other):
-        return cmp(type(self), type(other)) or cmp(self.content, other.content)
+#    def __cmp__(self, other):
+#        return cmp(type(self), type(other)) or cmp(self.content, other.content)
+    
+    def __eq__(self, other):
+        return (type(self) == type(other)) or (self.content == other.content)
+        
     
     def __hash__(self):
         return hash((type(self), self.content))
@@ -588,8 +592,8 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance." % funcname
             new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
         result = function(**new_kw)
-        print "-->", funcname
-        print
+        print("-->", funcname)
+        print()
         return result
     
     if not rule.__doc__:
@@ -633,18 +637,18 @@ def precondition(test):
     """
     try:
         if hasattr(test, 'next'):
-            result = test.next()
+            result = next(test)
         elif hasattr(test, '__call__'):
-            result = test().next()
+            result = next(test())
         else:
             raise SyntaxError("Precondition must be a generator or a generator "
                               "function. Instead it is a %s" % type(test))
         if result:
             if isinstance(result, record):
-                for key, value in result.asdict().items():
-                    print "...", key, "=", value
+                for key, value in list(result.asdict().items()):
+                    print("...", key, "=", value)
             else:
-                print "...", result
+                print("...", result)
         return result
     except StopIteration:
         raise PreconditionFailure
@@ -663,7 +667,7 @@ class DialogueManager(object):
     """
 
     def trace(self, message, *args):
-        print '{' + (message % tuple(args)) + '}'
+        print('{' + (message % tuple(args)) + '}')
 
     def run(self):
         """Run the dialogue system.
@@ -725,12 +729,12 @@ class StandardMIVS(DialogueManager):
 
     def print_MIVS(self, prefix=""):
         """Print the MIVS. To be called from self.print_state()."""
-        print prefix + "INPUT:         ", self.INPUT
-        print prefix + "LATEST_SPEAKER:", self.LATEST_SPEAKER
-        print prefix + "LATEST_MOVES:  ", self.LATEST_MOVES
-        print prefix + "NEXT_MOVES:    ", self.NEXT_MOVES
-        print prefix + "OUTPUT:        ", self.OUTPUT
-        print prefix + "PROGRAM_STATE: ", self.PROGRAM_STATE
+        print(prefix + "INPUT:         ", self.INPUT)
+        print(prefix + "LATEST_SPEAKER:", self.LATEST_SPEAKER)
+        print(prefix + "LATEST_MOVES:  ", self.LATEST_MOVES)
+        print(prefix + "NEXT_MOVES:    ", self.NEXT_MOVES)
+        print(prefix + "OUTPUT:        ", self.OUTPUT)
+        print(prefix + "PROGRAM_STATE: ", self.PROGRAM_STATE)
 
 ######################################################################
 # naive generate and output modules
@@ -761,8 +765,8 @@ class SimpleOutput(DialogueManager):
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """
-        print "S>", OUTPUT.get() or "[---]"
-        print
+        print("S>", OUTPUT.get() or "[---]")
+        print()
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
@@ -792,8 +796,8 @@ class SimpleInput(object):
         if INPUT.value != '':
             move_or_moves = GRAMMAR.interpret(INPUT.get())
             if not move_or_moves:
-                print "Did not understand:", INPUT
-                print
+                print("Did not understand:", INPUT)
+                print()
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:
@@ -806,10 +810,10 @@ class SimpleInput(object):
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
         """
         try:
-            str = raw_input("U> ")
+            str = input("U> ")
         except EOFError:
-            print "EOF"
+            print("EOF")
             sys.exit()
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
-        print
+        print()

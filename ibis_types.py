@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from trindikit import *
+from trindikit import Type, is_sequence, Move, SingletonMove
 
 ######################################################################
 # IBIS semantic types
@@ -36,10 +36,10 @@ class Atomic(Type):
       - Pred1
       - Sort
     """
-    contentclass = basestring
+    contentclass = str
     
     def __init__(self, atom):
-        assert isinstance(atom, (basestring, int))
+        assert isinstance(atom, (str, int))
         assert atom not in ("", "yes", "no")
         try:
             atom = int(atom)
@@ -83,7 +83,7 @@ class Sentence(Type):
     """Superclass for answers and questions."""
     def __new__(cls, sent, *args, **kw):
         if cls is Sentence:
-            assert isinstance(sent, basestring)
+            assert isinstance(sent, str)
             assert not args and not kw
             if sent.startswith('?'):
                 return Question(sent)
@@ -114,7 +114,7 @@ class Ans(Sentence):
     """
     def __new__(cls, ans, *args, **kw):
         if cls is Ans:
-            assert isinstance(ans, basestring)
+            assert isinstance(ans, str)
             assert not args and not kw
             if ans in ('yes', 'no'):
                 return YesNo(ans)
@@ -130,12 +130,12 @@ class Ans(Sentence):
 class Prop(Ans): 
     """Proposition."""
     def __init__(self, pred, ind=None, yes=True):
-        assert (isinstance(pred, (Pred0, basestring)) and ind is None or
+        assert (isinstance(pred, (Pred0, str)) and ind is None or
                 isinstance(pred, Pred1) and isinstance(ind, Ind)), \
                 ("%s must be a predicate, and %s must be None or an individual" % 
                  (pred, ind))
         assert isinstance(yes, bool), "%s must be a bool" % yes
-        if isinstance(pred, basestring):
+        if isinstance(pred, str):
             assert '(' in pred and pred.endswith(')'), \
                 "'%s' must be of the form '[-] pred ( [ind] )'" % pred
             pred = pred[:-1]
@@ -182,8 +182,8 @@ class ShortAns(Ans):
     
     def __init__(self, ind, yes=True):
         assert isinstance(yes, bool), "%s must be a boolean" % yes
-        assert isinstance(ind, (Ind, basestring)), "%s must be an individual" % ind
-        if isinstance(ind, basestring):
+        assert isinstance(ind, (Ind, str)), "%s must be an individual" % ind
+        if isinstance(ind, str):
             if ind.startswith('-'):
                 ind = ind[1:]
                 yes = not yes
@@ -214,8 +214,8 @@ class YesNo(ShortAns):
     contentclass = bool
     
     def __init__(self, yes):
-        assert isinstance(yes, (bool, basestring)), "%s must be a boolean" % yes
-        if isinstance(yes, basestring):
+        assert isinstance(yes, (bool, str)), "%s must be a boolean" % yes
+        if isinstance(yes, str):
             assert yes in ("yes", "no"), "'%s' must be 'yes' or 'no'" % yes
             yes = yes == "yes"
         self.content = yes
@@ -253,7 +253,7 @@ class Question(Sentence):
         "?prop" -> YNQ("prop")
         """
         if cls is Question:
-            assert isinstance(que, basestring)
+            assert isinstance(que, str)
             assert not args and not kw
             if que.startswith('?x.') and que.endswith('(x)'):
                 return WhQ(que[3:-3])
@@ -269,8 +269,8 @@ class WhQ(Question):
     contentclass = Pred1
     
     def __init__(self, pred):
-        assert isinstance(pred, (Pred1, basestring))
-        if isinstance(pred, basestring):
+        assert isinstance(pred, (Pred1, str))
+        if isinstance(pred, str):
             if pred.startswith('?x.') and pred.endswith('(x)'):
                 pred = pred[3:-3]
             pred = Pred1(pred)
@@ -287,8 +287,8 @@ class YNQ(Question):
     contentclass = Prop
     
     def __init__(self, prop):
-        assert isinstance(prop, (Prop, basestring))
-        if isinstance(prop, basestring):
+        assert isinstance(prop, (Prop, str))
+        if isinstance(prop, str):
             if prop.startswith('?'):
                 prop = prop[1:]
             prop = Prop(prop)
@@ -305,7 +305,7 @@ class AltQ(Question):
     def __init__(self, *ynqs):
         if len(ynqs) == 1 and is_sequence(ynqs[0]):
             ynqs = ynqs[0]
-        if not all(isinstance(q, (YNQ, basestring)) for q in ynqs):
+        if not all(isinstance(q, (YNQ, str)) for q in ynqs):
             raise TypeError("all AltQ arguments must be y/n-questions")
         self.content = tuple((q if isinstance(q, YNQ) else Question(q))
                              for q in ynqs)
@@ -396,7 +396,7 @@ class If(PlanConstructor):
     """
     
     def __init__(self, cond, iftrue, iffalse=()):
-        if isinstance(cond, basestring):
+        if isinstance(cond, str):
             cond = Question(cond)
         self.cond = cond
         self.iftrue = tuple(iftrue)

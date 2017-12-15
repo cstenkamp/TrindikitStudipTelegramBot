@@ -9,6 +9,7 @@
 
 from ibis import *
 from cfg_grammar import *
+from ibis_types import Findout, If, ConsultDB
 
 preds0 = 'return', 'need-visa'
 
