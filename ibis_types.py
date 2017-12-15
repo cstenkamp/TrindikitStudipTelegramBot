@@ -1,21 +1,25 @@
-from trindikit import Type, is_sequence, Move, SingletonMove
+# -*- encoding: utf-8 -*-
 
-####################### such that basestring can be used ######################
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-####################### such that basestring can be used ######################
+#
+# ibis_types.py
+# Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
+#
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published 
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# and the GNU Lesser General Public License along with this program.  
+# If not, see <http://www.gnu.org/licenses/>.
+
+from trindikit import *
 
 ######################################################################
 # IBIS semantic types

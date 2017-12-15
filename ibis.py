@@ -1,23 +1,28 @@
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, repeat, rule_group
-from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
+# -*- encoding: utf-8 -*-
 
-####################### such that basestring can be used ######################
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-####################### such that basestring can be used ######################
+#
+# ibis.py
+# Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
+#
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published 
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# and the GNU Lesser General Public License along with this program.  
+# If not, see <http://www.gnu.org/licenses/>.
+
+
+from trindikit import *
+from ibis_types import *
+from ibis_rules import *
 
 ######################################################################
 # IBIS grammar
@@ -128,7 +133,7 @@ class Domain(object):
             "The plan trigger %s must be a Question" % trigger
         if isinstance(trigger, basestring):
             trigger = Question(trigger)
-        assert not trigger in self.plans, \
+        assert not self.plans.has_key(trigger), \
             "There is already a plan with trigger %s" % trigger
         trigger._typecheck(self)
         for m in plan:
@@ -182,7 +187,7 @@ class Domain(object):
     def get_plan(self, question):
         """Return (a new copy of) the plan that is relevant to 'question', 
         or None if there is no relevant plan.
-        """  
+        """       
         planstack = stack(PlanConstructor)
         for construct in reversed(self.plans.get(question)):
             planstack.push(construct)
@@ -247,12 +252,12 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,
         self.init_MIVS()
 
     def print_state(self):
-        print("+------------------------ - -  -")
+        print "+------------------------ - -  -"
         self.print_MIVS(prefix="| ")
-        print("|")
+        print "|"
         self.print_IS(prefix="| ")
-        print("+------------------------ - -  -")
-        print()
+        print "+------------------------ - -  -"
+        print
 
 ######################################################################
 # IBIS-1
@@ -266,11 +271,10 @@ class IBIS1(IBIS):
         self.IS.private.agenda.clear()
         self.grounding()
         maybe(self.integrate)
-        print("########### DOWNDATING QUD")
         maybe(self.downdate_qud)
         maybe(self.load_plan)
         repeat(self.exec_plan)
-        
+
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
                                 integrate_answer, integrate_greet,

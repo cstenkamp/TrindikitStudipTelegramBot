@@ -1,26 +1,14 @@
+# -*- encoding: utf-8 -*-
+
+#
+# ibis_tests.py
+# Copyright (C) 2010, Alexander Berman. All rights reserved.
+#
 # This file contains unit tests for IBIS semantics.
 #
 
-from ibis import Domain
-from ibis_types import Answer, Question, Prop
+from ibis import *
 import unittest
-
-####################### such that basestring can be used ######################
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-####################### such that basestring can be used ######################
 
 class IbisTests(unittest.TestCase):
     preds0 = 'return'

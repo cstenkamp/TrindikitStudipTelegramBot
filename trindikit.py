@@ -1,4 +1,26 @@
-#####################################################################
+# -*- encoding: utf-8 -*-
+
+#
+# trindikit.py
+# Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
+#
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published 
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# and the GNU Lesser General Public License along with this program.  
+# If not, see <http://www.gnu.org/licenses/>.
+
+
+######################################################################
 # TODO: threading could be done with the modules: threading and/or Queue
 # OR: via send() and yield in a generator expression, see PEP 342:
 # http://www.python.org/dev/peps/pep-0342
@@ -7,23 +29,6 @@ import inspect
 import functools
 import collections
 import sys
-
-####################### such that basestring can be used ######################
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-####################### such that basestring can be used ######################
 
 ######################################################################
 # helper functions
@@ -176,7 +181,7 @@ class record(object):
 
     def pprint(self, prefix="", indent="    "):
         """Pretty-print a record to standard output."""
-        print(self.pformat(prefix, indent))
+        print self.pformat(prefix, indent)
     
     def pformat(self, prefix="", indent="    "):
         """Pretty-format a record, i.e., return a pretty-printed string."""
@@ -438,12 +443,8 @@ class Type(object):
     def __repr__(self):
         return "%s(%r)" % (type(self).__name__, self.content)
     
-#    def __cmp__(self, other):
-#        print("OJLDKÖKLSDJföKJÖFLKJÖSLKDFJÖLKSJ", type(self))
-#        return cmp(type(self), type(other)) or cmp(self.content, other.content)
-    
-    def __eq__(self, other):
-        return (type(self) == type(other)) or (self.content == other.content)
+    def __cmp__(self, other):
+        return cmp(type(self), type(other)) or cmp(self.content, other.content)
     
     def __hash__(self):
         return hash((type(self), self.content))
@@ -570,7 +571,7 @@ def update_rule(function):
         ...some effects applied to ATTR1, ATTR2, ...
         ...the variable V is now bound to the first yielded result...
     """
-    argkeys, varargs, varkw, defaults = inspect.getargspec(function) #DEPRECATED
+    argkeys, varargs, varkw, defaults = inspect.getargspec(function)
     assert not varargs,  "@update_rule does not support a variable *args argument"
     assert not varkw,    "@update_rule does not support a variable **kw argument"
     assert not defaults, "@update_rule does not support default arguments"
@@ -587,8 +588,8 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance." % funcname
             new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
         result = function(**new_kw)
-        print("-->", funcname)
-        print()
+        print "-->", funcname
+        print
         return result
     
     if not rule.__doc__:
@@ -632,18 +633,18 @@ def precondition(test):
     """
     try:
         if hasattr(test, 'next'):
-            result = test.__next__()
+            result = test.next()
         elif hasattr(test, '__call__'):
-            result = test().__next__()
+            result = test().next()
         else:
             raise SyntaxError("Precondition must be a generator or a generator "
                               "function. Instead it is a %s" % type(test))
         if result:
             if isinstance(result, record):
                 for key, value in result.asdict().items():
-                    print("...", key, "=", value)
+                    print "...", key, "=", value
             else:
-                print("...", result)
+                print "...", result
         return result
     except StopIteration:
         raise PreconditionFailure
@@ -662,7 +663,7 @@ class DialogueManager(object):
     """
 
     def trace(self, message, *args):
-        print('{' + (message % tuple(args)) + '}')
+        print '{' + (message % tuple(args)) + '}'
 
     def run(self):
         """Run the dialogue system.
@@ -724,12 +725,12 @@ class StandardMIVS(DialogueManager):
 
     def print_MIVS(self, prefix=""):
         """Print the MIVS. To be called from self.print_state()."""
-        print(prefix + "INPUT:         ", self.INPUT)
-        print(prefix + "LATEST_SPEAKER:", self.LATEST_SPEAKER)
-        print(prefix + "LATEST_MOVES:  ", self.LATEST_MOVES)
-        print(prefix + "NEXT_MOVES:    ", self.NEXT_MOVES)
-        print(prefix + "OUTPUT:        ", self.OUTPUT)
-        print(prefix + "PROGRAM_STATE: ", self.PROGRAM_STATE)
+        print prefix + "INPUT:         ", self.INPUT
+        print prefix + "LATEST_SPEAKER:", self.LATEST_SPEAKER
+        print prefix + "LATEST_MOVES:  ", self.LATEST_MOVES
+        print prefix + "NEXT_MOVES:    ", self.NEXT_MOVES
+        print prefix + "OUTPUT:        ", self.OUTPUT
+        print prefix + "PROGRAM_STATE: ", self.PROGRAM_STATE
 
 ######################################################################
 # naive generate and output modules
@@ -760,8 +761,8 @@ class SimpleOutput(DialogueManager):
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """
-        print("S>", OUTPUT.get() or "[---]")
-        print()
+        print "S>", OUTPUT.get() or "[---]"
+        print
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
@@ -791,8 +792,8 @@ class SimpleInput(object):
         if INPUT.value != '':
             move_or_moves = GRAMMAR.interpret(INPUT.get())
             if not move_or_moves:
-                print("Did not understand:", INPUT)
-                print()
+                print "Did not understand:", INPUT
+                print
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:
@@ -805,10 +806,10 @@ class SimpleInput(object):
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
         """
         try:
-            str = input("U> ")
+            str = raw_input("U> ")
         except EOFError:
-            print("EOF")
+            print "EOF"
             sys.exit()
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
-        print()
+        print

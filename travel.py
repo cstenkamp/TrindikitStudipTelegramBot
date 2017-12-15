@@ -1,24 +1,14 @@
+# -*- encoding: utf-8 -*-
+
+#
+# travel.py
+#
+# The author or authors of this code dedicate any and all 
+# copyright interest in this code to the public domain.
+
+
 from ibis import *
 from cfg_grammar import *
-from ibis_types import Findout, If, ConsultDB
-
-####################### such that basestring can be used ######################
-try:
-    unicode = unicode
-except NameError:
-    # 'unicode' is undefined, must be Python 3
-    str = str
-    unicode = str
-    bytes = bytes
-    basestring = (str,bytes)
-else:
-    # 'unicode' exists, must be Python 2
-    str = str
-    unicode = unicode
-    bytes = str
-    basestring = basestring
-####################### such that basestring can be used ######################
-
 
 preds0 = 'return', 'need-visa'
 
