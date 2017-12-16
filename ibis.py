@@ -20,9 +20,12 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE
-from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet
+from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT
+from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
+import pickle
+from copy import deepcopy
+import os.path
 
 ######################################################################
 # IBIS grammar
@@ -68,6 +71,7 @@ class SimpleGenGrammar(Grammar):
     def __init__(self):
         self.forms = dict()
         self.addForm("'Greet'()", 'Hello')
+        self.addForm("'Quit'()", 'Goodbye')
         self.addForm("icm:neg*sem", 'I don\'t understand')
 
     def addForm(self, move, output):
@@ -220,6 +224,7 @@ class IBISInfostate(DialogueManager):
 class IBISController(DialogueManager):
     def control(self):
         """The IBIS control algorithm."""
+        # self.pload("CurrState.pkl")
         self.IS.private.agenda.push(Greet())
         self.print_state()
         while True:
@@ -229,10 +234,11 @@ class IBISController(DialogueManager):
                 self.output()
                 self.update()
                 self.print_state()
+            self.input()
+            if self.interpret() == "exit": #obviously also runs it
+                self.PROGRAM_STATE.set(ProgramState.QUIT)
             if self.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break
-            self.input()
-            self.interpret()
             self.update()
             self.print_state()
 
@@ -258,7 +264,7 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,
             self.print_MIVS(prefix="| ")
         if VERBOSE["IS"] and VERBOSE["MIVS"]:
             print("|")
-        if VERBOSE["MIVS"]:
+        if VERBOSE["IS"]:
             self.print_IS(prefix="| ")
         if VERBOSE["IS"] or VERBOSE["MIVS"]:            
             print("+------------------------ - -  -")
@@ -279,8 +285,8 @@ class IBIS1(IBIS):
         maybe(self.downdate_qud)
         maybe(self.load_plan)
         repeat(self.exec_plan)
+        self.psave("CurrState.pkl")
         
-
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
                                 integrate_answer, integrate_greet,
@@ -298,3 +304,19 @@ class IBIS1(IBIS):
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
     select_move   = rule_group(select_answer, select_ask, select_other)
     select_icm    = rule_group(select_icm_sem_neg)
+
+
+    def pload(self, filename):
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                tmp_dict = pickle.load(f)
+    #        self.__dict__.update(tmp_dict) 
+    
+    def psave(self, filename):
+        odict = self.IS.asdict(recursive=True)
+        # print("####NOW")
+        # for key, val in odict.items():
+        #     print(key, val)
+        # print("####END")
+        with open(filename, 'wb') as f:
+            pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)

@@ -29,8 +29,9 @@ import inspect
 import functools
 import collections
 import sys
+from copy import deepcopy
 
-VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": False, "Precondition": False, "Parse": False}
+VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": True, "Precondition": True, "Parse": False, "NotUnderstand": False}
 
 ######################################################################
 # helper functions
@@ -138,11 +139,28 @@ class record(object):
                 typedict[key] = type(value)
                 setattr(self, key, value)
     
-    def asdict(self):
+    def asdict(self, recursive=False):
         """Return a dict consisting of the keys and values."""
-        return dict((key, self.__dict__[key]) 
-                    for key in self.__dict__[_TYPEDICT]
-                    if key in self.__dict__)
+        if not recursive:
+            return dict((key, self.__dict__[key]) 
+                        for key in self.__dict__[_TYPEDICT]
+                        if key in self.__dict__)
+        else:
+            tmp = dict((key, self.__dict__[key]) 
+                        for key in self.__dict__[_TYPEDICT]
+                        if key in self.__dict__)    
+            for key,val in tmp.items():
+                if isinstance(val, record):
+                    tmp[key] = val.asdict(True)
+                elif str(type(val)) == "<class 'trindikit.enum.<locals>.Enum'>":
+                    tmp[key] = str(val)
+                elif isinstance(val, stack):
+                    tmp[key] = val.aslist()
+                elif isinstance(val, set):
+                    tmp[key] = list(val)
+                else:
+                    raise Exception("No type I know of")
+            return tmp
 
     def _typecheck(self, key, value=None):
         typedict = self.__dict__[_TYPEDICT] 
@@ -284,6 +302,10 @@ class stack(object):
 
     def __repr__(self):
         return "<stack with %s elements>" % len(self)
+    
+    def aslist(self):
+        return self.elements
+    
 
 
 class stackset(stack):
@@ -577,7 +599,7 @@ def update_rule(function):
         ...some effects applied to ATTR1, ATTR2, ...
         ...the variable V is now bound to the first yielded result...
     """
-    argkeys, varargs, varkw, defaults = inspect.getargspec(function)
+    argkeys, varargs, varkw, defaults = inspect.getargspec(function) #damit etwas update-rule sein kann darf es keine (s.u.) haben. --> die funktion die gedecorated wird hat kein *args und **kwargs
     assert not varargs,  "@update_rule does not support a variable *args argument"
     assert not varkw,    "@update_rule does not support a variable **kw argument"
     assert not defaults, "@update_rule does not support default arguments"
@@ -611,7 +633,7 @@ def precondition(test):
     """Call a generator or a generator function as an update precondition.
     
     The function returns the first yielded result of the generator function. 
-    If there are no results, i.e. if the function raises a StopIteration 
+    If there are no results, i.e. if the function raises a StopIteration  #If a generator function calls return or reaches the end its definition, a StopIteration exception is raised
     exception, raise a PreconditionFailure instead. Failures can then be 
     caught by the functions: do, maybe and repeat.
     
@@ -648,8 +670,8 @@ def precondition(test):
                               "function. Instead it is a %s" % type(test))
         if result:
             if isinstance(result, record):
-                for key, value in list(result.asdict().items()):
-                    if VERBOSE["Precondition"]:
+                if VERBOSE["Precondition"]:
+                    for key, value in list(result.asdict().items()):
                         print("...", key, "=", value)
             else:
                 if VERBOSE["Precondition"]:
@@ -800,9 +822,12 @@ class SimpleInput(object):
         LATEST_MOVES.clear()
         if INPUT.value != '':
             move_or_moves = GRAMMAR.interpret(INPUT.get())
-            if not move_or_moves:
-                print("Did not understand:", INPUT)
-                print()
+            if INPUT.value == "exit":        
+                return "exit"
+            elif not move_or_moves:
+                if VERBOSE["NotUnderstand"]:
+                    print("Did not understand:", INPUT)
+                    print()
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:

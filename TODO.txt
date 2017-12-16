@@ -1,0 +1,8 @@
+TODO
+-den IS bzw alle nötigen informationen speichern, sodass man die current session schließen kann und neu starten
+-ein "repeat"-kommando einbrigen mit dem es die letzte utterance wiederholt
+-einen Telegram-Chatbot draus machen
+-per CI den Chatbot automatisch auf meinen webspace committen
+DONE
+-ein "exit"-kommando
+-switch to python3

@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis_types import Answer, Ask, WhQ, Pred1
+from ibis_types import Answer, Ask, WhQ, Pred1, Quit
 from nltk import load_parser #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis import Grammar
 from trindikit import VERBOSE
@@ -43,13 +43,18 @@ class CFG_Grammar(Grammar):
         return set([])
 
     def parseString(self, input):
+        print("###########", input)
         tokens = input.split()
-#        trees = self.parser.nbest_parse(tokens) #ist jetzt ein Iterator!
-#        sem = trees[0].node['sem'] #...der auch anders funktioniert >.<
         trees = next(self.parser.parse(tokens))
-        sem = trees[0].label()['sem']        
-        return self.sem2move(sem) 
+        root = trees[0].label()
+        try:
+            return self.sem2move(root['sem'])
+        except:
+            return self.type2move(root[list(dict(root).keys())[0]]) #geez.
 
+    def type2move(self, roottype):
+        if roottype == "QUIT":
+            return Quit()
 
     def sem2move(self, sem):
         try: return Answer(sem['Answer'])
@@ -63,5 +68,5 @@ class CFG_Grammar(Grammar):
         except: pass
         try: return Ask(WhQ(Pred1(sem['Ask'])))
         except: pass
-        return None
+        raise Exception
 

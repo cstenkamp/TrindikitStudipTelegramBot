@@ -3,7 +3,7 @@
 
 # IBIS / domain-independent
 
-USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s]
+USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[]
 
 ASK[sem=[Ask=?q]] -> WHQ[q=?q]
 
@@ -13,8 +13,9 @@ SHORTANS[ans=?ind] -> CAT[cat=?cat, ind=?ind]
 #SHORTANS[ans=[pred=?cat, ind=?ind]] -> CAT[cat=?cat, ind=?ind]
 
 YESNOANS[ans=yes] -> 'yes' | 'yeah'
-YESNOANS[ans=yes] -> 'no' | 'nope'
+YESNOANS[ans=no] -> 'no' | 'nope'
 
+QUIT[] -> 'bye'
 
 # travel
 
