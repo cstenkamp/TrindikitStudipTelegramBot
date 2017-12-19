@@ -448,7 +448,7 @@ class Type(object):
     """
     contentclass = object
     
-    def __new__(cls, *args, **kw):
+    def __new__(cls, *args, **kw): #einziges mal wo len(args)>1: args=('?return()', [Findout(WhQ(Pred1('return_day')))]) .... why? :o
         return object.__new__(cls)
     
     def __init__(self, content):

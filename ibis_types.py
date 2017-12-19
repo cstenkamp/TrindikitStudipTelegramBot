@@ -92,6 +92,9 @@ class Sentence(Type):
         else:
             return Type.__new__(cls, sent, *args, **kw)
 
+    def __getnewargs__(self): #https://stackoverflow.com/questions/37753425/cannot-unpickle-pickled-object sonst kann man nicht picklen/unpicklen
+        return (self.content, )
+
 
 # Answer types: propositions, short answers, y/n-answers
 
@@ -126,6 +129,7 @@ class Ans(Sentence):
                 raise SyntaxError("Could not parse answer: %s" % ans)
         else:
             return Sentence.__new__(cls, ans, *args, **kw)
+
 
 class Prop(Ans): 
     """Proposition."""
@@ -253,6 +257,7 @@ class Question(Sentence):
         "?prop" -> YNQ("prop")
         """
         if cls is Question:
+            # print("QUESTION's que:", que)
             assert isinstance(que, str)
             assert not args and not kw
             if que.startswith('?x.') and que.endswith('(x)'):
@@ -263,6 +268,8 @@ class Question(Sentence):
                 raise SyntaxError("Could not parse question: %s" % que)
         else:
             return Sentence.__new__(cls, que, *args, **kw)
+
+
 
 class WhQ(Question): 
     """Wh-question."""

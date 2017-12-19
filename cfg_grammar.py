@@ -43,7 +43,6 @@ class CFG_Grammar(Grammar):
         return set([])
 
     def parseString(self, input):
-        print("###########", input)
         tokens = input.split()
         trees = next(self.parser.parse(tokens))
         root = trees[0].label()

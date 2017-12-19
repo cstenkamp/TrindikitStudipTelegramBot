@@ -205,7 +205,7 @@ class Domain(object):
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        self.IS = record(private = record(agenda = stack(), 
+        self.IS = record(private = record(agenda = stack(),
                                           plan   = stack(), 
                                           bel    = set()),
                          shared  = record(com    = set(),
@@ -213,9 +213,67 @@ class IBISInfostate(DialogueManager):
                                           lu     = record(speaker = Speaker,
                                                           moves   = set())))
 
+        self.pload("CurrState.pkl")
+
     def print_IS(self, prefix=""):
         """Pretty-print the information state."""
         self.IS.pprint(prefix)
+
+    def pload(self, filename):
+        pass
+        # from ibis_types import ConsultDB
+        # asdf = ConsultDB("?x.penis(x)") #equal to ConsultDB(Question("?x.penis(x)"))
+        # print(asdf)
+        # print(asdf.content)
+        # print(asdf.contentclass)
+        # exit(-1)
+        if os.path.exists(filename):
+            with open(filename, 'rb') as f:
+                tmp_dict = pickle.load(f)
+                print(tmp_dict)
+    #        self.__dict__.update(tmp_dict)
+
+    def print_type(self, what, indent=""):
+        if indent == "":
+            print(type(what))
+        if isinstance(what, dict):
+            for key, val in what.items():
+                print(indent,key,":",type(val))
+                if type(val) == dict:
+                    self.print_type(val, indent+"  ")
+                elif isinstance(val, str):
+                    print(indent+"  ",val, type(val))
+                elif hasattr(val, '__getitem__'):
+                    for i in val:
+                        print(indent+"  ", i, type(i))
+        else:
+            print(indent, type(what))
+
+
+    def psave(self, filename):
+        #TODO: type mitspeichern (record, ...)
+        odict = self.IS.asdict(recursive=True)
+        print("####NOW")
+        self.print_type(odict["private"])
+        # odict["shared"] = None
+        # odict["private"]["plan"] = odict["private"]["plan"][:1]
+        # print("####MIDDLE")
+        # self.print_type(odict["private"])
+        # print("####MIDDLE2")
+        # if len(odict["private"]["plan"]) > 0:
+        #     print(odict["private"]["plan"][0])
+        #     print(type(odict["private"]["plan"][0]))
+        #     print(odict["private"]["plan"][0].contentclass)
+        #     print(odict["private"]["plan"][0].content)
+        #     asdf = odict["private"]["plan"][0]
+        #     with open(filename, 'wb') as f:
+        #         pickle.dump(odict["private"]["plan"][0], f, pickle.HIGHEST_PROTOCOL)
+        #     with open(filename, 'rb') as f:
+        #         tmp_dict = pickle.load(f)
+
+        print("####END")
+        with open(filename, 'wb') as f:
+            pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
 
 ######################################################################
 # IBIS dialogue manager
@@ -224,7 +282,6 @@ class IBISInfostate(DialogueManager):
 class IBISController(DialogueManager):
     def control(self):
         """The IBIS control algorithm."""
-        # self.pload("CurrState.pkl")
         self.IS.private.agenda.push(Greet())
         self.print_state()
         while True:
@@ -234,16 +291,15 @@ class IBISController(DialogueManager):
                 self.output()
                 self.update()
                 self.print_state()
+            if self.PROGRAM_STATE.get() == ProgramState.QUIT:
+                break
             self.input()
             if self.interpret() == "exit": #obviously also runs it
-                self.PROGRAM_STATE.set(ProgramState.QUIT)
-            if self.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break
             self.update()
             self.print_state()
 
-class IBIS(IBISController, IBISInfostate, StandardMIVS, 
-           SimpleInput, SimpleOutput, DialogueManager):
+class IBIS(IBISController, IBISInfostate, StandardMIVS, SimpleInput, SimpleOutput, DialogueManager):
     """The IBIS dialogue manager. 
     
     This is an abstract class: methods update and select are not implemented.
@@ -253,7 +309,7 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,
         self.DATABASE = database
         self.GRAMMAR = grammar
 
-    def reset(self):
+    def reset(self): #called by DialogueManager.run
         self.init_IS()
         self.init_MIVS()
 
@@ -304,19 +360,3 @@ class IBIS1(IBIS):
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
     select_move   = rule_group(select_answer, select_ask, select_other)
     select_icm    = rule_group(select_icm_sem_neg)
-
-
-    def pload(self, filename):
-        if os.path.exists(filename):
-            with open(filename, 'rb') as f:
-                tmp_dict = pickle.load(f)
-    #        self.__dict__.update(tmp_dict) 
-    
-    def psave(self, filename):
-        odict = self.IS.asdict(recursive=True)
-        # print("####NOW")
-        # for key, val in odict.items():
-        #     print(key, val)
-        # print("####END")
-        with open(filename, 'wb') as f:
-            pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
