@@ -205,7 +205,7 @@ class Domain(object):
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        self.IS = record(private = record(agenda = stack(),
+        self.IS = record(private = record(agenda = stack(), #TODO - stack, set & stackset brauchen konstruktoren mit Liste
                                           plan   = stack(), 
                                           bel    = set()),
                          shared  = record(com    = set(),
@@ -220,7 +220,6 @@ class IBISInfostate(DialogueManager):
         self.IS.pprint(prefix)
 
     def pload(self, filename):
-        pass
         # from ibis_types import ConsultDB
         # asdf = ConsultDB("?x.penis(x)") #equal to ConsultDB(Question("?x.penis(x)"))
         # print(asdf)
@@ -230,8 +229,19 @@ class IBISInfostate(DialogueManager):
         if os.path.exists(filename):
             with open(filename, 'rb') as f:
                 tmp_dict = pickle.load(f)
-                print(tmp_dict)
-    #        self.__dict__.update(tmp_dict)
+
+                self.IS = record(private = record(agenda = stack(tmp_dict["private"]["agenda"]),
+                                                  plan   = stack(tmp_dict["private"]["plan"], PlanConstructor), #TODO: warum ist das beim normalen initialisieren ein PlanConstructor?
+                                                  bel    = set(tmp_dict["private"]["bel"])),
+                                 shared  = record(com    = set(tmp_dict["shared"]["com"]),
+                                                  qud    = stackset(tmp_dict["shared"]["qud"], object),
+                                                  lu     = record(speaker = Speaker.USR,
+                                                                  moves   = set(tmp_dict["shared"]["lu"]["moves"]))))
+
+                # print(self.IS.asdict(recursive=True))
+                # print("-----------------")
+
+
 
     def print_type(self, what, indent=""):
         if indent == "":
@@ -251,10 +261,8 @@ class IBISInfostate(DialogueManager):
 
 
     def psave(self, filename):
-        #TODO: type mitspeichern (record, ...)
         odict = self.IS.asdict(recursive=True)
-        print("####NOW")
-        self.print_type(odict["private"])
+        # print("####NOW")
         # odict["shared"] = None
         # odict["private"]["plan"] = odict["private"]["plan"][:1]
         # print("####MIDDLE")
@@ -271,7 +279,9 @@ class IBISInfostate(DialogueManager):
         #     with open(filename, 'rb') as f:
         #         tmp_dict = pickle.load(f)
 
-        print("####END")
+        # print(odict)
+        # print_type(odict)
+        # print("####END")
         with open(filename, 'wb') as f:
             pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
 
@@ -282,7 +292,8 @@ class IBISInfostate(DialogueManager):
 class IBISController(DialogueManager):
     def control(self):
         """The IBIS control algorithm."""
-        self.IS.private.agenda.push(Greet())
+        if not self.IS.private.plan:
+            self.IS.private.agenda.push(Greet())
         self.print_state()
         while True:
             self.select()
@@ -290,6 +301,8 @@ class IBISController(DialogueManager):
                 self.generate()
                 self.output()
                 self.update()
+                # print("----HERE----")
+                # print(self.IS.shared.qud._type)
                 self.print_state()
             if self.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break

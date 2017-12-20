@@ -31,7 +31,7 @@ import collections
 import sys
 from copy import deepcopy
 
-VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": True, "Precondition": True, "Parse": False, "NotUnderstand": False}
+VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
 
 ######################################################################
 # helper functions
@@ -148,7 +148,7 @@ class record(object):
         else:
             tmp = dict((key, self.__dict__[key]) 
                         for key in self.__dict__[_TYPEDICT]
-                        if key in self.__dict__)    
+                        if key in self.__dict__)
             for key,val in tmp.items():
                 if isinstance(val, record):
                     tmp[key] = val.asdict(True)
@@ -241,7 +241,7 @@ class stack(object):
     all stack operations will be typechecked.
     """
     
-    def __init__(self, elements=None):
+    def __init__(self, elements=None, fixedType=False):
         self.elements = []
         self._type = object
         if elements is None:
@@ -251,7 +251,10 @@ class stack(object):
         elif is_sequence(elements):
             self.elements = list(elements)
             if len(self.elements) > 0:
-                self._type = type(self.elements[0])
+                if fixedType:
+                    self._type = fixedType
+                else:
+                    self._type = type(self.elements[0])
                 self._typecheck(*self.elements)
         else:
             raise ValueError("The argument (%s) should be a type or a sequence" % elements)
