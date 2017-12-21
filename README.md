@@ -3,5 +3,5 @@ Project for the class "Dialogue systems and embodied conversational agents" in W
 
 This projects builds on the Python-implementation of the ISU approach, available under the GNU GENERAL PUBLIC LICENSE.
 
-*Information state approach intro: http://www.cstenkamp.de/ISA_presentation.pdf
-*Python implementation: http://www.cse.chalmers.se/~peb/pubs/Ljunglof2009a%20-%20trindikit.py%20An%20open-source%20Python%20library.pdf
+* Information state approach intro: http://www.cstenkamp.de/ISA_presentation.pdf
+* Python implementation: http://www.cse.chalmers.se/~peb/pubs/Ljunglof2009a%20-%20trindikit.py%20An%20open-source%20Python%20library.pdf
