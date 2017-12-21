@@ -93,18 +93,19 @@ class TravelGrammar(SimpleGenGrammar, CFG_Grammar):
         except:
             return super(TravelGrammar, self).generateMove(move)
 
-grammar = TravelGrammar()
-grammar.loadGrammar("file:travel.fcfg")
-grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
-grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
-grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
-grammar.addForm("Ask('?x.depart_day(x)')", "When do you want to leave?")
-grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
-grammar.addForm("Ask('?x.class(x)')", "First or second class?")
-grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
 
-ibis = IBIS1(domain, database, grammar)
-
+def loadIBIS():
+    grammar = TravelGrammar()
+    grammar.loadGrammar("file:travel.fcfg")
+    grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
+    grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
+    grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
+    grammar.addForm("Ask('?x.depart_day(x)')", "When do you want to leave?")
+    grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
+    grammar.addForm("Ask('?x.class(x)')", "First or second class?")
+    grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
+    ibis = IBIS1(domain, database, grammar)
+    return ibis
 
 
 
@@ -135,4 +136,22 @@ ibis = IBIS1(domain, database, grammar)
 ######################################################################
 
 if __name__=='__main__':
+    ibis = loadIBIS()
     ibis.run()
+
+    # ibis.init()
+    # if not ibis.IS.private.plan:
+    #     ibis.IS.private.agenda.push(Greet())
+    #
+    # while True:
+    #     ibis.select()  # puts the next appropriate thing onto the agenda (->what is the differnce here between NEXT_MOVES und der agenda?)
+    #     if ibis.NEXT_MOVES:
+    #         ibis.generate()  # sets output
+    #         ibis.output()  # prints output
+    #         ibis.update()  # integrates answers, ..., loads & executes plan
+    #     if ibis.PROGRAM_STATE.get() == ProgramState.QUIT:
+    #         break
+    #     ibis.input()
+    #     # if ibis.interpret() == "exit":  # obviously also runs it
+    #     #     break
+    #     ibis.update()

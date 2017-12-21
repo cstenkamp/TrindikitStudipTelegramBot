@@ -125,7 +125,6 @@ def integrate_usr_quit(IS):
     """
     @precondition
     def V():
-        print("MOVES OF THE LU:", IS.shared.lu.moves) #TODO figure out warum das nich tkommt WENN ich einen dialouge move mache
         if IS.shared.lu.speaker == Speaker.USR:       #TODO figure out warum "Goodbye" zur Zeit noch kein Dialogue Move ist
             for move in IS.shared.lu.moves:
                 if isinstance(move, Quit):

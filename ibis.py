@@ -24,8 +24,11 @@ from trindikit import stack, DialogueManager, record, stackset, Speaker, Program
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
 import pickle
-from copy import deepcopy
 import os.path
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+ORM_Base = declarative_base()
 
 ######################################################################
 # IBIS grammar
@@ -202,30 +205,42 @@ class Domain(object):
 # IBIS information state
 ######################################################################
 
+##### IS and MIVS will be in an extra class, such that they can be saved in a DB #####
+class ConversationState(ORM_Base):
+    __tablename__ = 'conversationState'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    fullname = Column(String)
+    password = Column(String)
+
+
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        self.IS = record(private = record(agenda = stack(), #TODO - stack, set & stackset brauchen konstruktoren mit Liste
-                                          plan   = stack(), 
+        self.engine = create_engine('sqlite:///DB.sqlite', echo=False)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+        self.pload_IS("CurrState.pkl")
+
+
+    def reset_IS(self):
+        self.IS = record(private = record(agenda = stack(),
+                                          plan   = stack(),
                                           bel    = set()),
                          shared  = record(com    = set(),
                                           qud    = stackset(),
                                           lu     = record(speaker = Speaker,
                                                           moves   = set())))
 
-        self.pload("CurrState.pkl")
 
     def print_IS(self, prefix=""):
         """Pretty-print the information state."""
         self.IS.pprint(prefix)
 
-    def pload(self, filename):
-        # from ibis_types import ConsultDB
+    def pload_IS(self, filename):
         # asdf = ConsultDB("?x.penis(x)") #equal to ConsultDB(Question("?x.penis(x)"))
-        # print(asdf)
-        # print(asdf.content)
-        # print(asdf.contentclass)
-        # exit(-1)
         if os.path.exists(filename):
             with open(filename, 'rb') as f:
                 tmp_dict = pickle.load(f)
@@ -237,11 +252,8 @@ class IBISInfostate(DialogueManager):
                                                   qud    = stackset(tmp_dict["shared"]["qud"], object),
                                                   lu     = record(speaker = Speaker.USR,
                                                                   moves   = set(tmp_dict["shared"]["lu"]["moves"]))))
-
-                # print(self.IS.asdict(recursive=True))
-                # print("-----------------")
-
-
+        else:
+            self.reset_IS()
 
     def print_type(self, what, indent=""):
         if indent == "":
@@ -260,28 +272,10 @@ class IBISInfostate(DialogueManager):
             print(indent, type(what))
 
 
-    def psave(self, filename):
+    def psave_IS(self, filename):
+        #TODO you know what, ich speicher den Kram in ner Datenbank. ==> SQLAlchemy, die ibis-klasse extended Base=declarative_base(), und für die werte .IS und .MVIS gibt es entsprechungen
+        #TODO Flyweight-pattern nutzen, sodass jede ibis-instanz nur den Stand der Datenbank hat, und die Methoden von ner gemeinsamen erbt
         odict = self.IS.asdict(recursive=True)
-        # print("####NOW")
-        # odict["shared"] = None
-        # odict["private"]["plan"] = odict["private"]["plan"][:1]
-        # print("####MIDDLE")
-        # self.print_type(odict["private"])
-        # print("####MIDDLE2")
-        # if len(odict["private"]["plan"]) > 0:
-        #     print(odict["private"]["plan"][0])
-        #     print(type(odict["private"]["plan"][0]))
-        #     print(odict["private"]["plan"][0].contentclass)
-        #     print(odict["private"]["plan"][0].content)
-        #     asdf = odict["private"]["plan"][0]
-        #     with open(filename, 'wb') as f:
-        #         pickle.dump(odict["private"]["plan"][0], f, pickle.HIGHEST_PROTOCOL)
-        #     with open(filename, 'rb') as f:
-        #         tmp_dict = pickle.load(f)
-
-        # print(odict)
-        # print_type(odict)
-        # print("####END")
         with open(filename, 'wb') as f:
             pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
 
@@ -296,19 +290,20 @@ class IBISController(DialogueManager):
             self.IS.private.agenda.push(Greet())
         self.print_state()
         while True:
-            self.select()
+            self.select()          #puts the next appropriate thing onto the agenda (->what is the differnce here between NEXT_MOVES und der agenda?)
             if self.NEXT_MOVES:
-                self.generate()
-                self.output()
-                self.update()
-                # print("----HERE----")
-                # print(self.IS.shared.qud._type)
+                self.generate()    #sets output
+                self.output()      #prints output
+                self.update()      #integrates answers, ..., loads & executes plan
                 self.print_state()
             if self.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break
             self.input()
-            if self.interpret() == "exit": #obviously also runs it
+            res = self.interpret()
+            if res == "exit": #obviously also runs it
                 break
+            # elif res == "reset":
+
             self.update()
             self.print_state()
 
@@ -322,9 +317,13 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS, SimpleInput, SimpleOutpu
         self.DATABASE = database
         self.GRAMMAR = grammar
 
-    def reset(self): #called by DialogueManager.run
+    def init(self): #called by DialogueManager.run
         self.init_IS()
         self.init_MIVS()
+
+    def reset(self):
+        self.reset_IS()
+        self.reset_MIVS()
 
     def print_state(self):
         if VERBOSE["IS"] or VERBOSE["MIVS"]:
@@ -354,7 +353,7 @@ class IBIS1(IBIS):
         maybe(self.downdate_qud)
         maybe(self.load_plan)
         repeat(self.exec_plan)
-        self.psave("CurrState.pkl")
+        self.psave_IS("CurrState.pkl")
         
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,

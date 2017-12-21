@@ -10,3 +10,22 @@ DONE
 -den IS bzw alle nötigen informationen speichern, sodass man die current session schließen kann und neu starten
 -ein "exit"-kommando
 -switch to python3
+
+
+
+--------------
+-Situation: Instanz der Klasse IBIS IST sowohl domain, HAT information state, HAT alle update rules als function, ...
+->blöd, weil: nur für ein gespräch gleichzeitig.
+==> IS auslagern.
+====> Flyweight-pattern: Sämtliche Konversationen teilen sich funktionen, und nur Sachen wie IS sind einzen
+further: use databases.
+nen telegram-bot wartet auf messages. Sobald er eine kriegt, steht dabei von welchem User.
+
+Problem: Das beispiel von hier hat IS nur im RAM.
+Wenn, mit supervielen Usern wie in telegram, ein gespräch über mehrere tage geht, müssten zig instanzen gleichzeitig aktiv sein.
+Tausend gespräche im RAM = 1000 instanzen der Klasse IBIS, die sehr viel RAM verbrauchen, und die auch irgendwie alle nen einzelnen Thread brauchen und alles?
+Wie ist ein telegram gespräch denn sonst? Nachricht -> Antwort. Soll heißen: alles ist nur in ner datenbank gespeichert, wenn user X eine nachricht schreibt wird der IS von diesem User aus der Datenbank geladen, ne antwort generiert, updates in der DB gespeichert, session ende.
+
+lazy writing nutzen: 5 minuten nach antwort das gespräch noch im RAM halten, sodass man den IS jetzt nehmen kann statt aus der DB zu laden
+
+--> alles textuell speichern, und drauf achten dass in der DB dann alle und nur alle sachen sind die einer konversation eigen sind

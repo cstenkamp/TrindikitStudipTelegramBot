@@ -691,7 +691,7 @@ class DialogueManager(object):
     """Abstract base class for Dialogue Managers. 
     
     Subclasses need to implement at least:
-      - self.reset() for resetting the infostate variables
+      - self.init() for initializing the infostate variables
       - self.control() for starting the control algorithm
       - self.print_state() for printing the current infostate
     """
@@ -702,12 +702,12 @@ class DialogueManager(object):
     def run(self):
         """Run the dialogue system.
         
-        Convenience method which calls self.reset() and self.control().
+        Convenience method which calls self.init() and self.control().
         """
-        self.reset()
+        self.init()
         self.control()
 
-    def reset(self):
+    def init(self):
         """Reset the information state."""
         raise NotImplementedError
 
@@ -747,8 +747,8 @@ class StandardMIVS(DialogueManager):
       - self.PROGRAM_STATE  : value of RUN | QUIT
     """
 
-    def init_MIVS(self):
-        """Initialise the MIVS. To be called from self.reset()."""
+    def reset_MIVS(self):
+        """Initialise the MIVS. To be called from self.init()."""
         self.INPUT          = value(str)
         self.LATEST_SPEAKER = value(Speaker)
         self.LATEST_MOVES   = set()
@@ -756,6 +756,12 @@ class StandardMIVS(DialogueManager):
         self.OUTPUT         = value(str)
         self.PROGRAM_STATE  = value(ProgramState)
         self.PROGRAM_STATE.set(ProgramState.RUN)
+
+    def init_MIVS(self):
+        self.reset_MIVS()
+        # self.pload_MIVS()
+
+
 
     def print_MIVS(self, prefix=""):
         """Print the MIVS. To be called from self.print_state()."""
@@ -825,8 +831,8 @@ class SimpleInput(object):
         LATEST_MOVES.clear()
         if INPUT.value != '':
             move_or_moves = GRAMMAR.interpret(INPUT.get())
-            if INPUT.value == "exit":        
-                return "exit"
+            if INPUT.value == "exit" or INPUT.value == "reset":
+                return INPUT.value
             elif not move_or_moves:
                 if VERBOSE["NotUnderstand"]:
                     print("Did not understand:", INPUT)
