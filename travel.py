@@ -12,42 +12,44 @@ from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
 
 
+def create_domain():
+    preds0 = 'return', 'need-visa'
 
-preds0 = 'return', 'need-visa'
+    preds1 = {'price': 'int',
+              'how': 'means',
+              'dest_city': 'city',
+              'depart_city': 'city',
+              'depart_day': 'day',
+              'class': 'flight_class',
+              'return_day': 'day',
+              }
 
-preds1 = {'price': 'int',
-          'how': 'means',
-          'dest_city': 'city',
-          'depart_city': 'city',
-          'depart_day': 'day',
-          'class': 'flight_class',
-          'return_day': 'day',
-          }
+    means = 'plane', 'train'
+    cities = 'paris', 'london', 'berlin'
+    days = 'today', 'tomorrow'
+    classes = 'first', 'second'
 
-means = 'plane', 'train'
-cities = 'paris', 'london', 'berlin'
-days = 'today', 'tomorrow'
-classes = 'first', 'second'
+    sorts = {'means': means,
+             'city': cities,
+             'day': days,
+             'flight_class': classes,
+             }
 
-sorts = {'means': means,
-         'city': cities,
-         'day': days,
-         'flight_class': classes,
-         }
+    domain = Domain(preds0, preds1, sorts)
 
-domain = Domain(preds0, preds1, sorts)
+    domain.add_plan("?x.price(x)",
+                   [Findout("?x.how(x)"),
+                    Findout("?x.dest_city(x)"),
+                    Findout("?x.depart_city(x)"),
+                    Findout("?x.depart_day(x)"),
+                    Findout("?x.class(x)"),
+                    Findout("?return()"),
+                    If("?return()",
+                        [Findout("?x.return_day(x)")]),
+                    ConsultDB("?x.price(x)")
+                   ])
 
-domain.add_plan("?x.price(x)",
-               [Findout("?x.how(x)"),
-                Findout("?x.dest_city(x)"),
-                Findout("?x.depart_city(x)"),
-                Findout("?x.depart_day(x)"),
-                Findout("?x.class(x)"),
-                 Findout("?return()"),
-                 If("?return()", 
-                    [Findout("?x.return_day(x)")]),
-                 ConsultDB("?x.price(x)")
-                 ])
+    return domain
 
 
 class TravelDB(Database):
@@ -78,9 +80,6 @@ class TravelDB(Database):
     def addEntry(self, entry):
         self.entries.append(entry)
 
-database = TravelDB()
-database.addEntry({'price':'232', 'from':'berlin', 'to':'paris', 'day':'today'})
-database.addEntry({'price':'345', 'from':'paris', 'to':'london', 'day':'today'})
 
 class TravelGrammar(SimpleGenGrammar, CFG_Grammar):
     def generateMove(self, move):
@@ -104,6 +103,13 @@ def loadIBIS():
     grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
     grammar.addForm("Ask('?x.class(x)')", "First or second class?")
     grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
+
+    database = TravelDB()
+    database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today'})
+    database.addEntry({'price': '345', 'from': 'paris', 'to': 'london', 'day': 'today'})
+
+    domain = create_domain()
+
     ibis = IBIS1(domain, database, grammar)
     return ibis
 

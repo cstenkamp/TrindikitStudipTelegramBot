@@ -206,21 +206,21 @@ class Domain(object):
 ######################################################################
 
 ##### IS and MIVS will be in an extra class, such that they can be saved in a DB #####
-class ConversationState(ORM_Base):
-    __tablename__ = 'conversationState'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    fullname = Column(String)
-    password = Column(String)
+# class ConversationState(ORM_Base):
+#     __tablename__ = 'conversationState'
+#
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String)
+#     fullname = Column(String)
+#     password = Column(String)
 
 
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        self.engine = create_engine('sqlite:///DB.sqlite', echo=False)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+        # self.engine = create_engine('sqlite:///DB.sqlite', echo=False)
+        # Session = sessionmaker(bind=self.engine)
+        # self.session = Session()
 
         self.pload_IS("CurrState.pkl")
 
@@ -302,7 +302,6 @@ class IBISController(DialogueManager):
             res = self.interpret()
             if res == "exit": #obviously also runs it
                 break
-            # elif res == "reset":
 
             self.update()
             self.print_state()
