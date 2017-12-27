@@ -26,7 +26,7 @@ def create_domain():
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
-    days = 'today', 'tomorrow'
+    days = 'today', 'tomorrow', 'monday', 'tuesday','wednesday','thursday','friday','saturday','sunday'
     classes = 'first', 'second'
 
     sorts = {'means': means,
