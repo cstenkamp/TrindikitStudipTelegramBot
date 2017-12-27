@@ -20,6 +20,7 @@ QUIT[] -> 'bye'
 # travel
 
 WHQ[q=price] -> 'price'
+WHQ[q=price] -> 'I want to know how expensive a flight is.'
 
 CAT[cat=how, ind=plane] -> 'plane' | 'flight'
 CAT[cat=how, ind=train] -> 'train'

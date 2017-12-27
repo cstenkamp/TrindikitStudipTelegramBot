@@ -22,19 +22,19 @@
 
 from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg
+from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
 import pickle
 import os.path
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-ORM_Base = declarative_base()
+# from sqlalchemy import create_engine, Column, Integer, String
+# from sqlalchemy.orm import sessionmaker
+# from sqlalchemy.ext.declarative import declarative_base
+# ORM_Base = declarative_base()
 
 ######################################################################
 # IBIS grammar
 ######################################################################
 
-class Grammar(object):
+class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in travel
     """The simplest grammar, using dialogue moves as surface strings.
     
     Override generate and interpret if you want to use a real grammar.
@@ -44,7 +44,7 @@ class Grammar(object):
         """Generate a surface string from a set of dialogue moves."""
         return self.joinPhrases(self.generateMove(move) for move in moves)
 
-    def generateMove(self, move):
+    def generateMove(self, move): #wird 2 mal überschrieben
         return str(move)
 
     def joinPhrases(self, phrases):
@@ -56,9 +56,9 @@ class Grammar(object):
                 str += "."
         return str
 
-    def interpret(self, input):
+    def interpret(self, input): #Haupt-Sache die cfg_grammar überschreibt
         """Parse an input string into a dialogue move or a set of moves."""
-        try: return eval(input)
+        try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
         try: return Ask(Question(input))
         except: pass
@@ -73,9 +73,9 @@ class Grammar(object):
 class SimpleGenGrammar(Grammar):
     def __init__(self):
         self.forms = dict()
-        self.addForm("'Greet'()", 'Hello')
+        self.addForm("'Greet'()", 'Hello') #könnten genauso gut in travel.py definiert sein, oder in ner Template-Datenbank
         self.addForm("'Quit'()", 'Goodbye')
-        self.addForm("icm:neg*sem", 'I don\'t understand')
+        self.addForm("icm:sem*neg", 'I don\'t understand') #this was wrong order (see chap.4 of https://pdfs.semanticscholar.org/0066/b5c5b49e1a7eb4ea95ee22984b695ec5d2c5.pdf)
 
     def addForm(self, move, output):
         self.forms[move] = output
@@ -88,15 +88,18 @@ class SimpleGenGrammar(Grammar):
             except KeyError: output = s
         return output
 
-    def generateICM(self, move):
+    def generateICM(self, move): #Interactive Communication Management
         assert isinstance(move, ICM)
         try: return self.generateIcmPerPos(move)
         except: raise
 
-    def generateIcmPerPos(self, icm):
+    def generateIcmPerPos(self, icm): #positive, perception level. Print WHAT you heard.
         assert icm.level == "per"
         assert icm.polarity == "pos"
         return "I heard you say " + icm.icm_content
+
+    #was noch fehlen wird ist - icm:acc∗neg:Content (noegative acceptence) - realized
+    #as explanation (“Sorry, Paris is not a valid destination city”)
 
 ######################################################################
 # IBIS database
@@ -159,8 +162,12 @@ class Domain(object):
                 sort2 = self.preds1.get(question.pred.content)
                 return sort1 and sort2 and sort1 == sort2
         elif isinstance(question, YNQ):
+            # print("Answer", answer, type(answer))
+            # print("Question.prop", question.prop, type(question.prop))
+            # print("Answer.content", answer.content, type(answer.content))
+            # print("Question.prop.content", question.prop.content, type(question.prop.content))
             return (isinstance(answer, YesNo) or
-                    isinstance(answer, Prop) and answer == question.prop)
+                    isinstance(answer, Prop) and type(answer) == type(question.prop) and answer.content[:1] == question.prop.content[:1]) #der dritte teil des tuples IST ANDERS wenn ein "Nein" auf eine "Ja"-Frage geantwortet wrid!
         elif isinstance(question, AltQ):
             return any(answer == ynq.prop for ynq in question.ynqs)
 
@@ -290,7 +297,7 @@ class IBISController(DialogueManager):
             self.IS.private.agenda.push(Greet())
         self.print_state()
         while True:
-            self.select()          #puts the next appropriate thing onto the agenda (->what is the differnce here between NEXT_MOVES und der agenda?)
+            self.select()          #puts the next appropriate thing onto the agenda
             if self.NEXT_MOVES:
                 self.generate()    #sets output
                 self.output()      #prints output
@@ -299,14 +306,15 @@ class IBISController(DialogueManager):
             if self.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break
             self.input()
-            res = self.interpret()
-            if res == "exit": #obviously also runs it
+            res = self.interpret() #obviously also runs it
+            if res == "exit":
                 break
 
             self.update()
             self.print_state()
 
-class IBIS(IBISController, IBISInfostate, StandardMIVS, SimpleInput, SimpleOutput, DialogueManager):
+#contains..  control()     IS + init_IS   MVIS+init      interpret+input  generate+output do,maybe,repeat
+class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     SimpleOutput,   DialogueManager):
     """The IBIS dialogue manager. 
     
     This is an abstract class: methods update and select are not implemented.
@@ -352,8 +360,10 @@ class IBIS1(IBIS):
         maybe(self.downdate_qud)
         maybe(self.load_plan)
         repeat(self.exec_plan)
+        maybe(self.handle_empty_plan_agenda_qud)
         self.psave_IS("CurrState.pkl")
-        
+
+    #rule_group returns "lambda self: do(self, *rules)" with rules specified here
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
                                 integrate_answer, integrate_greet,
@@ -361,6 +371,7 @@ class IBIS1(IBIS):
     downdate_qud = rule_group(downdate_qud)
     load_plan    = rule_group(recover_plan, find_plan)
     exec_plan    = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if)
+    handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
     def select(self):
         if not self.IS.private.agenda:

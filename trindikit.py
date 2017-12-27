@@ -235,7 +235,7 @@ class stack(object):
     stack() -> new stack
     stack(type) -> new stack with elements of type 'type'
     stack(sequence) -> new stack initialised from sequence's items,
-        where all items have to be of the same type
+        where all items have to be of the same type (defined by the first or by fixedType)
     
     If a type/class is given as argument when creating the stack, 
     all stack operations will be typechecked.
@@ -309,7 +309,6 @@ class stack(object):
     def aslist(self):
         return self.elements
     
-
 
 class stackset(stack):
     """A stack which also can be used as a set.
@@ -395,7 +394,7 @@ class tset(object):
 # enumeration class 
 ######################################################################
 
-def enum(*names):
+def enum(*names): #good thing of enum: very compatible with the value() - wrapper from above!
     """Creates an enumeration class.
     
     The class instances are stored as attributes to the class. Example:
@@ -429,7 +428,7 @@ def enum(*names):
             self.__name = name
     
     for name in names:
-        setattr(Enum, name, Enum(name))
+        setattr(Enum, name, Enum(name)) #das heißt Speaker.USR = Enum(USR)? dafuq
     Enum.__new__ = None
     return Enum
 
@@ -449,7 +448,7 @@ class Type(object):
     This is meant to be subclassed by the types in a specific 
     dialogue theory implementation. 
     """
-    contentclass = object
+    contentclass = object #wird von ALLEM überschrieben
     
     def __new__(cls, *args, **kw): #einziges mal wo len(args)>1: args=('?return()', [Findout(WhQ(Pred1('return_day')))]) .... why? :o
         return object.__new__(cls)
@@ -461,7 +460,7 @@ class Type(object):
             self.content = self.contentclass(content)
         else:
             raise TypeError("%r must be of type %r" % (content, self.contentclass))
-    
+
     def _typecheck(self, context=None):
         assert isinstance(self.content, self.contentclass)
         if hasattr(self.content, '_typecheck'):
@@ -474,9 +473,7 @@ class Type(object):
 #        return cmp(type(self), type(other)) or cmp(self.content, other.content)
     
     def __eq__(self, other):
-        first = type(self) == type(other)
-        second = self.content == other.content
-        return first and second
+        return type(self) == type(other) and self.content == other.content
         
     
     def __hash__(self):
@@ -525,7 +522,7 @@ def do(*rules):
     without arguments.
     """
     if isinstance(rules[0], DialogueManager):
-        self = rules[0]
+        self = rules[0]   #deswegen gilt self.do(*rules) <==> do(self, *rules)
         rules = rules[1:]
     else:
         self = None
@@ -620,7 +617,7 @@ def update_rule(function):
             new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
         result = function(**new_kw)
         if VERBOSE["UpdateRules"]:
-            print("-->", funcname)
+            print("-->", funcname) #wird ebenfalls nur gecallt wenn die precondition hält
             print()
         return result
     
@@ -636,7 +633,7 @@ def precondition(test):
     """Call a generator or a generator function as an update precondition.
     
     The function returns the first yielded result of the generator function. 
-    If there are no results, i.e. if the function raises a StopIteration  #If a generator function calls return or reaches the end its definition, a StopIteration exception is raised
+    If there are no results, i.e. if the function raises a StopIteration     #If a generator function calls return or reaches the end its definition, a StopIteration exception is raised
     exception, raise a PreconditionFailure instead. Failures can then be 
     caught by the functions: do, maybe and repeat.
     
@@ -750,11 +747,11 @@ class StandardMIVS(DialogueManager):
     def reset_MIVS(self):
         """Initialise the MIVS. To be called from self.init()."""
         self.INPUT          = value(str)
-        self.LATEST_SPEAKER = value(Speaker)
-        self.LATEST_MOVES   = set()
+        self.LATEST_SPEAKER = value(Speaker) #initializing it with "Speaker" means that it can only take Speaker.USR or Speaker.SYS
+        self.LATEST_MOVES   = set()          #sind die NEXT_MOVES von einer Iteration vorher
         self.NEXT_MOVES     = stack(Move)
         self.OUTPUT         = value(str)
-        self.PROGRAM_STATE  = value(ProgramState)
+        self.PROGRAM_STATE  = value(ProgramState) #see above
         self.PROGRAM_STATE.set(ProgramState.RUN)
 
     def init_MIVS(self):
@@ -833,7 +830,7 @@ class SimpleInput(object):
             move_or_moves = GRAMMAR.interpret(INPUT.get())
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
-            elif not move_or_moves:
+            elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht
                 if VERBOSE["NotUnderstand"]:
                     print("Did not understand:", INPUT)
                     print()

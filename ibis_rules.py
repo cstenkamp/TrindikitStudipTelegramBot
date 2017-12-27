@@ -347,8 +347,11 @@ def select_icm_sem_neg(IS, INPUT, NEXT_MOVES):
                 if INPUT.value != '':
                     if IS.shared.lu.speaker == Speaker.USR:
                         yield True
-    NEXT_MOVES.push(ICM('per', 'pos', INPUT.value))
-    NEXT_MOVES.push(ICM('neg', 'sem'))
+    NEXT_MOVES.push(ICM('per', 'pos', INPUT.value)) #perception is positive "I heard you say XYZ" (with string as arg)
+    NEXT_MOVES.push(ICM('sem', 'neg')) #semantic understanding is negative "I don't understand" (would have the move as arg, unrecognized here)
+    # Quote from https://pdfs.semanticscholar.org/0066/b5c5b49e1a7eb4ea95ee22984b695ec5d2c5.pdf:
+    # A general strategy used by GoDiS in ICM selection is that if negative or checking feedback on some level is provided,
+    # the system should also provide positive feedback on the level below
 
 @update_rule
 def select_ask(IS, NEXT_MOVES):
@@ -411,3 +414,27 @@ def select_other(IS, NEXT_MOVES):
             yield R(move=move)
     NEXT_MOVES.push(V.move)
 
+
+######################################################################
+# Own rules
+######################################################################
+@update_rule
+def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
+    """Handles the end of a conversation.
+
+    pushes saying goodbye onto the agenda
+    """
+    @precondition
+    def V():
+        if len(IS.shared.qud.elements) == 0 and len(IS.private.plan.elements) == 0 and len(IS.private.agenda.elements) == 0:
+            no_greet = True
+            for move in IS.shared.lu.moves:
+                if isinstance(move, Greet):
+                    no_greet = False
+            if no_greet:
+                yield R(move=None)
+
+    #IS.private.agenda.push(Quit())
+    import os
+    os.remove("CurrState.pkl")
+    PROGRAM_STATE.set(ProgramState.QUIT)

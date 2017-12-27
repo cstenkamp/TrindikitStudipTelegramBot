@@ -61,20 +61,24 @@ class TravelDB(Database):
         depart_city = self.getContext(context, "depart_city")
         dest_city = self.getContext(context, "dest_city")
         day = self.getContext(context, "depart_day")
-        entry = self.lookupEntry(depart_city, dest_city, day)
+        do_return = self.getContext(context, "return")
+        entry = self.lookupEntry(depart_city, dest_city, day, do_return)
         price = entry['price']
         return Prop(Pred1("price"), Ind(price), True)
 
-    def lookupEntry(self, depart_city, dest_city, day):
+    def lookupEntry(self, depart_city, dest_city, day, do_return):
         for e in self.entries:
-            if e['from'] == depart_city and e['to'] == dest_city and e['day'] == day:
+            if e['from'] == depart_city and e['to'] == dest_city and e['day'] == day and e['return'] == do_return:
                 return e
         assert False
 
     def getContext(self, context, pred):
         for prop in context:
             if prop.pred.content == pred:
-                return prop.ind.content
+                try:
+                    return prop.ind.content
+                except AttributeError: #NoneType
+                    return prop.yes #bei Yes-No-Questions
         assert False
 
     def addEntry(self, entry):
@@ -105,8 +109,9 @@ def loadIBIS():
     grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
 
     database = TravelDB()
-    database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today'})
-    database.addEntry({'price': '345', 'from': 'paris', 'to': 'london', 'day': 'today'})
+    database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})
+    database.addEntry({'price': '345', 'from': 'paris', 'to': 'london', 'day': 'today', 'return': False})
+    database.addEntry({'price': '432', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': True})
 
     domain = create_domain()
 
