@@ -71,6 +71,11 @@ class Pred1(Atomic):
     def _typecheck(self, context):
         assert self.content in context.preds1
 
+    def __init__(self, *args, **kwargs):
+        print(*args, **kwargs) #HIER
+        # self._typecheck(args[0])
+        super(Pred1, self).__init__(*args, **kwargs)
+
 class Sort(Pred1): 
     """Sort."""
     def _typecheck(self, context):

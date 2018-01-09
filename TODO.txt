@@ -9,6 +9,10 @@ TODO
 -Sämtliche ICMs von https://pdfs.semanticscholar.org/0066/b5c5b49e1a7eb4ea95ee22984b695ec5d2c5.pdf benutzen, und bspw bei zu langer Wartezeit vom User 2 system responses machen können
 -Dialog ist System-Antwort auf User-Nachricht, außerdem mixed initiative! Ein Event-System einführen wo das sytem schreiben kann!
 -Information state approach erweiterung: Tentatively added stuff
+-warum sind YNQs Props (brauchen im Konstruktor eine, und sind damit bereits vollwertige propositionen), während WhQs immer noch Pred1's sind? Warum nicht YNQs Pred1s über die Domain bool?
+  -warum ist es YNQ(Prop((Pred0('return'), None, True))) und nicht YNQ(Pred0('return')) --> warum muss es nochmal in ner Prop sein wo noch Truth-value bei ist
+  --> warum muss ein Pred0 den Umweg über Prop gehen?
+
 DONE
 -den IS bzw alle nötigen informationen speichern, sodass man die current session schließen kann und neu starten
 -ein "exit"-kommando

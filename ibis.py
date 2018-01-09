@@ -130,14 +130,14 @@ class Domain(object):
     """
     
     def __init__(self, preds0, preds1, sorts):
-        self.preds0 = set(preds0)
-        self.preds1 = dict(preds1)
-        self.sorts = dict(sorts)
+        self.preds0 = set(preds0)                           # return
+        self.preds1 = dict(preds1)                          # city, day-of, ...
+        self.sorts = dict(sorts)                            # {'city': ('paris', 'london', 'berlin')}
         self.inds = dict((ind,sort) for sort in self.sorts 
-                         for ind in self.sorts[sort])
+                         for ind in self.sorts[sort])       # {'berlin': 'city', 'train': 'means', 'today': 'day', 'tuesday': 'day', ...}
         self.plans = {}
 
-    def add_plan(self, trigger, plan):
+    def add_plan(self, trigger, plan):  #("?x.price(x)", [Findout("?x.how(x)")])
         """Add a plan to the domain."""
         assert isinstance(trigger, (Question, str)), \
             "The plan trigger %s must be a Question" % trigger
@@ -152,22 +152,24 @@ class Domain(object):
 
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
-        assert isinstance(answer, (ShortAns, Prop))
+        assert isinstance(answer, (ShortAns, Prop)) #YesNo is a subclass of ShortAns
         assert isinstance(question, Question)
         if isinstance(question, WhQ):
             if isinstance(answer, Prop):
                 return answer.pred == question.pred
-            elif not isinstance(answer, YesNo):
+            elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
                 sort1 = self.inds.get(answer.ind.content)
                 sort2 = self.preds1.get(question.pred.content)
                 return sort1 and sort2 and sort1 == sort2
         elif isinstance(question, YNQ):
-            # print("Answer", answer, type(answer))
-            # print("Question.prop", question.prop, type(question.prop))
-            # print("Answer.content", answer.content, type(answer.content))
-            # print("Question.prop.content", question.prop.content, type(question.prop.content))
-            return (isinstance(answer, YesNo) or
-                    isinstance(answer, Prop) and type(answer) == type(question.prop) and answer.content[:1] == question.prop.content[:1]) #der dritte teil des tuples IST ANDERS wenn ein "Nein" auf eine "Ja"-Frage geantwortet wrid!
+            # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
+            # print("#####")                                                                      # OB YESNOANS DIE QUESTION RESOLVED (dann wird aus YesNo(False) ne Prop) # OB DIE ENTSTANDENE PROP WAS VOM QUD RESOLVED
+            # print("Answer", answer, type(answer))                                               # Answer no <class 'ibis_types.YesNo'>                                   # Answer -return() <class 'ibis_types.Prop'>
+            # print("Question.prop", question.prop, type(question.prop))                          # Question.prop return() <class 'ibis_types.Prop'>                       # Question.prop return() <class 'ibis_types.Prop'>
+            # print("Answer.content", answer.content, type(answer.content))                       # Answer.content False <class 'bool'>                                    # Question.prop.content (Pred0('return'), None, True) <class 'tuple'>
+            # print("Question.prop.content", question.prop.content, type(question.prop.content))  # Question.prop.content (Pred0('return'), None, True) <class 'tuple'>    # Question.prop.content (Pred0('return'), None, True) <class 'tuple'>
+            return isinstance(answer, YesNo) or \
+                    (isinstance(answer, Prop) and type(answer) == type(question.prop) and answer.content[:1] == question.prop.content[:1]) #der dritte teil des tuples IST ANDERS wenn ein "Nein" auf eine "Ja"-Frage geantwortet wrid!
         elif isinstance(question, AltQ):
             return any(answer == ynq.prop for ynq in question.ynqs)
 
@@ -203,6 +205,7 @@ class Domain(object):
         or None if there is no relevant plan.
         """       
         planstack = stack(PlanConstructor)
+        # print(question, type(question))
         for construct in reversed(self.plans.get(question)):
             planstack.push(construct)
         return planstack
@@ -366,7 +369,7 @@ class IBIS1(IBIS):
     #rule_group returns "lambda self: do(self, *rules)" with rules specified here
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
-                                integrate_answer, integrate_greet,
+                                integrate_answer, integrate_greet,      #integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                                 integrate_usr_quit, integrate_sys_quit)
     downdate_qud = rule_group(downdate_qud)
     load_plan    = rule_group(recover_plan, find_plan)

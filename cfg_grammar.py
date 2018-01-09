@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis_types import Answer, Ask, WhQ, Pred1, Quit
+from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0
 from nltk import load_parser #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis import Grammar
 from trindikit import VERBOSE
@@ -56,6 +56,7 @@ class CFG_Grammar(Grammar):
             return Quit()
 
     def sem2move(self, sem):
+        #sem bspw: [Ask = 'needvisa'] [ subtype = 'YNQ']
         try: return Answer(sem['Answer'])
         except: pass
         try:
@@ -65,7 +66,13 @@ class CFG_Grammar(Grammar):
             #return Answer(Prop((Pred1(pred, Ind(ind), True))))
             return Answer(pred+"("+ind+")")
         except: pass
-        try: return Ask(WhQ(Pred1(sem['Ask'])))
-        except: pass
+        try:
+            sem["Ask"]
+            if sem["subtype"] == "YNQ":
+                return Ask(YNQ(Prop(Pred0(sem["Ask"]))))
+            elif sem["subtype"] == "WHQ":
+                return Ask(WhQ(Pred1(sem['Ask'])))
+        except:
+            pass
         raise Exception
 

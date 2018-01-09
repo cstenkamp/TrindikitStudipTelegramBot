@@ -5,7 +5,8 @@
 
 USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[]
 
-ASK[sem=[Ask=?q]] -> WHQ[q=?q]
+ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
+ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
 
@@ -18,6 +19,8 @@ YESNOANS[ans=no] -> 'no' | 'nope'
 QUIT[] -> 'bye'
 
 # travel
+
+YNQ[q=needvisa] -> 'need-visa'
 
 WHQ[q=price] -> 'price'
 WHQ[q=price] -> 'I want to know how expensive a flight is.'
