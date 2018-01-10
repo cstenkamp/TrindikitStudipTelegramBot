@@ -8,7 +8,7 @@ from os.path import join
 
 
 PATH = "/var/www/studIPBot" if os.name != "nt" else ""
-TOKEN = "474481528:AAExdB0fRq7AhwgJ8MuAwteQ4WWiwuVk0FI"
+TOKEN = "491105485:AAFrSueGnkjLee79ne9MhvBSLrpB2VHEnec"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 MY_CHAT_ID = 163601520
 users = userDB(join(PATH,"users.sqlite"))
@@ -108,17 +108,17 @@ def send_message(text, chat_id, reply_markup=None):
     get_url(url)
 
 
-def main():
-
-    users.create_or_add(345)
-    # last_update_id = None
-    # while True:
-    #     updates = get_updates(last_update_id)
-    #     if len(updates["result"]) > 0:
-    #         last_update_id = get_last_update_id(updates) + 1
-    #         handle_updates(updates)
-    #     time.sleep(0.5)
-
-
-if __name__ == '__main__':
-    main()
+# def main():
+#
+#     users.create_or_add(345)
+#     # last_update_id = None
+#     # while True:
+#     #     updates = get_updates(last_update_id)
+#     #     if len(updates["result"]) > 0:
+#     #         last_update_id = get_last_update_id(updates) + 1
+#     #         handle_updates(updates)
+#     #     time.sleep(0.5)
+#
+#
+# if __name__ == '__main__':
+#     main()
