@@ -20,7 +20,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT
+from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT, user
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
 import pickle
@@ -355,20 +355,24 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
 ######################################################################
 
 
+
 class IBIS1(IBIS):
     """The IBIS-1 dialogue manager."""
 
     def update(self):
+        USR = user()
+
         self.IS.private.agenda.clear()
-        self.grounding()
-        maybe(self.integrate)
-        maybe(self.downdate_qud)
-        maybe(self.load_plan)
-        repeat(self.exec_plan)
-        maybe(self.handle_empty_plan_agenda_qud)
+        self.grounding(USR)()
+        maybe(self.integrate(USR))
+        maybe(self.downdate_qud(USR))
+        maybe(self.load_plan(USR))
+        repeat(self.exec_plan(USR))
+        maybe(self.handle_empty_plan_agenda_qud(USR))
         self.psave_IS("CurrState.pkl")
 
-    #rule_group returns "lambda self: do(self, *rules)" with rules specified here
+    #rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
+    #rule_group returns lambda self, user=None: lambda: do(self, user, *rules) <- es kriegt ERST rules (siehe hier drunter), und DAS erwarted dann noch self und user (siehe hier drüber), und returned eine funktion (nicht ihr result, deswegen das nested lambda)
     grounding    = rule_group(get_latest_moves)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
                                 integrate_answer, integrate_greet,      #integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
@@ -379,10 +383,11 @@ class IBIS1(IBIS):
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
     def select(self):
+        USR = user()
         if not self.IS.private.agenda:
-            maybe(self.select_action)
-        maybe(self.select_icm)
-        maybe(self.select_move)
+            maybe(self.select_action(USR))
+        maybe(self.select_icm(USR))
+        maybe(self.select_move(USR))
 
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
     select_move   = rule_group(select_answer, select_ask, select_other)

@@ -32,7 +32,7 @@ from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM,
 @update_rule
 def get_latest_moves(IS, LATEST_MOVES, LATEST_SPEAKER):
     """Copies the latest move(s) and speaker to the infostate.
-    
+
     LATEST_MOVES and LATEST_SPEAKER are copied to /shared/lu.
     """
     @precondition

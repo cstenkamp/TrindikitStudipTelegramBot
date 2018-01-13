@@ -29,7 +29,13 @@ import inspect
 import functools
 import collections
 import sys
-from copy import deepcopy
+
+
+
+class user():
+    def __init__(self):
+        pass
+
 
 VERBOSE = {"IS": True, "MIVS": True, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
 MULTIUSER = True
@@ -513,6 +519,7 @@ class PreconditionFailure(Exception):
     """
     pass
 
+
 def do(*rules):
     """Execute the first rule whose precondition matches. 
     
@@ -522,18 +529,32 @@ def do(*rules):
     instance is applied to every rule. Otherwise the rules are applied
     without arguments.
     """
+
     if isinstance(rules[0], DialogueManager):
         self = rules[0]   #deswegen gilt self.do(*rules) <==> do(self, *rules)
         rules = rules[1:]
     else:
         self = None
         rules = rules
+
+    if isinstance(rules[0], user) or rules[0] is None:
+        usr = rules[0]
+        rules = rules[1:]
+    else:
+        usr = None
+        rules = rules
+
     for rule in rules:
         try:
-            return rule(self) if self else rule()
+            if usr:
+                return rule(self, usr) if self else rule(usr)
+            else:
+                return rule(self) if self else rule()
+
         except PreconditionFailure:
             pass
     raise PreconditionFailure
+
 
 def maybe(*rules):
     """Execute the first rule whose precondition matches. 
@@ -571,7 +592,7 @@ def rule_group(*rules):
     When executed, the rules are tried in order. The first one whose 
     precondition matches is executed, otherwise the group fails.
     """
-    group = lambda self: do(self, *rules)
+    group = lambda self, user=None: lambda: do(self, user, *rules)
     group.__name__ = '<' + '|'.join(rule.__name__ for rule in rules) + '>'
     group.__doc__ = '\n'.join(
             ["Try a group of update rules in order:"] + 
@@ -606,16 +627,32 @@ def update_rule(function):
     assert not defaults, "@update_rule does not support default arguments"
     funcname = function.__name__
     callspec = ", ".join("%s=..." % arg for arg in argkeys)
-    
+
     @functools.wraps(function)
     def rule(*args, **kw):
+
+        print("----------------------------")
+        print("§§§§§§§", funcname, args)
         new_kw = kw
         if args:
-            assert (not kw and len(args) == 1 and 
-                    isinstance(args[0], DialogueManager)), \
+            assert len(args) == 1 or (len(args) == 2), "You need either one or two arguments..."
+            if len(args) == 1:
+                assert (not kw and isinstance(args[0], DialogueManager)), \
                     "Either call %s(%s), " % (funcname, callspec) + \
-                    "or %s(dm) where dm is a DialogueManager instance." % funcname
+                    "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
+                    "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
+            else:
+                assert (not kw and isinstance(args[0], DialogueManager) and isinstance(args[1], user)), \
+                    "Either call %s(%s), " % (funcname, callspec) + \
+                    "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
+                    "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
+            #für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
             new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
+            #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string ind en update rule
+
+            print(new_kw)
+            print(args[0])
+            print(getattr(args[0], "IS"))
         result = function(**new_kw)
         if VERBOSE["UpdateRules"]:
             print("-->", funcname) #wird ebenfalls nur gecallt wenn die precondition hält
