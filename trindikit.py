@@ -29,12 +29,8 @@ import inspect
 import functools
 import collections
 import sys
+import stateDB
 
-
-
-class user():
-    def __init__(self):
-        pass
 
 
 VERBOSE = {"IS": True, "MIVS": True, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
@@ -69,6 +65,7 @@ def add_to_docstring(docstring, *newlines):
         docstring += ' '*indent + line + '\n'
     # Return the new docstring:
     return docstring
+
 
 ######################################################################
 # value - object wrapper for non-object values
@@ -537,7 +534,7 @@ def do(*rules):
         self = None
         rules = rules
 
-    if isinstance(rules[0], user) or rules[0] is None:
+    if isinstance(rules[0], stateDB.user) or rules[0] is None:
         usr = rules[0]
         rules = rules[1:]
     else:
@@ -628,11 +625,13 @@ def update_rule(function):
     funcname = function.__name__
     callspec = ", ".join("%s=..." % arg for arg in argkeys)
 
+    # print("##", funcname, argkeys)
+
     @functools.wraps(function)
     def rule(*args, **kw):
 
-        print("----------------------------")
-        print("§§§§§§§", funcname, args)
+        # print("----------------------------")
+        # print("§§§§§§§", funcname, args)
         new_kw = kw
         if args:
             assert len(args) == 1 or (len(args) == 2), "You need either one or two arguments..."
@@ -642,17 +641,22 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
             else:
-                assert (not kw and isinstance(args[0], DialogueManager) and isinstance(args[1], user)), \
+                assert (not kw and isinstance(args[0], DialogueManager) and isinstance(args[1], stateDB.user)), \
                     "Either call %s(%s), " % (funcname, callspec) + \
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
-            #für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
-            new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
-            #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string ind en update rule
 
-            print(new_kw)
-            print(args[0])
-            print(getattr(args[0], "IS"))
+            if not MULTIUSER:
+                new_kw = dict((key, getattr(args[0], key, None)) for key in set(argkeys).difference(set(["USER"])))
+                #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string in den update rules
+            else:
+                # für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
+                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER"]))
+                globals_kw =  dict((key, getattr(args[0], key, None)) for key in globals) #domain, database, grammar sind für alle user selb
+                specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER"])))
+                user_kw = dict((key, args[1]) for key in set(argkeys).intersection(set(["USER"])))
+                new_kw = {**globals_kw, **specifics_kw, **user_kw}
+            # print(new_kw)
         result = function(**new_kw)
         if VERBOSE["UpdateRules"]:
             print("-->", funcname) #wird ebenfalls nur gecallt wenn die precondition hält
@@ -830,13 +834,13 @@ class SimpleOutput(DialogueManager):
         OUTPUT.set(GRAMMAR.generate(NEXT_MOVES))
 
     @update_rule
-    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES):
+    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES, USER):
         """Print the string in OUTPUT to standard output.
         
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """
-        print("S>", OUTPUT.get() or "[---]")
+        print("S to", str(USER.state.chat_id)+":", OUTPUT.get() or "[---]")
         print()
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
@@ -878,7 +882,7 @@ class SimpleInput(object):
                 LATEST_MOVES.update(move_or_moves)
 
     @update_rule
-    def input(INPUT, LATEST_SPEAKER):
+    def input(INPUT, LATEST_SPEAKER, USER):
         """Inputs a string from standard input.
         
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
@@ -888,6 +892,10 @@ class SimpleInput(object):
         except EOFError:
             print("EOF")
             sys.exit()
+        # if MULTIUSER:
+        #     str = str.split(":")
+        #     INPUT.set(str[1])
+        # else:
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
         print()

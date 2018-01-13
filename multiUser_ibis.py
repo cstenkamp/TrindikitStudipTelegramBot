@@ -294,32 +294,45 @@ class IBISInfostate(DialogueManager):
 ######################################################################
 
 class IBISController(DialogueManager):
-    def control(self):
+    def print_state(self, user):
+        if VERBOSE["IS"] or VERBOSE["MIVS"]:
+            print("+----- "+str(user.state.chat_id)+" ------------- - -  -")
+        if VERBOSE["MIVS"]:
+            user.state.print_MIVS(prefix="| ")
+        if VERBOSE["IS"] and VERBOSE["MIVS"]:
+            print("|")
+        if VERBOSE["IS"]:
+            user.state.print_IS(prefix="| ")
+        if VERBOSE["IS"] or VERBOSE["MIVS"]:
+            print("+------------------------ - -  -")
+            print()
+
+    def control(self, user):
         """The IBIS control algorithm."""
-        if not self.IS.private.plan:
-            self.IS.private.agenda.push(Greet())
-        self.print_state()
+        if not user.state.IS.private.plan:
+            user.state.IS.private.agenda.push(Greet())
+        self.print_state(user)
         while True:
-            self.select()          #puts the next appropriate thing onto the agenda
-            if self.NEXT_MOVES:
-                self.generate()    #sets output
-                self.output()      #prints output
-                self.update()      #integrates answers, ..., loads & executes plan
-                self.print_state()
-            if self.PROGRAM_STATE.get() == ProgramState.QUIT:
+            self.select(user)          #puts the next appropriate thing onto the agenda
+            if user.state.NEXT_MOVES:
+                self.generate(user)    #sets output
+                self.output(user)      #prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
+                self.update(user)      #integrates answers, ..., loads & executes plan
+                self.print_state(user)
+            if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
                 break
-            self.input()
-            res = self.interpret() #obviously also runs it
+            self.input(user)
+            res = self.interpret(user) #obviously also runs it
             if res == "exit":
                 break
 
-            self.update()
-            self.print_state()
+            self.update(user)
+            self.print_state(user)
 
 
 
-#contains..  control()     IS + init_IS   MVIS+init      interpret+input  generate+output do,maybe,repeat
-class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     SimpleOutput,   DialogueManager):
+#contains..         control()        interpret+input  generate+output do,maybe,repeat
+class MultiUserIBIS(IBISController,  SimpleInput,     SimpleOutput,   DialogueManager):
     """The IBIS dialogue manager. 
     
     This is an abstract class: methods update and select are not implemented.
@@ -329,26 +342,18 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
         self.DATABASE = database
         self.GRAMMAR = grammar
 
-    def init(self): #called by DialogueManager.run
-        self.init_IS()
-        self.init_MIVS()
+    def init(self):
+        pass
 
-    def reset(self):
-        self.reset_IS()
-        self.reset_MIVS()
+    # def init(self): #called by DialogueManager.run
+    #     self.init_IS()
+    #     self.init_MIVS()
+    # 
+    # def reset(self):
+    #     self.reset_IS()
+    #     self.reset_MIVS()
 
-    def print_state(self):
-        if VERBOSE["IS"] or VERBOSE["MIVS"]:
-            print("+------------------------ - -  -")
-        if VERBOSE["MIVS"]:
-            self.print_MIVS(prefix="| ")
-        if VERBOSE["IS"] and VERBOSE["MIVS"]:
-            print("|")
-        if VERBOSE["IS"]:
-            self.print_IS(prefix="| ")
-        if VERBOSE["IS"] or VERBOSE["MIVS"]:            
-            print("+------------------------ - -  -")
-            print()
+
 
 ######################################################################
 # IBIS-1
@@ -356,19 +361,17 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
 
 
 
-class IBIS1(IBIS):
+class IBIS2(MultiUserIBIS):
     """The IBIS-1 dialogue manager."""
 
-    def update(self):
-
-        self.IS.private.agenda.clear()
-        self.grounding()()
-        maybe(self.integrate())
-        maybe(self.downdate_qud())
-        maybe(self.load_plan())
-        repeat(self.exec_plan())
-        maybe(self.handle_empty_plan_agenda_qud())
-        self.psave_IS("CurrState.pkl")
+    def update(self, user):
+        user.state.IS.private.agenda.clear()
+        self.grounding(user)()
+        maybe(self.integrate(user))
+        maybe(self.downdate_qud(user))
+        maybe(self.load_plan(user))
+        repeat(self.exec_plan(user))
+        maybe(self.handle_empty_plan_agenda_qud(user))
 
     #rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
     #rule_group returns lambda self, user=None: lambda: do(self, user, *rules) <- es kriegt ERST rules (siehe hier drunter), und DAS erwarted dann noch self und user (siehe hier drüber), und returned eine funktion (nicht ihr result, deswegen das nested lambda)
@@ -381,12 +384,11 @@ class IBIS1(IBIS):
     exec_plan    = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if)
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
-    def select(self):
-        USR = user()
-        if not self.IS.private.agenda:
-            maybe(self.select_action())
-        maybe(self.select_icm())
-        maybe(self.select_move())
+    def select(self, user):
+        if not user.state.IS.private.agenda:
+            maybe(self.select_action(user))
+        maybe(self.select_icm(user))
+        maybe(self.select_move(user))
 
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
     select_move   = rule_group(select_answer, select_ask, select_other)

@@ -8,8 +8,11 @@
 
 
 from ibis import *
+from multiUser_ibis import IBIS2
+from trindikit import MULTIUSER
 from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
+from stateDB import user
 
 
 def create_domain():
@@ -124,7 +127,10 @@ def loadIBIS():
 
     domain = create_domain()
 
-    ibis = IBIS1(domain, database, grammar)
+    if MULTIUSER:
+        ibis = IBIS2(domain, database, grammar)
+    else:
+        ibis = IBIS1(domain, database, grammar)
     return ibis
 
 
@@ -156,8 +162,15 @@ def loadIBIS():
 ######################################################################
 
 if __name__=='__main__':
-    ibis = loadIBIS()
-    ibis.run()
+    if MULTIUSER:
+        usr1 = user(123)
+        usr2 = user(456)
+        ibis = loadIBIS()
+        ibis.init()
+        ibis.control(usr1)
+    else:
+        ibis = loadIBIS()
+        ibis.run()
 
     # ibis.init()
     # if not ibis.IS.private.plan:
