@@ -72,7 +72,7 @@ class Pred1(Atomic):
         assert self.content in context.preds1
 
     def __init__(self, *args, **kwargs):
-        print(*args, **kwargs) #HIER
+        # print(*args, **kwargs) #HIER
         # self._typecheck(args[0])
         super(Pred1, self).__init__(*args, **kwargs)
 

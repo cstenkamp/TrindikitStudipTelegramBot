@@ -316,6 +316,8 @@ class IBISController(DialogueManager):
             self.update()
             self.print_state()
 
+
+
 #contains..  control()     IS + init_IS   MVIS+init      interpret+input  generate+output do,maybe,repeat
 class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     SimpleOutput,   DialogueManager):
     """The IBIS dialogue manager. 

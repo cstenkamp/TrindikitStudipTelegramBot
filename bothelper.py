@@ -44,15 +44,23 @@ def handle_update(update):
     text = update["message"]["text"]
     chat = update["message"]["chat"]["id"]
     # gucke chat in DB nach, wenns noch nicht existiert akzeptierst du nur start und fragst nach Namen etc
-    user, did_create = userDB.create_or_add(chat)
+    user, did_create = users.create_or_add(chat)
 
     if did_create:
         if text == "/start":
             send_message("Hello, new user! You were added to the system", chat)
         else:
-            send_message("New User that didnt send /start", chat)
+            send_message("New User that didn't send /start", chat)
     else:
-        send_message("YOU SAID "+text, chat)
+        if text == "/start":
+            send_message("Do you want to start over?", chat)
+        elif text == "/stop":
+            send_message("Do you want me to delete your data?", chat)
+        elif text.startswith("/"):
+            send_message("Unkown command", chat)
+        else:
+            send_message("YOU SAID: "+text, chat)
+
 
     #
     # items = db.get_items(chat)

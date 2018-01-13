@@ -31,7 +31,8 @@ import collections
 import sys
 from copy import deepcopy
 
-VERBOSE = {"IS": False, "MIVS": False, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
+VERBOSE = {"IS": True, "MIVS": True, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
+MULTIUSER = True
 
 ######################################################################
 # helper functions
