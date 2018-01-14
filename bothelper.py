@@ -6,12 +6,19 @@ from userDB import userDB
 import os
 from os.path import join
 
+import travel
+import stateDB
 
 PATH = "/var/www/studIPBot" if os.name != "nt" else ""
 TOKEN = "491105485:AAFrSueGnkjLee79ne9MhvBSLrpB2VHEnec"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 MY_CHAT_ID = 163601520
 users = userDB(join(PATH,"users.sqlite"))
+
+usr2 = stateDB.user(456)
+ibis = travel.loadIBIS()
+ibis.init()
+
 
 def get_url(url):
     response = requests.get(url)
@@ -57,10 +64,10 @@ def handle_update(update):
         elif text == "/stop":
             send_message("Do you want me to delete your data?", chat)
         elif text.startswith("/"):
-            send_message("Unkown command", chat)
+            send_message("Unknown command", chat)
         else:
             send_message("YOU SAID: "+text, chat)
-
+            ibis.handle_message(text, usr2)
 
     #
     # items = db.get_items(chat)

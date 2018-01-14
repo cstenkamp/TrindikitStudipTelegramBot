@@ -7,13 +7,15 @@
 # copyright interest in this code to the public domain.
 
 
-from ibis import *
-from multiUser_ibis import IBIS2
-from trindikit import MULTIUSER
+import ibis as singleUser_ibis
+import multiUser_ibis
+import trindikit
 from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
-from stateDB import user
+import stateDB
+import os
 
+PATH = "/var/www/studIPBot" if os.name != "nt" else ""
 
 def create_domain():
     preds0 = 'return', 'needvisa'
@@ -42,7 +44,7 @@ def create_domain():
              'flight_class': classes,
              }
 
-    domain = Domain(preds0, preds1, sorts)
+    domain = singleUser_ibis.Domain(preds0, preds1, sorts)
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -64,7 +66,7 @@ def create_domain():
     return domain
 
 
-class TravelDB(Database):
+class TravelDB(singleUser_ibis.Database):
 
     def __init__(self):
         self.entries = []
@@ -97,7 +99,7 @@ class TravelDB(Database):
         self.entries.append(entry)
 
 
-class TravelGrammar(SimpleGenGrammar, CFG_Grammar):
+class TravelGrammar(singleUser_ibis.SimpleGenGrammar, CFG_Grammar):
     def generateMove(self, move):
         try:
             assert isinstance(move, Answer)
@@ -111,7 +113,7 @@ class TravelGrammar(SimpleGenGrammar, CFG_Grammar):
 
 def loadIBIS():
     grammar = TravelGrammar()
-    grammar.loadGrammar("file:travel.fcfg")
+    grammar.loadGrammar(os.path.join(PATH,"travel.fcfg"))
     grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
     grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
     grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
@@ -127,10 +129,10 @@ def loadIBIS():
 
     domain = create_domain()
 
-    if MULTIUSER:
-        ibis = IBIS2(domain, database, grammar)
+    if trindikit.MULTIUSER:
+        ibis = multiUser_ibis.IBIS2(domain, database, grammar)
     else:
-        ibis = IBIS1(domain, database, grammar)
+        ibis = singleUser_ibis.IBIS1(domain, database, grammar)
     return ibis
 
 
@@ -162,9 +164,9 @@ def loadIBIS():
 ######################################################################
 
 if __name__=='__main__':
-    if MULTIUSER:
-        usr1 = user(123)
-        usr2 = user(456)
+    if trindikit.MULTIUSER:
+        usr1 = stateDB.user(123)
+        usr2 = stateDB.user(456)
         ibis = loadIBIS()
         ibis.init()
         ibis.control(usr1)

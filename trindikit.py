@@ -842,6 +842,7 @@ class SimpleOutput(DialogueManager):
         """
         print("S to", str(USER.state.chat_id)+":", OUTPUT.get() or "[---]")
         print()
+        #bothelper.send_message(OUTPUT.get(), bothelper.MY_CHAT_ID)
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
