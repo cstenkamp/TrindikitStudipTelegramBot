@@ -888,15 +888,16 @@ class SimpleInput(object):
         
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
         """
-        try:
-            str = input("U> ")
-        except EOFError:
-            print("EOF")
-            sys.exit()
+        # try:
+        #     str = input("U> ")
+        # except EOFError:
+        #     print("EOF")
+        #     sys.exit()
         # if MULTIUSER:
         #     str = str.split(":")
         #     INPUT.set(str[1])
         # else:
+        str = ""
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
         print()

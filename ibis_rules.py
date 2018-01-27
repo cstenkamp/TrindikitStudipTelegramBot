@@ -435,6 +435,6 @@ def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
                 yield R(move=None)
 
     #IS.private.agenda.push(Quit())
-    import os
-    os.remove("CurrState.pkl")
+    # import os
+    # os.remove("CurrState.pkl")
     PROGRAM_STATE.set(ProgramState.QUIT)

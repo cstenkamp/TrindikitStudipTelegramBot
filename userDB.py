@@ -1,37 +1,50 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Column, Integer, String
+# from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy import create_engine
+# from sqlalchemy.orm import sessionmaker
+# from sqlalchemy import Column, Integer, String
+from botserver import db
 
-Base = declarative_base()
+# Base = declarative_base()
+#
+# class userDB:
+#
+#     def __init__(self, dbname=":memory:", dbtype="sqlite"):
+#         dbname = dbname+"."+dbtype if dbname != ":memory:" and "." not in dbname else dbname
+#         self.engine = create_engine(dbtype+':///'+dbname, echo=False)
+#         Session = sessionmaker(bind=self.engine)
+#         self.session = Session()
+#         Base.metadata.create_all(self.engine)
+#
+#
+#     def create_or_add(self, chatID):
+#         query = self.session.query(User)
+#         user = query.filter(User.chat_id==chatID).one_or_none()
+#         if user != None:
+#             return user, False
+#         else:
+#             user = User(chat_id=chatID)
+#             self.session.add(user)
+#             self.session.commit()
+#             return user, True
 
-class userDB:
 
-    def __init__(self, dbname=":memory:", dbtype="sqlite"):
-        dbname = dbname+"."+dbtype if dbname != ":memory:" and "." not in dbname else dbname
-        self.engine = create_engine(dbtype+':///'+dbname, echo=False)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
-        Base.metadata.create_all(self.engine)
-
-
-    def create_or_add(self, chatID):
-        query = self.session.query(User)
-        user = query.filter(User.chat_id==chatID).one_or_none()
-        if user != None:
-            return user, False
-        else:
-            user = User(chat_id=chatID)
-            self.session.add(user)
-            self.session.commit()
-            return user, True
+def create_or_add_user(chatID):
+    db.create_all()
+    user = User.query.filter(User.chat_id==chatID).one_or_none()
+    if user != None:
+        return user, False
+    else:
+        user = User(chat_id=chatID)
+        db.session.add(user)
+        db.session.commit()
+        return user, True
 
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'users'
 
-    chat_id = Column(Integer, primary_key=True)
-    name = Column(String)
+    chat_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
 
     def __repr__(self):
         return "<User(chat_id='%i', name='%s')>" % (self.chat_id, self.name)
@@ -39,13 +52,14 @@ class User(Base):
 
 
 if __name__ == "__main__":
-    db = userDB("users")
-    user, created = db.create_or_add(123)
-    print("CREATE", user, created)
-
-    users = db.session.query(User)
-    for i in users:
-        print("LOOK", i)
+    pass
+    # db = userDB("users")
+    # user, created = db.create_or_add(123)
+    # print("CREATE", user, created)
+    #
+    # users = db.session.query(User)
+    # for i in users:
+    #     print("LOOK", i)
 
 
 #

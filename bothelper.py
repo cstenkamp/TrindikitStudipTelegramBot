@@ -1,19 +1,19 @@
 import json
 import requests
-import time
 import urllib
-from userDB import userDB
 import os
 from os.path import join
 
 import travel
 import stateDB
+import userDB
+from botserver import db
 
 PATH = "/var/www/studIPBot" if os.name != "nt" else ""
 TOKEN = "491105485:AAFrSueGnkjLee79ne9MhvBSLrpB2VHEnec"
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 MY_CHAT_ID = 163601520
-users = userDB(join(PATH,"users.sqlite"))
+
 
 usr2 = stateDB.user(456)
 ibis = travel.loadIBIS()
@@ -51,7 +51,7 @@ def handle_update(update):
     text = update["message"]["text"]
     chat = update["message"]["chat"]["id"]
     # gucke chat in DB nach, wenns noch nicht existiert akzeptierst du nur start und fragst nach Namen etc
-    user, did_create = users.create_or_add(chat)
+    user, did_create = userDB.create_or_add_user(chat)
 
     if did_create:
         if text == "/start":
@@ -66,7 +66,6 @@ def handle_update(update):
         elif text.startswith("/"):
             send_message("Unknown command", chat)
         else:
-            send_message("YOU SAID: "+text, chat)
             ibis.handle_message(text, usr2)
 
     #

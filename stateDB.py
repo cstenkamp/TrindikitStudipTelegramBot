@@ -5,54 +5,58 @@ from sqlalchemy import Column, Integer, String
 
 import trindikit
 
-Base = declarative_base()
-
-class stateDB:
-
-    def __init__(self, dbname=":memory:", dbtype="sqlite"):
-        dbname = dbname+"."+dbtype if dbname != ":memory:" and "." not in dbname else dbname
-        self.engine = create_engine(dbtype+':///'+dbname, echo=False)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
-        Base.metadata.create_all(self.engine)
-
-
-    def create_or_add(self, chatID):
-        query = self.session.query(stateDBEntry)
-        user = query.filter(stateDBEntry.chat_id==chatID).one_or_none()
-        if user != None:
-            return user, False
-        else:
-            user = stateDBEntry(chat_id=chatID)
-            self.session.add(user)
-            self.session.commit()
-            return user, True
+from botserver import db
 
 
 
+# Base = declarative_base()
+#
+# class stateDB:
+#
+#     def __init__(self, dbname=":memory:", dbtype="sqlite"):
+#         dbname = dbname+"."+dbtype if dbname != ":memory:" and "." not in dbname else dbname
+#         self.engine = create_engine(dbtype+':///'+dbname, echo=False)
+#         Session = sessionmaker(bind=self.engine)
+#         self.session = Session()
+#         Base.metadata.create_all(self.engine)
+#
+#
+#     def create_or_add(self, chatID):
+#         query = self.session.query(stateDBEntry)
+#         user = query.filter(stateDBEntry.chat_id==chatID).one_or_none()
+#         if user != None:
+#             return user, False
+#         else:
+#             user = stateDBEntry(chat_id=chatID)
+#             self.session.add(user)
+#             self.session.commit()
+#             return user, True
 
-class stateDBEntry(Base):
-    __tablename__ = 'conversationState'
 
-    chat_id = Column(Integer, primary_key=True)
 
-    private_agenda = Column(String)
-    private_plan = Column(String)
-    private_bel = Column(String)
-    shared_com = Column(String)
-    shared_qud = Column(String)
-    shared_lu_speaker = Column(String)
-    shared_lu_moves = Column(String)
 
-    mvis_input = Column(String)
-    mvis_latest_speaker = Column(String)
-    mvis_lastest_move = Column(String)
-    mvis_next_moves = Column(String)
-    mvis_output = Column(String)
-    mvis_program_state = Column(String)
-
-    # def __repr__(self):
-    #     return "<User(chat_id='%i', name='%s')>" % (self.chat_id, self.name)
+# class stateDBEntry(Base):
+#     __tablename__ = 'conversationState'
+#
+#     chat_id = Column(Integer, primary_key=True)
+#
+#     private_agenda = Column(String)
+#     private_plan = Column(String)
+#     private_bel = Column(String)
+#     shared_com = Column(String)
+#     shared_qud = Column(String)
+#     shared_lu_speaker = Column(String)
+#     shared_lu_moves = Column(String)
+#
+#     mvis_input = Column(String)
+#     mvis_latest_speaker = Column(String)
+#     mvis_lastest_move = Column(String)
+#     mvis_next_moves = Column(String)
+#     mvis_output = Column(String)
+#     mvis_program_state = Column(String)
+#
+#     # def __repr__(self):
+#     #     return "<User(chat_id='%i', name='%s')>" % (self.chat_id, self.name)
 
 
 
