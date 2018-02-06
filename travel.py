@@ -165,11 +165,11 @@ def loadIBIS():
 
 if __name__=='__main__':
     if trindikit.MULTIUSER:
-        usr1 = stateDB.user(123)
-        usr2 = stateDB.user(456)
+        # usr1 = stateDB.user(123)
+        # usr2 = stateDB.user(456)
         ibis = loadIBIS()
         ibis.init()
-        ibis.control(usr1)
+        # ibis.control(usr1)
     else:
         ibis = loadIBIS()
         ibis.run()

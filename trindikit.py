@@ -30,6 +30,7 @@ import functools
 import collections
 import sys
 import stateDB
+import userDB
 
 
 
@@ -534,7 +535,7 @@ def do(*rules):
         self = None
         rules = rules
 
-    if isinstance(rules[0], stateDB.user) or rules[0] is None:
+    if isinstance(rules[0], userDB.User) or rules[0] is None:
         usr = rules[0]
         rules = rules[1:]
     else:
@@ -641,7 +642,7 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
             else:
-                assert (not kw and isinstance(args[0], DialogueManager) and isinstance(args[1], stateDB.user)), \
+                assert (not kw and isinstance(args[0], DialogueManager) and isinstance(args[1], userDB.User)), \
                     "Either call %s(%s), " % (funcname, callspec) + \
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
@@ -836,7 +837,7 @@ class SimpleOutput(DialogueManager):
     @update_rule
     def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES, USER):
         """Print the string in OUTPUT to standard output.
-        
+
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """

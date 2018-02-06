@@ -143,9 +143,9 @@ class TGramOutput(SimpleOutput):
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """
-        print("S to", str(USER.state.chat_id) + ":", OUTPUT.get() or "[---]")
+        print("S to", str(USER.chat_id) + ":", OUTPUT.get() or "[---]")
         print()
-        send_message(OUTPUT.get(), MY_CHAT_ID)
+        send_message(OUTPUT.get(), USER.chat_id)
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
@@ -158,7 +158,7 @@ class TGramOutput(SimpleOutput):
 class IBISController(DialogueManager):
     def print_state(self, user):
         if VERBOSE["IS"] or VERBOSE["MIVS"]:
-            print("+----- "+str(user.state.chat_id)+" ------------- - -  -")
+            print("+----- "+str(user.chat_id)+" ------------- - -  -")
         if VERBOSE["MIVS"]:
             user.state.print_MIVS(prefix="| ")
         if VERBOSE["IS"] and VERBOSE["MIVS"]:

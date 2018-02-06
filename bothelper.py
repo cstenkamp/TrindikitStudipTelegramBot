@@ -15,7 +15,7 @@ URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 MY_CHAT_ID = 163601520
 
 
-usr2 = stateDB.user(456)
+# usr2 = stateDB.user(456)
 ibis = travel.loadIBIS()
 ibis.init()
 
@@ -66,7 +66,7 @@ def handle_update(update):
         elif text.startswith("/"):
             send_message("Unknown command", chat)
         else:
-            ibis.handle_message(text, usr2)
+            ibis.handle_message(text, user)
 
     #
     # items = db.get_items(chat)

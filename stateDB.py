@@ -114,17 +114,17 @@ class conversationState():
 
 
 
-class user():
-    def __init__(self, chat_id):
-        self.state = conversationState(chat_id)
+# class user():
+#     def __init__(self, chat_id):
+#         self.state = conversationState(chat_id)
 
 
 
 if __name__ == "__main__":
-    # pass
-    usr = user(123)
-    print(usr.state.IS)
-    print(usr.state.INPUT)
+    pass
+    # usr = user(123)
+    # print(usr.state.IS)
+    # print(usr.state.INPUT)
 
 
     # db = stateDB("conversationStates")

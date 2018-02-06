@@ -16,7 +16,7 @@ from stateDB import conversationState
 #         Session = sessionmaker(bind=self.engine)
 #         self.session = Session()
 #         Base.metadata.create_all(self.engine)
-#
+#t
 #
 #     def create_or_add(self, chatID):
 #         query = self.session.query(User)
@@ -27,16 +27,23 @@ from stateDB import conversationState
 #             user = User(chat_id=chatID)
 #             self.session.add(user)
 #             self.session.commit()
-#             return user, True
+#             return user, Truet
 
 
 def create_or_add_user(chatID):
     db.create_all()
     user = User.query.filter(User.chat_id==chatID).one_or_none()
     if user != None:
+        print("==============================================================")
+        print(user.__dict__)
+        print("==============================================================")
+        user.state = conversationState(user.chat_id)
         return user, False
     else:
-        user = User(chat_id=chatID, createdate=datetime.now())
+        user = User(chat_id=chatID)
+        print("==============================================================")
+        print(user.__dict__)
+        print("==============================================================")
         db.session.add(user)
         db.session.commit()
         return user, True
@@ -55,9 +62,10 @@ class User(db.Model):
         return "<User(id='%i', chat_id='%i', name='%s', created at='%s')>" % (self.id, self.chat_id, self.name, str(self.createdate))
 
 
-    # def __init__(self, *args, **kwargs):
-    #     super.__init__(self, *args, **kwargs)
-    #     self.state = conversationState(self.chat_id)
+    def __init__(self, chat_id):
+        self.chat_id = chat_id
+        self.createdate = datetime.now()
+        self.state = conversationState(self.chat_id)
 
 
 
