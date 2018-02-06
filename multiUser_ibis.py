@@ -169,27 +169,27 @@ class IBISController(DialogueManager):
             print("+------------------------ - -  -")
             print()
 
-    def control(self, user):
-        """The IBIS control algorithm."""
-        if not user.state.IS.private.plan:
-            user.state.IS.private.agenda.push(Greet())
-        self.print_state(user)
-        while True:
-            self.select(user)          #puts the next appropriate thing onto the agenda
-            if user.state.NEXT_MOVES:
-                self.generate(user)    #sets output
-                self.output(user)      #prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
-                self.update(user)      #integrates answers, ..., loads & executes plan
-                self.print_state(user)
-            if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
-                break
-            self.input(user)
-            res = self.interpret(user) #obviously also runs it
-            if res == "exit":
-                break
-
-            self.update(user)
-            self.print_state(user)
+    # def control(self, user):
+    #     """The IBIS control algorithm."""
+    #     if not user.state.IS.private.plan:
+    #         user.state.IS.private.agenda.push(Greet())
+    #     self.print_state(user)
+    #     while True:
+    #         self.select(user)          #puts the next appropriate thing onto the agenda
+    #         if user.state.NEXT_MOVES:
+    #             self.generate(user)    #sets output
+    #             self.output(user)      #prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
+    #             self.update(user)      #integrates answers, ..., loads & executes plan
+    #             self.print_state(user)
+    #         if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
+    #             break
+    #         self.input(user)
+    #         res = self.interpret(user) #obviously also runs it
+    #         if res == "exit":
+    #             break
+    #
+    #         self.update(user)
+    #         self.print_state(user)
 
 
 

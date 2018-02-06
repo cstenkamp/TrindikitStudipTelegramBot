@@ -3,6 +3,8 @@
 # from sqlalchemy.orm import sessionmaker
 # from sqlalchemy import Column, Integer, String
 from botserver import db
+from datetime import datetime
+from stateDB import conversationState
 
 # Base = declarative_base()
 #
@@ -34,7 +36,7 @@ def create_or_add_user(chatID):
     if user != None:
         return user, False
     else:
-        user = User(chat_id=chatID)
+        user = User(chat_id=chatID, createdate=datetime.now())
         db.session.add(user)
         db.session.commit()
         return user, True
@@ -43,11 +45,19 @@ def create_or_add_user(chatID):
 class User(db.Model):
     __tablename__ = 'users'
 
-    chat_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    chat_id = db.Column(db.Integer, unique=True)
     name = db.Column(db.String)
+    createdate = db.Column(db.DateTime)
+
 
     def __repr__(self):
-        return "<User(chat_id='%i', name='%s')>" % (self.chat_id, self.name)
+        return "<User(id='%i', chat_id='%i', name='%s', created at='%s')>" % (self.id, self.chat_id, self.name, str(self.createdate))
+
+
+    # def __init__(self, *args, **kwargs):
+    #     super.__init__(self, *args, **kwargs)
+    #     self.state = conversationState(self.chat_id)
 
 
 

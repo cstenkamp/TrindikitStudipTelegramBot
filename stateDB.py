@@ -121,6 +121,7 @@ class user():
 
 
 if __name__ == "__main__":
+    # pass
     usr = user(123)
     print(usr.state.IS)
     print(usr.state.INPUT)
