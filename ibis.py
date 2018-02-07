@@ -152,6 +152,8 @@ class Domain(object):
 
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
+        print("UUUUUUUUUUUUUUUUUU", answer, " | ", type(answer))
+        print("AAAAAAAAAAAAAAAAAA", question, " | ", type(question))
         assert isinstance(answer, (ShortAns, Prop)) #YesNo is a subclass of ShortAns
         assert isinstance(question, Question)
         if isinstance(question, WhQ):
@@ -303,7 +305,7 @@ class IBISController(DialogueManager):
             self.select()          #puts the next appropriate thing onto the agenda
             if self.NEXT_MOVES:
                 self.generate()    #sets output
-                self.output()      #prints output
+                self.output(None)      #prints output
                 self.update()      #integrates answers, ..., loads & executes plan
                 self.print_state()
             if self.PROGRAM_STATE.get() == ProgramState.QUIT:
@@ -382,7 +384,6 @@ class IBIS1(IBIS):
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
     def select(self):
-        USR = user()
         if not self.IS.private.agenda:
             maybe(self.select_action())
         maybe(self.select_icm())

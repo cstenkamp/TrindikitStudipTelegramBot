@@ -22,11 +22,15 @@
 from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0
 import nltk  #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis import Grammar
-from trindikit import VERBOSE
+from trindikit import VERBOSE, MULTIUSER
 
+if MULTIUSER:
+    nltk.data.path.append("/var/www/")
+    nltk.data.path.append("/var/www/nltk_data/")
+else:
+    nltk.data.path.append("/home/chris/nltk_data/")
+    nltk.data.path.append("/home/chris/")
 
-nltk.data.path.append("/var/www/")
-nltk.data.path.append("/var/www/nltk_data/")
 
 ######################################################################
 # CFG grammar based on NLTK

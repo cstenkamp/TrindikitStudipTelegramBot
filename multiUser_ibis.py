@@ -27,6 +27,7 @@ import pickle
 import os.path
 import requests
 import urllib
+from botserver import db
 # from sqlalchemy import create_engine, Column, Integer, String
 # from sqlalchemy.orm import sessionmaker
 # from sqlalchemy.ext.declarative import declarative_base
@@ -221,13 +222,14 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,   DialogueMan
         self.select(user)  # puts the next appropriate thing onto the agenda
         if user.state.NEXT_MOVES:
             self.generate(user)  # sets output
-            self.output(
-                user)  # prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
+            self.output(user)  # prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
             self.update(user)  # integrates answers, ..., loads & executes plan
             self.print_state(user)
+
+
         # if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
         #     break
-        self.input(user)
+        # self.input(user)
 
 
     # def init(self): #called by DialogueManager.run

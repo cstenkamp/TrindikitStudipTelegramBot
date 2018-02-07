@@ -7,15 +7,18 @@
 # copyright interest in this code to the public domain.
 
 
+import os
 import ibis as singleUser_ibis
-import multiUser_ibis
-import trindikit
 from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
-import stateDB
-import os
+import trindikit
+if trindikit.MULTIUSER:
+    import stateDB
+    import multiUser_ibis
+    PATH = "/var/www/studIPBot"
+else:
+    PATH = "/home/chris/Documents/UNI/sem_9/dialog_systems/Projekt/My_Trindikit/"
 
-PATH = "/var/www/studIPBot" if os.name != "nt" else ""
 
 def create_domain():
     preds0 = 'return', 'needvisa'

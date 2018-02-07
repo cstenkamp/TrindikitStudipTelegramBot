@@ -29,13 +29,15 @@ import inspect
 import functools
 import collections
 import sys
-import stateDB
-import userDB
 
 
 
 VERBOSE = {"IS": True, "MIVS": True, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
 MULTIUSER = True
+
+if MULTIUSER:
+    import stateDB
+    import userDB
 
 ######################################################################
 # helper functions
@@ -156,7 +158,7 @@ class record(object):
                         if key in self.__dict__)
             for key,val in tmp.items():
                 if isinstance(val, record):
-                    tmp[key] = val.asdict(True)
+                    tmp[key] = val.asdict(recursive=True)
                 elif str(type(val)) == "<class 'trindikit.enum.<locals>.Enum'>":
                     tmp[key] = str(val)
                 elif isinstance(val, stack):
@@ -166,6 +168,7 @@ class record(object):
                 else:
                     raise Exception("No type I know of")
             return tmp
+
 
     def _typecheck(self, key, value=None):
         typedict = self.__dict__[_TYPEDICT] 
@@ -535,12 +538,14 @@ def do(*rules):
         self = None
         rules = rules
 
-    if isinstance(rules[0], userDB.User) or rules[0] is None:
+    if MULTIUSER and (isinstance(rules[0], userDB.User) or rules[0] is None):
         usr = rules[0]
+        rules = rules[1:]
+    elif rules[0] is None:
+        usr = None
         rules = rules[1:]
     else:
         usr = None
-        rules = rules
 
     for rule in rules:
         try:
@@ -636,7 +641,7 @@ def update_rule(function):
         new_kw = kw
         if args:
             assert len(args) == 1 or (len(args) == 2), "You need either one or two arguments..."
-            if len(args) == 1:
+            if len(args) == 1 or len(args) == 2 and args[1] is None:
                 assert (not kw and isinstance(args[0], DialogueManager)), \
                     "Either call %s(%s), " % (funcname, callspec) + \
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
@@ -835,13 +840,13 @@ class SimpleOutput(DialogueManager):
         OUTPUT.set(GRAMMAR.generate(NEXT_MOVES))
 
     @update_rule
-    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES, USER):
+    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES, USERDUMMY):
         """Print the string in OUTPUT to standard output.
 
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
         and LATEST_SPEAKER is set to SYS.
         """
-        print("S to", str(USER.state.chat_id)+":", OUTPUT.get() or "[---]")
+        print("S:", OUTPUT.get() or "[---]")
         print()
         #bothelper.send_message(OUTPUT.get(), bothelper.MY_CHAT_ID)
         LATEST_SPEAKER.set(Speaker.SYS)
@@ -881,24 +886,23 @@ class SimpleInput(object):
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:
-                LATEST_MOVES.update(move_or_moves)
+                LATEST_MOVES.update(move_or_moves) #TODO typerror builtin_function_or_method is object not iterable
 
     @update_rule
-    def input(INPUT, LATEST_SPEAKER, USER):
+    def input(INPUT, LATEST_SPEAKER):
         """Inputs a string from standard input.
         
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
         """
-        # try:
-        #     str = input("U> ")
-        # except EOFError:
-        #     print("EOF")
-        #     sys.exit()
+        try:
+            str = input("U> ")
+        except EOFError:
+            print("EOF")
+            sys.exit()
         # if MULTIUSER:
         #     str = str.split(":")
         #     INPUT.set(str[1])
         # else:
-        str = ""
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
         print()

@@ -66,7 +66,13 @@ def handle_update(update):
         elif text.startswith("/"):
             send_message("Unknown command", chat)
         else:
+            print("-------------------------USER WROTE", text)
             ibis.handle_message(text, user)
+
+    user.state.save_IS_to_DB()
+    user.state.save_MIVS_to_DB()
+    db.session.add(user.state)
+    db.session.commit()
 
     #
     # items = db.get_items(chat)

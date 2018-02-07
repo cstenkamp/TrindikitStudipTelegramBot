@@ -4,7 +4,7 @@
 # from sqlalchemy import Column, Integer, String
 from botserver import db
 from datetime import datetime
-from stateDB import conversationState
+from stateDB import ConversationState
 
 # Base = declarative_base()
 #
@@ -34,17 +34,15 @@ def create_or_add_user(chatID):
     db.create_all()
     user = User.query.filter(User.chat_id==chatID).one_or_none()
     if user != None:
-        print("==============================================================")
-        print(user.__dict__)
-        print("==============================================================")
-        user.state = conversationState(user.chat_id)
+        user.state = ConversationState.query.filter(ConversationState.user_id == user.id).one_or_none()
+        #TODO - hier ne abfrage falls das None ist. Stranger case, kann aber eintreten
         return user, False
     else:
         user = User(chat_id=chatID)
-        print("==============================================================")
-        print(user.__dict__)
-        print("==============================================================")
         db.session.add(user)
+        db.session.commit()
+        user.state = ConversationState(user_id=user.id)
+        db.session.add(user.state)
         db.session.commit()
         return user, True
 
@@ -65,7 +63,7 @@ class User(db.Model):
     def __init__(self, chat_id):
         self.chat_id = chat_id
         self.createdate = datetime.now()
-        self.state = conversationState(self.chat_id)
+        # self.state = ConversationState(self.chat_id)
 
 
 
