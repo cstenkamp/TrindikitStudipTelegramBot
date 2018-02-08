@@ -1,28 +1,7 @@
-# -*- encoding: utf-8 -*-
-
-#
-# ibis.py
-# Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
-#
-
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published 
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# and the GNU Lesser General Public License along with this program.  
-# If not, see <http://www.gnu.org/licenses/>.
-
-
 from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT, update_rule
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
+from ibis_generals import SimpleGenGrammar, Grammar, Database, Domain
 import pickle
 import os.path
 import requests
@@ -119,9 +98,7 @@ class IBISInfostate(DialogueManager):
 # can't use send_message from bothelper >.<
 ######################################################################
 
-MY_CHAT_ID = 163601520
-TOKEN = "491105485:AAFrSueGnkjLee79ne9MhvBSLrpB2VHEnec"
-URL = "https://api.telegram.org/bot{}/".format(TOKEN)
+from login import MY_CHAT_ID, TOKEN, URL
 
 def get_url(url):
     response = requests.get(url)

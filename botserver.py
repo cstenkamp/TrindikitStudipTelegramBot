@@ -18,7 +18,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////var/www/studIPBot/'+DBNAME
 db = SQLAlchemy(app)
 
 ######################## interne imports, NACH creation der db #####################
-from bothelper import handle_update, send_message, MY_CHAT_ID
+from bothelper import handle_update, send_message
+from login import MY_CHAT_ID
+import travel
 
 ####################################################################################
 
@@ -27,7 +29,9 @@ def botupdate2():
     if request.method == 'POST':
         update = request.data.decode("utf8")
         update = json.loads(update)
-        handle_update(update)
+        ibis = travel.loadIBIS()
+        ibis.init()
+        handle_update(update, ibis)
         return "" #"" = 200 responsee
     else:
         return "This page is reserved for the Telegram-studIP-Bot (/)"

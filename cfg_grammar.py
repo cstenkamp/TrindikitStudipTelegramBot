@@ -21,7 +21,7 @@
 
 from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0
 import nltk  #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
-from ibis import Grammar
+from ibis_generals import Grammar
 from trindikit import VERBOSE, MULTIUSER
 
 if MULTIUSER:

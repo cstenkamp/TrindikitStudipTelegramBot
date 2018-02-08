@@ -7,7 +7,7 @@
 # This file contains unit tests for IBIS semantics.
 #
 
-from ibis import *
+from ibis_generals import *
 import unittest
 
 class IbisTests(unittest.TestCase):

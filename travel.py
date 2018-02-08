@@ -8,7 +8,7 @@
 
 
 import os
-import ibis as singleUser_ibis
+import singleUser_ibis
 from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
 import trindikit
