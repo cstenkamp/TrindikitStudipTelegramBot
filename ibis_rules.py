@@ -145,10 +145,8 @@ def downdate_qud(IS, DOMAIN):
     def V():
         que = IS.shared.qud.top()
         for prop in IS.shared.com:
-            print("DDDDDDDDDDDDDDDDDDDDOWNDATE QUD testing", str(que), "and", str(prop))
             if DOMAIN.resolves(prop, que):
                 yield R(que=que, prop=prop)
-    print("DDDDDDDDDDDDDDDDDDDDDOWNDATE QUD result", str(V.que), str(V.prop))
     IS.shared.qud.pop()
 
 # @update_rule

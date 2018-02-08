@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-
 #
 # ibis_generals.py
 # Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
@@ -20,11 +19,8 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT
+from trindikit import stack
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
-import pickle
-import os.path
 
 ######################################################################
 # IBIS grammar
@@ -133,6 +129,7 @@ class Domain(object):
                          for ind in self.sorts[sort])       # {'berlin': 'city', 'train': 'means', 'today': 'day', 'tuesday': 'day', ...}
         self.plans = {}
 
+
     def add_plan(self, trigger, plan):  #("?x.price(x)", [Findout("?x.how(x)")])
         """Add a plan to the domain."""
         assert isinstance(trigger, (Question, str)), \
@@ -145,6 +142,7 @@ class Domain(object):
         for m in plan:
             m._typecheck(self)
         self.plans[trigger] = tuple(plan)
+
 
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
@@ -169,6 +167,7 @@ class Domain(object):
         elif isinstance(question, AltQ):
             return any(answer == ynq.prop for ynq in question.ynqs)
 
+
     def resolves(self, answer, question):
         """True if 'question' is resolved by 'answer'."""
         if self.relevant(answer, question):
@@ -176,6 +175,7 @@ class Domain(object):
                 return True
             return answer.yes == True
         return False
+
 
     def combine(self, question, answer):
         """Return the proposition that is the result of combining 'question' 
@@ -195,6 +195,7 @@ class Domain(object):
                     prop = -prop
                 return prop
         return answer
+
 
     def get_plan(self, question):
         """Return (a new copy of) the plan that is relevant to 'question', 

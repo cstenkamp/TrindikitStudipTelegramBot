@@ -8,16 +8,18 @@
 
 
 import os
-import singleUser_ibis
+import settings
 from cfg_grammar import *
 from ibis_types import Findout, If, ConsultDB, Ind
 import trindikit
-if trindikit.MULTIUSER:
-    import stateDB
+import ibis_generals
+
+if settings.MULTIUSER:
     import multiUser_ibis
     PATH = "/var/www/studIPBot"
 else:
     PATH = "/home/chris/Documents/UNI/sem_9/dialog_systems/Projekt/My_Trindikit/"
+    import singleUser_ibis
 
 
 def create_domain():
@@ -47,7 +49,7 @@ def create_domain():
              'flight_class': classes,
              }
 
-    domain = singleUser_ibis.Domain(preds0, preds1, sorts)
+    domain = ibis_generals.Domain(preds0, preds1, sorts)
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -69,7 +71,7 @@ def create_domain():
     return domain
 
 
-class TravelDB(singleUser_ibis.Database):
+class TravelDB(ibis_generals.Database):
 
     def __init__(self):
         self.entries = []
@@ -102,7 +104,7 @@ class TravelDB(singleUser_ibis.Database):
         self.entries.append(entry)
 
 
-class TravelGrammar(singleUser_ibis.SimpleGenGrammar, CFG_Grammar):
+class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
     def generateMove(self, move):
         try:
             assert isinstance(move, Answer)
@@ -132,7 +134,7 @@ def loadIBIS():
 
     domain = create_domain()
 
-    if trindikit.MULTIUSER:
+    if settings.MULTIUSER:
         ibis = multiUser_ibis.IBIS2(domain, database, grammar)
     else:
         ibis = singleUser_ibis.IBIS1(domain, database, grammar)
@@ -167,29 +169,9 @@ def loadIBIS():
 ######################################################################
 
 if __name__=='__main__':
-    if trindikit.MULTIUSER:
-        # usr1 = stateDB.user(123)
-        # usr2 = stateDB.user(456)
+    if not settings.MULTIUSER:
         ibis = loadIBIS()
         ibis.init()
-        # ibis.control(usr1)
+        ibis.control()
     else:
-        ibis = loadIBIS()
-        ibis.run()
-
-    # ibis.init()
-    # if not ibis.IS.private.plan:
-    #     ibis.IS.private.agenda.push(Greet())
-    #
-    # while True:
-    #     ibis.select()  # puts the next appropriate thing onto the agenda (->what is the differnce here between NEXT_MOVES und der agenda?)
-    #     if ibis.NEXT_MOVES:
-    #         ibis.generate()  # sets output
-    #         ibis.output()  # prints output
-    #         ibis.update()  # integrates answers, ..., loads & executes plan
-    #     if ibis.PROGRAM_STATE.get() == ProgramState.QUIT:
-    #         break
-    #     ibis.input()
-    #     # if ibis.interpret() == "exit":  # obviously also runs it
-    #     #     break
-    #     ibis.update()
+        print("Multiuser is on")

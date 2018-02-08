@@ -25,17 +25,14 @@
 # OR: via send() and yield in a generator expression, see PEP 342:
 # http://www.python.org/dev/peps/pep-0342
 
+import settings
 import inspect 
 import functools
 import collections
 import sys
 
 
-
-VERBOSE = {"IS": True, "MIVS": True, "UpdateRules": False, "Precondition": False, "Parse": False, "NotUnderstand": True}
-MULTIUSER = True
-
-if MULTIUSER:
+if settings.MULTIUSER:
     import stateDB
     import userDB
 
@@ -538,7 +535,7 @@ def do(*rules):
         self = None
         rules = rules
 
-    if MULTIUSER and (isinstance(rules[0], userDB.User) or rules[0] is None):
+    if settings.MULTIUSER and (isinstance(rules[0], userDB.User) or rules[0] is None):
         usr = rules[0]
         rules = rules[1:]
     elif rules[0] is None:
@@ -652,7 +649,7 @@ def update_rule(function):
                     "or %s(dm) where dm is a DialogueManager instance, " % funcname + \
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
 
-            if not MULTIUSER:
+            if not settings.MULTIUSER:
                 new_kw = dict((key, getattr(args[0], key, None)) for key in set(argkeys).difference(set(["USER"])))
                 #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string in den update rules
             else:
@@ -664,7 +661,7 @@ def update_rule(function):
                 new_kw = {**globals_kw, **specifics_kw, **user_kw}
             # print(new_kw)
         result = function(**new_kw)
-        if VERBOSE["UpdateRules"]:
+        if settings.VERBOSE["UpdateRules"]:
             print("-->", funcname) #wird ebenfalls nur gecallt wenn die precondition hält
             print()
         return result
@@ -718,11 +715,11 @@ def precondition(test):
                               "function. Instead it is a %s" % type(test))
         if result:
             if isinstance(result, record):
-                if VERBOSE["Precondition"]:
+                if settings.VERBOSE["Precondition"]:
                     for key, value in list(result.asdict().items()):
                         print("...", key, "=", value)
             else:
-                if VERBOSE["Precondition"]:
+                if settings.VERBOSE["Precondition"]:
                     print("...", result)
         return result
     except StopIteration:
@@ -848,7 +845,6 @@ class SimpleOutput(DialogueManager):
         """
         print("S:", OUTPUT.get() or "[---]")
         print()
-        #bothelper.send_message(OUTPUT.get(), bothelper.MY_CHAT_ID)
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
@@ -880,13 +876,14 @@ class SimpleInput(object):
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht
-                if VERBOSE["NotUnderstand"]:
+                if settings.VERBOSE["NotUnderstand"]:
                     print("Did not understand:", INPUT)
                     print()
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:
                 LATEST_MOVES.update(move_or_moves) #TODO typerror builtin_function_or_method is object not iterable
+
 
     @update_rule
     def input(INPUT, LATEST_SPEAKER):
@@ -899,10 +896,6 @@ class SimpleInput(object):
         except EOFError:
             print("EOF")
             sys.exit()
-        # if MULTIUSER:
-        #     str = str.split(":")
-        #     INPUT.set(str[1])
-        # else:
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
         print()

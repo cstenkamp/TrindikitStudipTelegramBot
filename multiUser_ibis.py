@@ -1,116 +1,15 @@
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, VERBOSE, _TYPEDICT, update_rule
+import settings
+from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, _TYPEDICT, update_rule
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
-from ibis_generals import SimpleGenGrammar, Grammar, Database, Domain
 import pickle
 import os.path
 import requests
 import urllib
 from botserver import db
-# from sqlalchemy import create_engine, Column, Integer, String
-# from sqlalchemy.orm import sessionmaker
-# from sqlalchemy.ext.declarative import declarative_base
-# ORM_Base = declarative_base()
+from bothelper import send_message
 
-
-######################################################################
-# IBIS information state
-######################################################################
-
-##### IS and MIVS will be in an extra class, such that they can be saved in a DB #####
-# class ConversationState(ORM_Base):
-#     __tablename__ = 'conversationState'
-#
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String)
-#     fullname = Column(String)
-#     password = Column(String)
-
-
-class IBISInfostate(DialogueManager):
-    def init_IS(self):
-        """Definition of the IBIS information state."""
-        # self.engine = create_engine('sqlite:///DB.sqlite', echo=False)
-        # Session = sessionmaker(bind=self.engine)
-        # self.session = Session()
-
-        self.pload_IS("CurrState.pkl")
-
-
-    def reset_IS(self):
-        self.IS = record(private = record(agenda = stack(),
-                                          plan   = stack(),
-                                          bel    = set()),
-                         shared  = record(com    = set(),
-                                          qud    = stackset(),
-                                          lu     = record(speaker = Speaker,
-                                                          moves   = set())))
-
-
-    def print_IS(self, prefix=""):
-        """Pretty-print the information state."""
-        self.IS.pprint(prefix)
-
-    def pload_IS(self, filename):
-        # asdf = ConsultDB("?x.penis(x)") #equal to ConsultDB(Question("?x.penis(x)"))
-        if os.path.exists(filename):
-            with open(filename, 'rb') as f:
-                tmp_dict = pickle.load(f)
-
-                self.IS = record(private = record(agenda = stack(tmp_dict["private"]["agenda"]),
-                                                  plan   = stack(tmp_dict["private"]["plan"], PlanConstructor), #TODO: warum ist das beim normalen initialisieren ein PlanConstructor?
-                                                  bel    = set(tmp_dict["private"]["bel"])),
-                                 shared  = record(com    = set(tmp_dict["shared"]["com"]),
-                                                  qud    = stackset(tmp_dict["shared"]["qud"], object),
-                                                  lu     = record(speaker = Speaker.USR,
-                                                                  moves   = set(tmp_dict["shared"]["lu"]["moves"]))))
-        else:
-            self.reset_IS()
-
-    def print_type(self, what, indent=""):
-        if indent == "":
-            print(type(what))
-        if isinstance(what, dict):
-            for key, val in what.items():
-                print(indent,key,":",type(val))
-                if type(val) == dict:
-                    self.print_type(val, indent+"  ")
-                elif isinstance(val, str):
-                    print(indent+"  ",val, type(val))
-                elif hasattr(val, '__getitem__'):
-                    for i in val:
-                        print(indent+"  ", i, type(i))
-        else:
-            print(indent, type(what))
-
-
-    def psave_IS(self, filename):
-        #TODO you know what, ich speicher den Kram in ner Datenbank. ==> SQLAlchemy, die ibis-klasse extended Base=declarative_base(), und für die werte .IS und .MVIS gibt es entsprechungen
-        #TODO Flyweight-pattern nutzen, sodass jede ibis-instanz nur den Stand der Datenbank hat, und die Methoden von ner gemeinsamen erbt
-        odict = self.IS.asdict(recursive=True)
-        with open(filename, 'wb') as f:
-            pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
-
-
-
-
-######################################################################
-# can't use send_message from bothelper >.<
-######################################################################
-
-from login import MY_CHAT_ID, TOKEN, URL
-
-def get_url(url):
-    response = requests.get(url)
-    content = response.content.decode("utf8")
-    return content
-
-def send_message(text, chat_id, reply_markup=None):
-    text = urllib.parse.quote_plus(text)
-    url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
-    if reply_markup:
-        url += "&reply_markup={}".format(reply_markup)
-    get_url(url)
+# TODO Flyweight-pattern nutzen, sodass jede ibis-instanz nur den Stand der Datenbank hat, und die Methoden von ner gemeinsamen erbt
 
 
 class TGramOutput(SimpleOutput):
@@ -135,39 +34,17 @@ class TGramOutput(SimpleOutput):
 
 class IBISController(DialogueManager):
     def print_state(self, user):
-        if VERBOSE["IS"] or VERBOSE["MIVS"]:
+        if settings.VERBOSE["IS"] or settings.VERBOSE["MIVS"]:
             print("+----- "+str(user.chat_id)+" ------------- - -  -")
-        if VERBOSE["MIVS"]:
+        if settings.VERBOSE["MIVS"]:
             user.state.print_MIVS(prefix="| ")
-        if VERBOSE["IS"] and VERBOSE["MIVS"]:
+        if settings.VERBOSE["IS"] and settings.VERBOSE["MIVS"]:
             print("|")
-        if VERBOSE["IS"]:
+        if settings.VERBOSE["IS"]:
             user.state.print_IS(prefix="| ")
-        if VERBOSE["IS"] or VERBOSE["MIVS"]:
+        if settings.VERBOSE["IS"] or settings.VERBOSE["MIVS"]:
             print("+------------------------ - -  -")
             print()
-
-    # def control(self, user):
-    #     """The IBIS control algorithm."""
-    #     if not user.state.IS.private.plan:
-    #         user.state.IS.private.agenda.push(Greet())
-    #     self.print_state(user)
-    #     while True:
-    #         self.select(user)          #puts the next appropriate thing onto the agenda
-    #         if user.state.NEXT_MOVES:
-    #             self.generate(user)    #sets output
-    #             self.output(user)      #prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
-    #             self.update(user)      #integrates answers, ..., loads & executes plan
-    #             self.print_state(user)
-    #         if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
-    #             break
-    #         self.input(user)
-    #         res = self.interpret(user) #obviously also runs it
-    #         if res == "exit":
-    #             break
-    #
-    #         self.update(user)
-    #         self.print_state(user)
 
 
 
@@ -189,9 +66,7 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,   DialogueMan
         user.state.INPUT.set(message)
         user.state.LATEST_SPEAKER.set(Speaker.USR)
 
-        res = self.interpret(user)  # obviously also runs it
-        # if res == "exit":
-        #     break
+        self.interpret(user)
 
         self.update(user)
         self.print_state(user)
@@ -203,19 +78,6 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,   DialogueMan
             self.update(user)  # integrates answers, ..., loads & executes plan
             self.print_state(user)
 
-
-        # if user.state.PROGRAM_STATE.get() == ProgramState.QUIT:
-        #     break
-        # self.input(user)
-
-
-    # def init(self): #called by DialogueManager.run
-    #     self.init_IS()
-    #     self.init_MIVS()
-    # 
-    # def reset(self):
-    #     self.reset_IS()
-    #     self.reset_MIVS()
 
 
 

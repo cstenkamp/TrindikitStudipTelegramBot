@@ -3,7 +3,7 @@
 *.pkl
 *.sqlite
 *.db
-login.py
+settings.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

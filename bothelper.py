@@ -1,9 +1,9 @@
 import requests
 import urllib
 
+import settings
 import userDB
 from botserver import db
-from login import URL
 
 
 def get_url(url):
@@ -28,11 +28,14 @@ def handle_update(update, ibis):
             send_message("Do you want to start over?", chat)
         elif text == "/stop":
             send_message("Do you want me to delete your data?", chat)
+            user.state.reset_IS()
+            user.state.reset_MIVS()
         elif text.startswith("/"):
             send_message("Unknown command", chat)
         else:
             print("-------------------------USER WROTE", text)
             ibis.handle_message(text, user)
+
 
     user.state.save_IS_to_DB()
     user.state.save_MIVS_to_DB()
@@ -42,7 +45,7 @@ def handle_update(update, ibis):
 
 def send_message(text, chat_id, reply_markup=None):
     text = urllib.parse.quote_plus(text)
-    url = URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
+    url = settings.URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
     get_url(url)

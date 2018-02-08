@@ -19,7 +19,7 @@ db = SQLAlchemy(app)
 
 ######################## interne imports, NACH creation der db #####################
 from bothelper import handle_update, send_message
-from login import MY_CHAT_ID
+from settings import MY_CHAT_ID
 import travel
 
 ####################################################################################
