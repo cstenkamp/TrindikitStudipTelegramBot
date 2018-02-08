@@ -84,6 +84,10 @@ class Sort(Pred1):
 
 # Sentences: answers, questions
 
+##################################################################################################################
+# Sentence as base
+##################################################################################################################
+
 class Sentence(Type): 
     """Superclass for answers and questions."""
     def __new__(cls, sent, *args, **kw):
@@ -101,7 +105,9 @@ class Sentence(Type):
         return (self.content, )
 
 
-# Answer types: propositions, short answers, y/n-answers
+######################################################################
+# Answer base class + its derivatives (propositions, short answers, y/n-answers)
+######################################################################
 
 class Ans(Sentence): 
     """Abstract base class for all kinds of answers.
@@ -239,7 +245,10 @@ class YesNo(ShortAns):
         return "yes" if self.content else "no"
 
 
-# Question types: wh-questions, y/n-questions, alternative questions
+
+######################################################################
+# Question base class + its derivatives (wh-questions, y/n-questions, alternative questions)
+######################################################################
 
 class Question(Sentence): 
     """Abstract base class for all kinds of questions.
@@ -333,9 +342,33 @@ class AltQ(Question):
         for q in self.content:
             q._typecheck(context)
 
+
 ######################################################################
+# Command base class
+######################################################################
+
+class Command(Sentence):
+    def __new__(cls, cmd, *args, **kw):
+        if cls is Command:
+            assert isinstance(cmd, str)
+            assert not args and not kw
+            assert cmd.startswith("!(")
+            cmd = cmd[2:-1]
+            return Sentence.__new__(cls, cmd, *args, **kw)
+
+    def __init__(self, cmd):
+        self.content = cmd
+
+    def __str__(self):
+        return "cmd: %s" % self.content
+
+
+##################################################################################################################
 # IBIS dialogue moves
-######################################################################
+##################################################################################################################
+
+class Imperative(Move):
+    contentclass = Command
 
 class Greet(SingletonMove): pass
 
@@ -369,9 +402,9 @@ class ICM(Move):
     @property
     def icm_content(self): return self.content[2]
 
-######################################################################
+##################################################################################################################
 # IBIS plan constructors
-######################################################################
+##################################################################################################################
 
 class PlanConstructor(Type): 
     """An abstract base class for plan constructors."""

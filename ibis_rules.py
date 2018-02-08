@@ -21,7 +21,7 @@
 
 
 from trindikit import update_rule, precondition, Speaker, ProgramState, Move, R, record
-from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB
+from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative
 
 ######################################################################
 # IBIS update rules
@@ -57,21 +57,42 @@ def integrate_sys_ask(IS):
                     yield R(move=move, que=move.content)
     IS.shared.qud.push(V.que)
 
+
 @update_rule
 def integrate_usr_ask(IS):
     """Integrate an Ask move by the user.
-    
+
     The question is pushed onto /shared/qud, and 
     a Respond move is pushed onto /private/agenda.
     """
+
     @precondition
     def V():
         if IS.shared.lu.speaker == Speaker.USR:
             for move in IS.shared.lu.moves:
                 if isinstance(move, Ask):
                     yield R(move=move, que=move.content)
+
     IS.shared.qud.push(V.que)
     IS.private.agenda.push(Respond(V.que))
+
+
+@update_rule
+def integrate_usr_impr(IS):
+    """Integrate an Imperative move by the user.
+
+    The question is pushed onto /shared/qud
+    """
+
+    @precondition
+    def V():
+        if IS.shared.lu.speaker == Speaker.USR:
+            for move in IS.shared.lu.moves:
+                if isinstance(move, Imperative):
+                    yield R(move=move, que=move.content)
+
+    IS.shared.qud.push(V.que)
+
 
 @update_rule
 def integrate_answer(IS, DOMAIN):

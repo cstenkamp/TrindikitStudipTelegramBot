@@ -20,7 +20,7 @@
 
 
 from trindikit import stack
-from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
+from ibis_types import Ask, Question, Answer, Ans, Command, Imperative, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 
 ######################################################################
 # IBIS grammar
@@ -53,6 +53,8 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
         try: return Ask(Question(input))
+        except: pass
+        try: return Imperative(Command(input))
         except: pass
         try: return Answer(Ans(input))
         except: pass
@@ -132,10 +134,13 @@ class Domain(object):
 
     def add_plan(self, trigger, plan):  #("?x.price(x)", [Findout("?x.how(x)")])
         """Add a plan to the domain."""
-        assert isinstance(trigger, (Question, str)), \
+        assert isinstance(trigger, (Question, Command, str)), \
             "The plan trigger %s must be a Question" % trigger
         if isinstance(trigger, str):
-            trigger = Question(trigger)
+            try:
+                trigger = Question(trigger)
+            except:
+                trigger = Command(trigger)
         assert trigger not in self.plans, \
             "There is already a plan with trigger %s" % trigger
         trigger._typecheck(self)

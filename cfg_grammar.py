@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0
+from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0, Command, Imperative
 import nltk  #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis_generals import Grammar
 import settings
@@ -50,6 +50,7 @@ class CFG_Grammar(Grammar):
         except: pass
         return set([])
 
+
     def parseString(self, input):
         tokens = input.split()
         trees = next(self.parser.parse(tokens))
@@ -59,9 +60,11 @@ class CFG_Grammar(Grammar):
         except:
             return self.type2move(root[list(dict(root).keys())[0]]) #geez.
 
+
     def type2move(self, roottype):
         if roottype == "QUIT":
             return Quit()
+
 
     def sem2move(self, sem):
         #sem bspw: [Ask = 'needvisa'] [ subtype = 'YNQ']
@@ -82,5 +85,13 @@ class CFG_Grammar(Grammar):
                 return Ask(WhQ(Pred1(sem['Ask'])))
         except:
             pass
+        try:
+            cmd = sem["Command"]
+            if not cmd.startswith("!("):
+                cmd = "!("+cmd+")"
+            return Imperative(Command(cmd))
+        except:
+            pass
+
         raise Exception
 

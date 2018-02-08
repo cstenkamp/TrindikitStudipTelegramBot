@@ -864,13 +864,15 @@ class SimpleInput(object):
     """
 
     @update_rule
-    def interpret(INPUT, LATEST_MOVES, GRAMMAR):
+    def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, GRAMMAR):
         """Convert an INPUT string to a set of LATEST_MOVES.
         
         Calls GRAMMAR.interpret to convert the string in INPUT
         to a set of LATEST_MOVES.
         """
         LATEST_MOVES.clear()
+        if len(IS.shared.qud) > 0:
+            print("+++++++++++++++++++++", DOMAIN.preds1.get(IS.shared.qud.top().content, ""))
         if INPUT.value != '':
             move_or_moves = GRAMMAR.interpret(INPUT.get())
             if INPUT.value == "exit" or INPUT.value == "reset":

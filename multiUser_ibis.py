@@ -1,7 +1,7 @@
 import settings
 from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, _TYPEDICT, update_rule
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud
+from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr
 import pickle
 import os.path
 import requests
@@ -48,8 +48,8 @@ class IBISController(DialogueManager):
 
 
 
-#contains..         control()        interpret+input  generate+output do,maybe,repeat
-class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,   DialogueManager):
+#contains..         print_state      interpret        generate+output do,maybe,repeat
+class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueManager):
     """The IBIS dialogue manager. 
     
     This is an abstract class: methods update and select are not implemented.
@@ -59,18 +59,21 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,   DialogueMan
         self.DATABASE = database
         self.GRAMMAR = grammar
 
+
     def init(self):
         pass
+
 
     def handle_message(self, message, user):
         user.state.INPUT.set(message)
         user.state.LATEST_SPEAKER.set(Speaker.USR)
-
         self.interpret(user)
-
         self.update(user)
         self.print_state(user)
+        self.respond(user)
 
+
+    def respond(self, user):
         self.select(user)  # puts the next appropriate thing onto the agenda
         if user.state.NEXT_MOVES:
             self.generate(user)  # sets output
@@ -102,7 +105,7 @@ class IBIS2(MultiUserIBIS):
     #rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
     #rule_group returns lambda self, user=None: lambda: do(self, user, *rules) <- es kriegt ERST rules (siehe hier drunter), und DAS erwarted dann noch self und user (siehe hier drüber), und returned eine funktion (nicht ihr result, deswegen das nested lambda)
     grounding    = rule_group(get_latest_moves)
-    integrate    = rule_group(integrate_usr_ask, integrate_sys_ask,
+    integrate    = rule_group(integrate_usr_ask, integrate_sys_ask, integrate_usr_impr,
                                 integrate_answer, integrate_greet,      #integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                                 integrate_usr_quit, integrate_sys_quit)
     downdate_qud = rule_group(downdate_qud)

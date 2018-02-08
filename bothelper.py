@@ -4,7 +4,7 @@ import urllib
 import settings
 import userDB
 from botserver import db
-
+from ibis_types import Greet
 
 def get_url(url):
     response = requests.get(url)
@@ -18,22 +18,43 @@ def handle_update(update, ibis):
     # gucke chat in DB nach, wenns noch nicht existiert akzeptierst du nur start und fragst nach Namen etc
     user, did_create = userDB.create_or_add_user(chat)
 
+    print("-----------------------------------------------------")
+    print("USER WROTE", text)
+    print("-----------------------------------------------------")
+
     if did_create:
         if text == "/start":
-            send_message("Hello, new user! You were added to the system", chat)
+            send_message("New user! You were added to the system", chat)
         else:
             send_message("New User that didn't send /start", chat)
+        user.state.IS.private.agenda.push(Greet())
+        ibis.respond(user)
     else:
-        if text == "/start":
+        if user.asked_restart or user.asked_stop:
+            if text == "yes":
+                user.state.reset_IS()
+                user.state.reset_MIVS()
+                send_message("Consider it done.", chat)
+                if user.asked_restart:
+                    user.state.IS.private.agenda.push(Greet())
+                    ibis.respond(user)
+            elif text == "no":
+                send_message("Ok, won't do", chat)
+            else:
+                send_message("Count that as 'no'.", chat)
+            user.asked_restart = False
+            user.asked_stop = False
+        elif text == "/start":
             send_message("Do you want to start over?", chat)
+            user.asked_restart = True
         elif text == "/stop":
             send_message("Do you want me to delete your data?", chat)
-            user.state.reset_IS()
-            user.state.reset_MIVS()
+            user.asked_stop = True
+        elif text == "/showIS":
+            send_message(user.state.IS.pformat(), chat)
         elif text.startswith("/"):
             send_message("Unknown command", chat)
         else:
-            print("-------------------------USER WROTE", text)
             ibis.handle_message(text, user)
 
 

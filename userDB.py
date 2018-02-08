@@ -28,6 +28,11 @@ class User(db.Model):
     name = db.Column(db.String)
     createdate = db.Column(db.DateTime)
 
+    asked_restart = db.Column(db.Boolean)
+    asked_stop = db.Column(db.Boolean)
+
+    username = db.Column(db.String)
+    auth_str = db.Column(db.String)
 
     def __repr__(self):
         return "<User(id='%i', chat_id='%i', name='%s', created at='%s')>" % (self.id, self.chat_id, self.name, str(self.createdate))
@@ -36,4 +41,5 @@ class User(db.Model):
     def __init__(self, chat_id):
         self.chat_id = chat_id
         self.createdate = datetime.now()
-        # self.state = ConversationState(self.chat_id)
+        self.asked_restart = False
+        self.asked_stop = False

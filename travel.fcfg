@@ -3,7 +3,7 @@
 
 # IBIS / domain-independent
 
-USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[]
+USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]
 
 ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
 ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
@@ -17,6 +17,13 @@ YESNOANS[ans=yes] -> 'yes' | 'yeah'
 YESNOANS[ans=no] -> 'no' | 'nope'
 
 QUIT[] -> 'bye'
+
+IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
+
+# studip
+
+CMD[con=studip] -> 'studip'
+
 
 # travel
 
