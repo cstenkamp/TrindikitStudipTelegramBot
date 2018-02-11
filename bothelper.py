@@ -1,5 +1,7 @@
 import requests
 import urllib
+import os
+from subprocess import run
 
 import settings
 import userDB
@@ -15,6 +17,10 @@ def get_url(url):
 def handle_update(update, ibis):
     text = update["message"]["text"]
     chat = update["message"]["chat"]["id"]
+
+    if handle_unix_handles(chat, text):
+        return
+
     # gucke chat in DB nach, wenns noch nicht existiert akzeptierst du nur start und fragst nach Namen etc
     user, did_create = userDB.create_or_add_user(chat)
 
@@ -62,6 +68,22 @@ def handle_update(update, ibis):
     user.state.save_MIVS_to_DB()
     db.session.add(user.state)
     db.session.commit()
+
+
+def handle_unix_handles(chat, text):
+    if chat != settings.MY_CHAT_ID or not text.startswith("/"):
+        return False
+    if text == "/deleteDB":
+        os.remove(settings.DBPATH+settings.DBNAME)
+        send_message("Did it, sir", chat)
+        return True
+    if text == "/apachereload":
+        run(["rm","/var/log/apache2/error.log"])
+        run(["service", "apache2", "reload"])
+        send_message("Did it, sir", chat)
+        return True
+
+    return False
 
 
 def send_message(text, chat_id, reply_markup=None):

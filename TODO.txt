@@ -1,3 +1,13 @@
+Done
+-Multiuser-version. Alles was user-specific ist ist jetzt nicht mehr multiple-inheritance vom DialogManger, sondern mit Datenbank
+-Telegram-version (zusätzliche update-rules, .....)
+-"Command"/"Imperative" als klassen hinzugefügt
+-Ein Nein als antwort akzeptieren
+-Quit und Greet zur grammar hinzugefügt
+
+
+
+------------------------------------------------------------------------------------------------------------------------
 TODO
 -ein "repeat"-kommando einbrigen mit dem es die letzte utterance wiederholt
 -einen Telegram-Chatbot draus machen

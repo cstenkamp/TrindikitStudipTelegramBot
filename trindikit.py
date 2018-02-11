@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
-
+# import  time
+# print = (lambda p: lambda *args,**kwargs: [p(*args,**kwargs), time.sleep(.01)])(print)
 #
 # trindikit.py
 # Copyright (C) 2009, Peter Ljunglöf. All rights reserved.
@@ -313,7 +314,8 @@ class stack(object):
     
     def aslist(self):
         return self.elements
-    
+
+
 
 class stackset(stack):
     """A stack which also can be used as a set.
@@ -818,6 +820,7 @@ class StandardMIVS(DialogueManager):
 # naive generate and output modules
 ######################################################################
 
+
 class SimpleOutput(DialogueManager):
     """Naive implementations of a generation module and an output module.
     
@@ -834,10 +837,14 @@ class SimpleOutput(DialogueManager):
         Calls GRAMMAR.generate to convert the set of NEXT_MOVES
         into a string, which is put in OUTPUT.
         """
-        OUTPUT.set(GRAMMAR.generate(NEXT_MOVES))
+        if settings.MERGE_SUBSQ_MESSAGES:
+            OUTPUT.set(GRAMMAR.generate(NEXT_MOVES))
+        else:
+            OUTPUT.set(GRAMMAR.generate([NEXT_MOVES.elements[0]]))
+
 
     @update_rule
-    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES, USERDUMMY):
+    def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES):
         """Print the string in OUTPUT to standard output.
 
         After printing, the set of NEXT_MOVES is moved to LATEST_MOVES,
@@ -848,11 +855,22 @@ class SimpleOutput(DialogueManager):
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
-        NEXT_MOVES.clear()
+        if settings.MERGE_SUBSQ_MESSAGES:
+            NEXT_MOVES.clear()
+        else:
+            del NEXT_MOVES.elements[0]
+
 
 ######################################################################
 # naive interpret and input modules
 ######################################################################
+
+def freetextquestion(IS, DOMAIN):
+    isString = False
+    if len(IS.shared.qud) > 0:
+        isString = DOMAIN.preds1.get(str(IS.shared.qud.top().content)) == "string"
+    return isString
+
 
 class SimpleInput(object):
     """Naive implementations of an input module and an interpretation module.
@@ -863,6 +881,7 @@ class SimpleInput(object):
       - GRAMMAR.interpret(string), returning a move or a sequence of moves.
     """
 
+
     @update_rule
     def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, GRAMMAR):
         """Convert an INPUT string to a set of LATEST_MOVES.
@@ -871,10 +890,8 @@ class SimpleInput(object):
         to a set of LATEST_MOVES.
         """
         LATEST_MOVES.clear()
-        if len(IS.shared.qud) > 0:
-            print("+++++++++++++++++++++", DOMAIN.preds1.get(IS.shared.qud.top().content, ""))
         if INPUT.value != '':
-            move_or_moves = GRAMMAR.interpret(INPUT.get())
+            move_or_moves = GRAMMAR.interpret(INPUT.get(), anyString = freetextquestion(IS,DOMAIN))
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht

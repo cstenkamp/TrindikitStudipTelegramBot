@@ -48,7 +48,7 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
                 str += "."
         return str
 
-    def interpret(self, input): #Haupt-Sache die cfg_grammar überschreibt
+    def interpret(self, input, anyString=False): #Haupt-Sache die cfg_grammar überschreibt
         """Parse an input string into a dialogue move or a set of moves."""
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
@@ -152,14 +152,15 @@ class Domain(object):
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
         assert isinstance(answer, (ShortAns, Prop)) #YesNo is a subclass of ShortAns
-        assert isinstance(question, Question)
+        if not isinstance(question, Question):
+            return False
         if isinstance(question, WhQ):
             if isinstance(answer, Prop):
                 return answer.pred == question.pred
             elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
                 sort1 = self.inds.get(answer.ind.content)
                 sort2 = self.preds1.get(question.pred.content)
-                return sort1 and sort2 and sort1 == sort2
+                return (sort1 and sort2 and sort1 == sort2) or sort2 == "string" #letzterer Fall ist freetextquestion
         elif isinstance(question, YNQ):
             # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
             # print("#####")                                                                      # OB YESNOANS DIE QUESTION RESOLVED (dann wird aus YesNo(False) ne Prop) # OB DIE ENTSTANDENE PROP WAS VOM QUD RESOLVED
@@ -208,6 +209,7 @@ class Domain(object):
         """       
         planstack = stack(PlanConstructor)
         # print(question, type(question))
-        for construct in reversed(self.plans.get(question)):
-            planstack.push(construct)
+        if self.plans.get(question) != None:
+            for construct in reversed(self.plans.get(question)):
+                planstack.push(construct)
         return planstack

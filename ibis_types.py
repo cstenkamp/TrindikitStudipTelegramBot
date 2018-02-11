@@ -45,7 +45,7 @@ class Atomic(Type):
             atom = int(atom)
         except ValueError:
             assert atom[0].isalpha()
-            assert all(ch.isalnum() or ch in "_-+:" for ch in atom)
+            assert all(ch.isalnum() or ch in "_-+: " for ch in atom)
         self.content = atom
     
     def __str__(self):
@@ -363,12 +363,35 @@ class Command(Sentence):
         return "cmd: %s" % self.content
 
 
+######################################################################
+# Inform base class
+######################################################################
+
+class Statement(Sentence):
+    def __new__(cls, cmd, *args, **kw):
+        if cls is Statement:
+            assert isinstance(cmd, str)
+            assert not args and not kw
+            return Sentence.__new__(cls, cmd, *args, **kw)
+
+    def __init__(self, sent):
+        self.content = sent
+
+    def __str__(self):
+        return "statement: %s" % self.content
+
+
 ##################################################################################################################
 # IBIS dialogue moves
 ##################################################################################################################
 
 class Imperative(Move):
     contentclass = Command
+
+class State(Move):
+    contentclass = Statement
+    def __str__(self):
+        return self.content.content
 
 class Greet(SingletonMove): pass
 
@@ -432,6 +455,13 @@ class Raise(PlanConstructor):
 
     def __str__(self):
         return "Raise('%s')" % self.content.__str__()
+
+
+class Inform(PlanConstructor):
+    contentclass = Statement
+
+    def __str__(self):
+        return "Inform('%s')" % self.content.__str__()
 
 # Complex plan constructs
 

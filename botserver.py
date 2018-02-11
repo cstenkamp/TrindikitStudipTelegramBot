@@ -2,10 +2,9 @@
 from flask import Flask, request, redirect, url_for
 import json
 from flask_sqlalchemy import SQLAlchemy
+import settings
 
 ####################################################################################
-
-DBNAME = "user_states.db"
 
 app = Flask(__name__) #that's what's imported in the wsgi file
 app.config.from_object(__name__)
@@ -14,13 +13,13 @@ app.config.update(
     SESSION_COOKIE_PATH = '/studipbot/'
 )
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////var/www/studIPBot/'+DBNAME
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///'+settings.DBPATH+settings.DBNAME
 db = SQLAlchemy(app)
 
 ######################## interne imports, NACH creation der db #####################
 from bothelper import handle_update, send_message
-from settings import MY_CHAT_ID
-import travel
+# import travel
+import studip
 
 ####################################################################################
 
@@ -29,7 +28,8 @@ def botupdate2():
     if request.method == 'POST':
         update = request.data.decode("utf8")
         update = json.loads(update)
-        ibis = travel.loadIBIS()
+        # ibis = travel.loadIBIS()
+        ibis = studip.loadIBIS()
         ibis.init()
         handle_update(update, ibis)
         return "" #"" = 200 responsee
@@ -43,7 +43,7 @@ def deploycomplete():
     if request.method == 'POST':
         data = request.get_json()
         update = data["event"]+" of "+data["project_name"]+" on "+data["server_name"]+" "+data["result"]+" (commit "+data["commit"]["id"]+" from "+data["created_at"]+")"
-        send_message(update, str(MY_CHAT_ID))
+        send_message(update, str(settings.MY_CHAT_ID))
         return update
     else:
         return "This must be called via a POST-webhook!"

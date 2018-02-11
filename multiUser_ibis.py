@@ -1,7 +1,7 @@
 import settings
 from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, _TYPEDICT, update_rule
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr
+from ibis_rules import *#get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
 import pickle
 import os.path
 import requests
@@ -26,7 +26,10 @@ class TGramOutput(SimpleOutput):
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)
-        NEXT_MOVES.clear()
+        if settings.MERGE_SUBSQ_MESSAGES:
+            NEXT_MOVES.clear()
+        else:
+            del NEXT_MOVES.elements[0]
 
 ######################################################################
 # IBIS dialogue manager
@@ -75,7 +78,7 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueMa
 
     def respond(self, user):
         self.select(user)  # puts the next appropriate thing onto the agenda
-        if user.state.NEXT_MOVES:
+        while user.state.NEXT_MOVES:
             self.generate(user)  # sets output
             self.output(user)  # prints output  #kann gut sein dass generate, output, input und intepret nicht mit user als param klappen, weil die nicht ge rule_group ed werden
             self.update(user)  # integrates answers, ..., loads & executes plan
@@ -100,6 +103,7 @@ class IBIS2(MultiUserIBIS):
         maybe(self.downdate_qud(user))
         maybe(self.load_plan(user))
         repeat(self.exec_plan(user))
+        maybe(self.downdate_qud2(user))
         maybe(self.handle_empty_plan_agenda_qud(user))
 
     #rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
@@ -108,9 +112,10 @@ class IBIS2(MultiUserIBIS):
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask, integrate_usr_impr,
                                 integrate_answer, integrate_greet,      #integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                                 integrate_usr_quit, integrate_sys_quit)
-    downdate_qud = rule_group(downdate_qud)
-    load_plan    = rule_group(recover_plan, find_plan)
-    exec_plan    = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if)
+    downdate_qud  = rule_group(downdate_qud)
+    load_plan     = rule_group(recover_plan, find_plan)
+    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform)
+    downdate_qud2 = rule_group(downdate_qud_commands)
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
     def select(self, user):

@@ -1,7 +1,7 @@
 import os
 import settings
 from cfg_grammar import *
-from ibis_types import Findout, If, ConsultDB, Ind
+from ibis_types import Findout, If, ConsultDB, Ind, Inform
 import trindikit
 import ibis_generals
 
@@ -27,7 +27,8 @@ def create_domain():
               'depart_day': 'day',
               'class': 'flight_class',
               'return_day': 'day',
-              'username': 'string'
+              'username': 'string',
+              'password': 'string'
               }
 
     means = 'plane', 'train'
@@ -60,10 +61,12 @@ def create_domain():
                     ])
 
     domain.add_plan("!(studip)",
-                   [Findout("?x.username(x)")
-                    ])
-
-
+                   [Findout("?x.username(x)"),
+                    Findout("?x.password(x)"),
+                    Inform("Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string."),
+                    
+                    ]
+                   )
 
     return domain
 
@@ -125,6 +128,8 @@ def loadIBIS():
     grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
 
     grammar.addForm("Ask('?x.username(x)')", "Before we start, I need to know your username. What is it?")
+    grammar.addForm("Ask('?x.password(x)')", "Next up, your password please.")
+    grammar.addForm("State('wtf')", "Uhm, wtf")
 
     database = TravelDB()
     database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})

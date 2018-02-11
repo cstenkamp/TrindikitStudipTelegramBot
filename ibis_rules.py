@@ -20,8 +20,8 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import update_rule, precondition, Speaker, ProgramState, Move, R, record
-from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative
+from trindikit import update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
+from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
 
 ######################################################################
 # IBIS update rules
@@ -158,17 +158,44 @@ def integrate_usr_quit(IS):
 @update_rule
 def downdate_qud(IS, DOMAIN):
     """Downdate the QUD.
-    
+
     If the topmost question on /shared/qud is resolved by 
     a proposition in /shared/com, pop the question from the QUD.
     """
+
     @precondition
     def V():
         que = IS.shared.qud.top()
         for prop in IS.shared.com:
             if DOMAIN.resolves(prop, que):
                 yield R(que=que, prop=prop)
+
     IS.shared.qud.pop()
+
+
+@update_rule
+def downdate_qud_commands(IS, DOMAIN):
+    """Downdate the QUD.
+
+    If the topmost question on /shared/qud is resolved by
+    a proposition in /shared/com, pop the question from the QUD.
+    """
+    @precondition
+    def V():
+        que = IS.shared.qud.top()
+        cmdresolvees = DOMAIN.plans.get(que, False)
+        if cmdresolvees:
+            doesresolve = [[DOMAIN.resolves(prop, move.content) for prop in IS.shared.com] for move in cmdresolvees]
+            allresolved = all([any(i) for i in doesresolve])
+            # print([i.content for i in cmdresolvees])
+            # print(IS.shared.com)
+            if allresolved:
+                yield
+
+    IS.shared.qud.pop()
+
+
+
 
 # @update_rule
 # def downdate_qud_2(IS, DOMAIN):
@@ -437,7 +464,7 @@ def select_other(IS, NEXT_MOVES):
 
 
 ######################################################################
-# Own rules
+# Other rules
 ######################################################################
 @update_rule
 def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
@@ -459,3 +486,20 @@ def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
     # import os
     # os.remove("CurrState.pkl")
     PROGRAM_STATE.set(ProgramState.QUIT)
+
+
+@update_rule
+def exec_inform(IS, NEXT_MOVES):
+    @precondition
+    def V():
+        move = IS.private.plan.top()
+        if isinstance(move, Inform):
+            yield R(move=move)
+
+    NEXT_MOVES.push(State(V.move.content))
+    IS.private.plan.pop()
+
+
+# @update_rule
+# def asdf
+    #wenn auf dem qud ein command liegt, und er sieht dass die bedingungen dafür schon eingehalten sind, führe gegenstand des commands aus und entferne den command

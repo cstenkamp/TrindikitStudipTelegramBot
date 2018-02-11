@@ -1,7 +1,7 @@
 import settings
 from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, _TYPEDICT
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr
+from ibis_rules import *#get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
 import pickle
 import os.path
 
@@ -87,7 +87,7 @@ class IBISController(DialogueManager):
         self.print_state()
         while True:
             self.select()  # puts the next appropriate thing onto the agenda
-            if self.NEXT_MOVES:
+            while self.NEXT_MOVES:
                 self.generate()  # sets output
                 self.output(None)  # prints output
                 self.update()  # integrates answers, ..., loads & executes plan
@@ -151,6 +151,7 @@ class IBIS1(IBIS):
         maybe(self.downdate_qud())
         maybe(self.load_plan())
         repeat(self.exec_plan())
+        maybe(self.downdate_qud2())
         maybe(self.handle_empty_plan_agenda_qud())
         if SAVE_IS:
             self.psave_IS("CurrState.pkl")
@@ -162,9 +163,10 @@ class IBIS1(IBIS):
                               integrate_answer, integrate_greet,
                               # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                               integrate_usr_quit, integrate_sys_quit)
-    downdate_qud = rule_group(downdate_qud)
-    load_plan    = rule_group(recover_plan, find_plan)
-    exec_plan    = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if)
+    downdate_qud  = rule_group(downdate_qud)
+    load_plan     = rule_group(recover_plan, find_plan)
+    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform)
+    downdate_qud2 = rule_group(downdate_qud_commands)
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 
     def select(self):

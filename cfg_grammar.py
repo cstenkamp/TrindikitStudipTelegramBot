@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0, Command, Imperative
+from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0, Command, Imperative, ShortAns
 import nltk  #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis_generals import Grammar
 import settings
@@ -42,12 +42,14 @@ class CFG_Grammar(Grammar):
     def loadGrammar(self, grammarFilename):
         self.parser = nltk.load_parser(grammarFilename, trace=1 if settings.VERBOSE["Parse"] else 0, cache=False) #nciht mehr parse.[...]
 
-    def interpret(self, input):
+    def interpret(self, input, anyString=False):
         """Parse an input string into a dialogue move or a set of moves."""
         try: return self.parseString(input)
         except: pass
         try: return eval(input)
         except: pass
+        if anyString:
+            return Answer(ShortAns(input))
         return set([])
 
 
