@@ -656,7 +656,7 @@ def update_rule(function):
                 #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string in den update rules
             else:
                 # für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
-                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER"]))
+                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER", "FUNCPOOL"]))
                 globals_kw =  dict((key, getattr(args[0], key, None)) for key in globals) #domain, database, grammar sind für alle user selb
                 specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER"])))
                 user_kw = dict((key, args[1]) for key in set(argkeys).intersection(set(["USER"])))
@@ -854,12 +854,12 @@ class SimpleOutput(DialogueManager):
         print()
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
-        LATEST_MOVES.update(NEXT_MOVES)
         if settings.MERGE_SUBSQ_MESSAGES:
+            LATEST_MOVES.update(NEXT_MOVES)
             NEXT_MOVES.clear()
         else:
+            LATEST_MOVES.update([NEXT_MOVES.elements[0]])
             del NEXT_MOVES.elements[0]
-
 
 ######################################################################
 # naive interpret and input modules

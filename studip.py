@@ -1,9 +1,10 @@
 import os
 import settings
 from cfg_grammar import *
-from ibis_types import Findout, If, ConsultDB, Ind, Inform
+from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc
 import trindikit
 import ibis_generals
+import codecs
 
 if settings.MULTIUSER:
     import multiUser_ibis
@@ -11,6 +12,14 @@ if settings.MULTIUSER:
 else:
     PATH = "/home/chris/Documents/UNI/sem_9/dialog_systems/Projekt/My_Trindikit/"
     import singleUser_ibis
+
+
+
+def make_authstring(username, pw):
+    auth_bytes = ('%s:%s' % (username, pw)).encode('ascii')
+    auth_string = codecs.encode(auth_bytes, 'base64').strip()
+    return Prop(Pred1("auth_string"), Ind(auth_string), True)
+
 
 
 def create_domain():
@@ -64,8 +73,9 @@ def create_domain():
                    [Findout("?x.username(x)"),
                     Findout("?x.password(x)"),
                     Inform("Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string."),
-                    
-                    ]
+                    ExecuteFunc(make_authstring, "?x.username(x)", "?x.password(x)"),
+                    Inform("The Auth-string is: %s", ["bel(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
+                   ]
                    )
 
     return domain

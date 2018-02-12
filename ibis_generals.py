@@ -20,7 +20,7 @@
 
 
 from trindikit import stack
-from ibis_types import Ask, Question, Answer, Ans, Command, Imperative, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
+from ibis_types import *#Ask, Question, Answer, Ans, Command, Imperative, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 
 ######################################################################
 # IBIS grammar
@@ -151,7 +151,8 @@ class Domain(object):
 
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
-        assert isinstance(answer, (ShortAns, Prop)) #YesNo is a subclass of ShortAns
+        if not isinstance(answer, (ShortAns, Prop)): #YesNo is a subclass of ShortAns
+            return False
         if not isinstance(question, Question):
             return False
         if isinstance(question, WhQ):

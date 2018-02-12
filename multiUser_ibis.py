@@ -57,10 +57,11 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueMa
     
     This is an abstract class: methods update and select are not implemented.
     """
-    def __init__(self, domain, database, grammar):
+    def __init__(self, domain, database, grammar, funcpool=None):
         self.DOMAIN = domain
         self.DATABASE = database
         self.GRAMMAR = grammar
+        self.FUNCPOOL = funcpool
 
 
     def init(self):
@@ -114,7 +115,7 @@ class IBIS2(MultiUserIBIS):
                                 integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
     load_plan     = rule_group(recover_plan, find_plan)
-    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform)
+    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func)
     downdate_qud2 = rule_group(downdate_qud_commands)
     handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
 

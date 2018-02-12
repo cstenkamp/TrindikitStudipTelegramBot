@@ -20,6 +20,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 from trindikit import Type, is_sequence, Move, SingletonMove
+from types import FunctionType
 
 ######################################################################
 # IBIS semantic types
@@ -39,13 +40,14 @@ class Atomic(Type):
     contentclass = str
     
     def __init__(self, atom):
-        assert isinstance(atom, (str, int))
+        assert isinstance(atom, (str, int, bytes))
         assert atom not in ("", "yes", "no")
         try:
             atom = int(atom)
         except ValueError:
-            assert atom[0].isalpha()
-            assert all(ch.isalnum() or ch in "_-+: " for ch in atom)
+            if not isinstance(atom, bytes):
+                assert atom[0].isalpha()
+                assert all(ch.isalnum() or ch in "_-+: " for ch in atom)
         self.content = atom
     
     def __str__(self):
@@ -444,6 +446,7 @@ class ConsultDB(PlanConstructor):
     def __str__(self):
         return "ConsultDB('%s')" % self.content.__str__()
 
+
 class Findout(PlanConstructor):
     contentclass = Question
 
@@ -457,13 +460,34 @@ class Raise(PlanConstructor):
         return "Raise('%s')" % self.content.__str__()
 
 
+# Complex plan constructs
+
+class ExecuteFunc(PlanConstructor):
+    contentclass = FunctionType
+
+    def __init__(self, funcname, *params):
+        assert isinstance(funcname, FunctionType)
+        self.content = funcname
+        self.params = params
+
+    def __str__(self):
+        return "ExecuteFunc('%s') needing params %s" % (self.content.__str__(), self.params)
+
+
 class Inform(PlanConstructor):
     contentclass = Statement
+
+    def __init__(self, formatstr, replacers=[]):
+        assert isinstance(formatstr, str)
+        self.content = formatstr
+        self.replacers = replacers
 
     def __str__(self):
         return "Inform('%s')" % self.content.__str__()
 
-# Complex plan constructs
+    def _typecheck(self, context=None):
+        return True
+
 
 class If(PlanConstructor):
     """A conditional plan constructor, consisting of a condition,

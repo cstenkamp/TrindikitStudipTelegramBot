@@ -20,8 +20,9 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
-from ibis_types import Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
+from trindikit import *#update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
+from ibis_types import *#Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
+import itertools
 
 ######################################################################
 # IBIS update rules
@@ -230,6 +231,7 @@ def find_plan(IS, DOMAIN):
                     yield R(move=move, plan=plan)
     IS.private.agenda.pop()
     IS.private.plan = V.plan
+    print("DID TRIGGER")
 
 # Executing plans
 
@@ -291,10 +293,12 @@ def exec_consultDB(IS, DATABASE):
     IS.private.bel.add(prop)
     IS.private.plan.pop()
 
+
+
 @update_rule
 def recover_plan(IS, DOMAIN):
     """Recover a plan matching the topmost question in the QUD.
-    
+
     If both /private/agenda and /private/plan are empty,
     and there is a topmost question in /shared/qud,
     and there is a matching plan, then put the plan in 
@@ -307,7 +311,10 @@ def recover_plan(IS, DOMAIN):
             plan = DOMAIN.get_plan(que)
             if plan:
                 yield R(que=que, plan=plan)
+
     IS.private.plan = V.plan
+    if isinstance(V.que, Command):
+        IS.shared.qud.pop()
 
 @update_rule
 def remove_raise(IS, DOMAIN):
@@ -494,11 +501,74 @@ def exec_inform(IS, NEXT_MOVES):
     def V():
         move = IS.private.plan.top()
         if isinstance(move, Inform):
-            yield R(move=move)
+            if not any([i == move.content for i in IS.private.bel]):
+                if len(move.replacers) == 0:
+                    yield R(move=move)
+                else:
+                    mustbe = [False]*len(move.replacers)
+                    relevants = {}
+                    index = -1
+                    for i in move.replacers:
+                        index += 1
+                        if i.startswith("bel("):
+                            relevantpart = i[4:-1]
+                            for j in IS.private.bel:
+                                if isinstance(j, Prop):
+                                    print("----------")
+                                    print(j.content[0])
+                                    print(relevantpart)
+                                    if str(j.content[0]) == relevantpart:
+                                        mustbe[index] = True
+                                        relevants[i] = j.content[1]
+                        elif i.startswith("com("):
+                            relevantpart = i[4:-1]
+                            for j in IS.shared.com:
+                                if isinstance(j, Prop):
+                                    if str(j.content[0]) == relevantpart:
+                                        mustbe[index] = True
+                                        relevants[i] = j.content[1]
+                    if all(mustbe):
+                        yield R(move=move, toreplace = relevants)
 
-    NEXT_MOVES.push(State(V.move.content))
+    string = V.move.content
+    index = -1
+    while string.find("%s") > 0:
+        index += 1
+        string = string.replace("%s", str(V.toreplace[V.move.replacers[index]]), 1)
+
+    NEXT_MOVES.push(State(string))
     IS.private.plan.pop()
+    IS.private.bel.add(V.move.content)
 
+
+def powerset(s, fixedLen=False, incShuffles = True):
+    if fixedLen:
+        tmp = [s[j] for j in range(len(s)) if (fixedLen+1 & (1 << j))]
+    else:
+        tmp = [[s[j] for j in range(len(s)) if (i & (1 << j))] for i in range(1 << len(s))]
+    if not incShuffles:
+        return tmp
+    else:
+        return list(itertools.permutations(tmp))
+
+
+@update_rule
+def exec_func(IS, DOMAIN):
+
+    @precondition
+    def V():
+        move = IS.private.plan.top()
+        if isinstance(move, ExecuteFunc):
+            mustknow = [Question(i) for i in move.params]
+            knowledgecombos = powerset(list(IS.shared.com),len(mustknow))
+            for knowledge in knowledgecombos:
+                for i in range(len(mustknow)):
+                    if DOMAIN.resolves(knowledge[i], mustknow[i]):
+                        yield R(knowledge=knowledge, move=move)
+
+    prop = V.move.content(*[i.ind.content for i in V.knowledge])
+    IS.private.bel.add(prop)
+    IS.private.plan.pop()
 
 # @update_rule
 # def asdf
