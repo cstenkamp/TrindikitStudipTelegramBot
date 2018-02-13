@@ -360,13 +360,14 @@ class Command(Sentence):
 
     def __init__(self, cmd):
         self.content = cmd
+        self.new = True
 
     def __str__(self):
         return "cmd: %s" % self.content
 
 
 ######################################################################
-# Inform base class
+# Statement base class
 ######################################################################
 
 class Statement(Sentence):

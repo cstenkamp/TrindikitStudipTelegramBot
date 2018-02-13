@@ -96,6 +96,7 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueMa
 
 class IBIS2(MultiUserIBIS):
     """The IBIS-1 dialogue manager."""
+    # select -> generate -> output -> update -> input -> update
 
     def update(self, user):
         user.state.IS.private.agenda.clear()
@@ -105,7 +106,7 @@ class IBIS2(MultiUserIBIS):
         maybe(self.load_plan(user))
         repeat(self.exec_plan(user))
         maybe(self.downdate_qud2(user))
-        maybe(self.handle_empty_plan_agenda_qud(user))
+        maybe(self.finalize_IS(user))
 
     #rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
     #rule_group returns lambda self, user=None: lambda: do(self, user, *rules) <- es kriegt ERST rules (siehe hier drunter), und DAS erwarted dann noch self und user (siehe hier drüber), und returned eine funktion (nicht ihr result, deswegen das nested lambda)
@@ -115,9 +116,9 @@ class IBIS2(MultiUserIBIS):
                                 integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
     load_plan     = rule_group(recover_plan, find_plan)
-    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func)
+    exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func, mention_command_conditions)
     downdate_qud2 = rule_group(downdate_qud_commands)
-    handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
+    finalize_IS = rule_group(make_command_old, handle_empty_plan_agenda_qud)
 
     def select(self, user):
         if not user.state.IS.private.agenda:

@@ -1,7 +1,7 @@
 import os
 import settings
 from cfg_grammar import *
-from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc
+from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc, State, Statement
 import trindikit
 import ibis_generals
 import codecs
@@ -37,18 +37,21 @@ def create_domain():
               'class': 'flight_class',
               'return_day': 'day',
               'username': 'string',
-              'password': 'string'
+              'password': 'string',
+              'coursename': 'studip_course'
               }
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
     days = 'today', 'tomorrow', 'monday', 'tuesday','wednesday','thursday','friday','saturday','sunday'
-    classes = 'first', 'second'
+    classes = 'first', 'second', 'krypto'
+    courses = 'krypto', 'krypto2'
 
     sorts = {'means': means,
              'city': cities,
              'day': days,
              'flight_class': classes,
+             'studip_course': courses
              }
 
     domain = ibis_generals.Domain(preds0, preds1, sorts)
@@ -65,7 +68,7 @@ def create_domain():
                     ConsultDB("?x.price(x)")  #das was precond der update-rule ist, nicht die funktion von unten!
                    ])
 
-    domain.add_plan("?needvisa()",
+    domain.add_plan("!(visa)",
                    [Findout("?x.dest_city(x)")
                     ])
 
@@ -75,8 +78,16 @@ def create_domain():
                     Inform("Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string."),
                     ExecuteFunc(make_authstring, "?x.username(x)", "?x.password(x)"),
                     Inform("The Auth-string is: %s", ["bel(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
-                   ]
-                   )
+                   ])
+
+    domain.add_plan("!(download)",
+                    [Findout("?x.coursename(x)")
+                    ])
+                    # , conditions = [
+                    #  "bel(auth_string)"
+                    # ])
+
+
 
     return domain
 
@@ -140,6 +151,7 @@ def loadIBIS():
     grammar.addForm("Ask('?x.username(x)')", "Before we start, I need to know your username. What is it?")
     grammar.addForm("Ask('?x.password(x)')", "Next up, your password please.")
     grammar.addForm("State('wtf')", "Uhm, wtf")
+    grammar.addForm("Ask('?x.coursename(x)')", "From which course do you want to download?")
 
     database = TravelDB()
     database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})

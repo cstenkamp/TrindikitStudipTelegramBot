@@ -24,6 +24,12 @@ IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
 
 CMD[con=studip] -> 'studip'
 
+CMD[con=visa] -> 'visa'
+
+CMD[con=download] -> 'download'
+
+CAT[cat=coursename, ind=krypto] -> 'krypto'
+
 
 # travel
 

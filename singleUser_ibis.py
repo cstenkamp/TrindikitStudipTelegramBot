@@ -145,6 +145,7 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
 
 class IBIS1(IBIS):
     """The IBIS-1 dialogue manager."""
+    # select -> generate -> output -> update -> input -> update
 
     def update(self):
         self.IS.private.agenda.clear()
@@ -154,7 +155,7 @@ class IBIS1(IBIS):
         maybe(self.load_plan())
         repeat(self.exec_plan())
         maybe(self.downdate_qud2())
-        maybe(self.handle_empty_plan_agenda_qud())
+        maybe(self.finalize_IS())
         if SAVE_IS:
             self.psave_IS("CurrState.pkl")
 
@@ -166,10 +167,10 @@ class IBIS1(IBIS):
                               # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                               integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
-    load_plan     = rule_group(recover_plan, find_plan)
+    load_plan     = rule_group(mention_command_conditions, recover_plan, find_plan)
     exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func)
     downdate_qud2 = rule_group(downdate_qud_commands)
-    handle_empty_plan_agenda_qud = rule_group(handle_empty_plan_agenda_qud)
+    finalize_IS = rule_group(make_command_old, handle_empty_plan_agenda_qud)
 
     def select(self):
         if not self.IS.private.agenda:

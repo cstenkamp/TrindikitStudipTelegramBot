@@ -132,7 +132,7 @@ class Domain(object):
         self.plans = {}
 
 
-    def add_plan(self, trigger, plan):  #("?x.price(x)", [Findout("?x.how(x)")])
+    def add_plan(self, trigger, plan, conditions=[]):  #("?x.price(x)", [Findout("?x.how(x)")])
         """Add a plan to the domain."""
         assert isinstance(trigger, (Question, Command, str)), \
             "The plan trigger %s must be a Question" % trigger
@@ -146,7 +146,10 @@ class Domain(object):
         trigger._typecheck(self)
         for m in plan:
             m._typecheck(self)
-        self.plans[trigger] = tuple(plan)
+        if len(conditions) == 0:
+            self.plans[trigger] = {"plan": tuple(plan)}
+        else:
+            self.plans[trigger] = {"plan": tuple(plan), "conditions": tuple(conditions)}
 
 
     def relevant(self, answer, question):
@@ -204,13 +207,49 @@ class Domain(object):
         return answer
 
 
-    def get_plan(self, question):
+    def get_plan(self, question, IS):
         """Return (a new copy of) the plan that is relevant to 'question', 
         or None if there is no relevant plan.
-        """       
+        """
+        if len(self.check_for_plan(question, IS)) > 0:
+            return
         planstack = stack(PlanConstructor)
         # print(question, type(question))
-        if self.plans.get(question) != None:
-            for construct in reversed(self.plans.get(question)):
+        if self.plans.get(question) is not None:
+            for construct in reversed(self.plans.get(question)["plan"]):
                 planstack.push(construct)
         return planstack
+
+
+    def check_for_plan(self, question, IS):
+        plan = self.plans.get(question)
+        if plan is not None:
+            if len(plan.get("conditions", [])) == 0:
+                return []
+            else:
+                mustbe = [False] * len(plan.get("conditions"))
+                relevants = {}
+                index = -1
+                for i in plan.get("conditions"):
+                    index += 1
+                    if i.startswith("bel("):
+                        relevantpart = i[4:-1]
+                        for j in IS.private.bel:
+                            if isinstance(j, Prop):
+                                if str(j.content[0]) == relevantpart:
+                                    mustbe[index] = True
+                                    relevants[i] = j.content[1]
+                    elif i.startswith("com("):
+                        relevantpart = i[4:-1]
+                        for j in IS.shared.com:
+                            if isinstance(j, Prop):
+                                if str(j.content[0]) == relevantpart:
+                                    mustbe[index] = True
+                                    relevants[i] = j.content[1]
+                if all(mustbe):
+                    return []
+                else:
+                    missing = list(zip(plan.get("conditions"), mustbe))
+                    missing = [i[0] for i in missing if not i[1]]
+                    return missing
+        return []

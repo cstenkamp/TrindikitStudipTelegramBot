@@ -184,14 +184,15 @@ def downdate_qud_commands(IS, DOMAIN):
     @precondition
     def V():
         que = IS.shared.qud.top()
-        cmdresolvees = DOMAIN.plans.get(que, False)
-        if cmdresolvees:
-            doesresolve = [[DOMAIN.resolves(prop, move.content) for prop in IS.shared.com] for move in cmdresolvees]
-            allresolved = all([any(i) for i in doesresolve])
-            # print([i.content for i in cmdresolvees])
-            # print(IS.shared.com)
-            if allresolved:
-                yield
+        if isinstance(que, Command):
+            cmdresolvees = DOMAIN.plans.get(que, False)
+            if cmdresolvees:
+                doesresolve = [[DOMAIN.resolves(prop, move.content) for prop in IS.shared.com] for move in cmdresolvees if isinstance(move, Question)]
+                allresolved = all([any(i) for i in doesresolve])
+                # print([i.content for i in cmdresolvees])
+                # print(IS.shared.com)
+                if allresolved:
+                    yield
 
     IS.shared.qud.pop()
 
@@ -226,7 +227,7 @@ def find_plan(IS, DOMAIN):
             resolved = any(DOMAIN.resolves(prop, move.content) 
                            for prop in IS.private.bel)
             if not resolved:
-                plan = DOMAIN.get_plan(move.content)
+                plan = DOMAIN.get_plan(move.content, IS)
                 if plan:
                     yield R(move=move, plan=plan)
     IS.private.agenda.pop()
@@ -308,7 +309,7 @@ def recover_plan(IS, DOMAIN):
     def V():
         if not IS.private.agenda and not IS.private.plan:
             que = IS.shared.qud.top()
-            plan = DOMAIN.get_plan(que)
+            plan = DOMAIN.get_plan(que, IS)
             if plan:
                 yield R(que=que, plan=plan)
 
@@ -384,7 +385,7 @@ def reraise_issue(IS, DOMAIN):
     @precondition
     def V():
         que = IS.shared.qud.top()
-        if not DOMAIN.get_plan(que):
+        if not DOMAIN.get_plan(que, IS) and isinstance(que, Question):
             yield R(que=que)
     IS.private.agenda.push(Raise(V.que))
 
@@ -419,10 +420,18 @@ def select_ask(IS, NEXT_MOVES):
     @precondition
     def V():
         move = IS.private.agenda.top()
-        if isinstance(move, Findout) or isinstance(move, Raise):
+        if isinstance(move, Findout) or isinstance(move, Raise) or isinstance(move, Inform):
             yield R(move=move, que=move.content)
 
-    NEXT_MOVES.push(Ask(V.que))
+    if isinstance(V.move, Inform): #TODO diesen teil vom code muss Statement/State haben god damn it
+        string = V.move.content
+        index = -1
+        while string.find("%s") > 0:
+            index += 1
+            string = string.replace("%s", str(V.move.replacers[index])[4:-1], 1)
+        NEXT_MOVES.push(State(string))
+    else:
+        NEXT_MOVES.push(Ask(V.que))
     if IS.private.plan:
         move = IS.private.plan.top()
         if isinstance(move, Raise) and move.content == V.que:
@@ -489,10 +498,11 @@ def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
             if no_greet:
                 yield R(move=None)
 
-    #IS.private.agenda.push(Quit())
+    # IS.private.agenda.push(Quit())
     # import os
     # os.remove("CurrState.pkl")
-    PROGRAM_STATE.set(ProgramState.QUIT)
+    # Alternatively:
+    # PROGRAM_STATE.set(ProgramState.QUIT)
 
 
 @update_rule
@@ -514,9 +524,9 @@ def exec_inform(IS, NEXT_MOVES):
                             relevantpart = i[4:-1]
                             for j in IS.private.bel:
                                 if isinstance(j, Prop):
-                                    print("----------")
-                                    print(j.content[0])
-                                    print(relevantpart)
+                                    # print("----------")
+                                    # print(j.content[0])
+                                    # print(relevantpart)
                                     if str(j.content[0]) == relevantpart:
                                         mustbe[index] = True
                                         relevants[i] = j.content[1]
@@ -561,15 +571,40 @@ def exec_func(IS, DOMAIN):
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]
             knowledgecombos = powerset(list(IS.shared.com),len(mustknow))
-            for knowledge in knowledgecombos:
-                for i in range(len(mustknow)):
-                    if DOMAIN.resolves(knowledge[i], mustknow[i]):
-                        yield R(knowledge=knowledge, move=move)
+            if len(knowledgecombos) >= len(mustknow):
+                for knowledge in knowledgecombos:
+                    for i in range(len(mustknow)):
+                        if DOMAIN.resolves(knowledge[i], mustknow[i]):
+                            yield R(knowledge=knowledge, move=move)
 
     prop = V.move.content(*[i.ind.content for i in V.knowledge])
     IS.private.bel.add(prop)
     IS.private.plan.pop()
 
-# @update_rule
-# def asdf
-    #wenn auf dem qud ein command liegt, und er sieht dass die bedingungen dafür schon eingehalten sind, führe gegenstand des commands aus und entferne den command
+
+@update_rule
+def mention_command_conditions(IS, DOMAIN):
+
+    @precondition
+    def V():
+        cmd = IS.shared.qud.top()
+        if len(DOMAIN.check_for_plan(cmd, IS)) > 0 and isinstance(cmd, Command) and cmd.new:
+            yield R(cmd=cmd)
+
+    missings = DOMAIN.check_for_plan(V.cmd, IS)
+    string = ", ".join(["%s"]*len(missings))
+    string = "The plan for this cannot be conducted yet, as the following Information is missing: "+string
+    IS.private.agenda.push(Inform(string, missings))
+    V.cmd.new = False
+
+
+@update_rule
+def make_command_old(IS):
+
+    @precondition
+    def V():
+        cmd = IS.shared.qud.top()
+        if isinstance(cmd, Command) and cmd.new:
+            yield R(cmd=cmd)
+
+    V.cmd.new = False
