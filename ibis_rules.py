@@ -553,6 +553,8 @@ def exec_inform(IS, NEXT_MOVES):
 
 def powerset(s, fixedLen=False, incShuffles = True):
     if fixedLen:
+        if fixedLen == 1:
+            return [[i] for i in s]
         tmp = [s[j] for j in range(len(s)) if (fixedLen+1 & (1 << j))]
     else:
         tmp = [[s[j] for j in range(len(s)) if (i & (1 << j))] for i in range(1 << len(s))]
@@ -570,7 +572,8 @@ def exec_func(IS, DOMAIN):
         move = IS.private.plan.top()
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]
-            knowledgecombos = powerset(list(IS.shared.com),len(mustknow))
+            sources = list(IS.shared.com)+list(IS.private.bel)
+            knowledgecombos = powerset(sources, len(mustknow))
             if len(knowledgecombos) >= len(mustknow):
                 for knowledge in knowledgecombos:
                     for i in range(len(mustknow)):

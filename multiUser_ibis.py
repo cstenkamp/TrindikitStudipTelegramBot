@@ -7,7 +7,7 @@ import os.path
 import requests
 import urllib
 from botserver import db
-from bothelper import send_message
+import bothelper
 
 # TODO Flyweight-pattern nutzen, sodass jede ibis-instanz nur den Stand der Datenbank hat, und die Methoden von ner gemeinsamen erbt
 
@@ -22,7 +22,7 @@ class TGramOutput(SimpleOutput):
         """
         print("S to", str(USER.chat_id) + ":", OUTPUT.get() or "[---]")
         print()
-        send_message(OUTPUT.get(), USER.chat_id)
+        bothelper.send_message(str(OUTPUT.get()), USER.chat_id)
         LATEST_SPEAKER.set(Speaker.SYS)
         LATEST_MOVES.clear()
         LATEST_MOVES.update(NEXT_MOVES)

@@ -8,8 +8,12 @@ import userDB
 from botserver import db
 from ibis_types import Greet
 
-def get_url(url):
-    response = requests.get(url)
+
+def get_url(url, file=False, filename=""):
+    if not file:
+        response = requests.get(url)
+    else:
+        response = requests.post(url, files={'document': (filename, file)})
     content = response.content.decode("utf8")
     return content
 
@@ -87,12 +91,21 @@ def handle_unix_handles(chat, text):
 
 
 def send_message(text, chat_id, reply_markup=None):
+    text = text.replace("_", "-")
     text = urllib.parse.quote_plus(text)
     url = settings.URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown".format(text, chat_id)
     if reply_markup:
         url += "&reply_markup={}".format(reply_markup)
     get_url(url)
 
+
+def send_file(chat_id, filename="", filestream=None):
+    url = settings.URL + "sendDocument?chat_id={}".format(chat_id)
+    if filestream != None:
+        file = filestream
+    else:
+        file = open(filename,'r')
+    get_url(url, file, filename)
 
 # ---------------------------- Diese hier sind nicht mehr nötig bei webhooks ----------------------------
 #

@@ -5,10 +5,12 @@ from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc, State, 
 import trindikit
 import ibis_generals
 import codecs
+from studip_downloader import load, return_file, load_file2
 
 if settings.MULTIUSER:
     import multiUser_ibis
     PATH = "/var/www/studIPBot"
+    import bothelper
 else:
     PATH = "/home/chris/Documents/UNI/sem_9/dialog_systems/Projekt/My_Trindikit/"
     import singleUser_ibis
@@ -19,6 +21,18 @@ def make_authstring(username, pw):
     auth_bytes = ('%s:%s' % (username, pw)).encode('ascii')
     auth_string = codecs.encode(auth_bytes, 'base64').strip()
     return Prop(Pred1("auth_string"), Ind(auth_string), True)
+
+
+def download_file(auth_string):
+    print(auth_string)
+    if settings.MULTIUSER:
+        bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
+        try:
+            userid = load('user', auth_string)['user']['user_id']
+            file = return_file(userid, None, "Codierungstheorie und Kryptographie", None, "Skript", auth_string)
+            bothelper.send_file(settings.MY_CHAT_ID, file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
+        except SystemExit:
+            bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
 
 
 
@@ -38,7 +52,7 @@ def create_domain():
               'return_day': 'day',
               'username': 'string',
               'password': 'string',
-              'coursename': 'studip_course'
+              'coursename': 'string' #'studip_course'
               }
 
     means = 'plane', 'train'
@@ -81,11 +95,11 @@ def create_domain():
                    ])
 
     domain.add_plan("!(download)",
-                    [Findout("?x.coursename(x)")
+                    [Findout("?x.coursename(x)"),
+                     ExecuteFunc(download_file, "?x.auth_string(x)")
+                    ], conditions = [
+                     "bel(auth_string)"
                     ])
-                    # , conditions = [
-                    #  "bel(auth_string)"
-                    # ])
 
 
 
