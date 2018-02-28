@@ -652,15 +652,18 @@ def update_rule(function):
                     "or %s(dm, user) where dm is DialogueManager and user a user." % funcname
 
             if not settings.MULTIUSER:
-                new_kw = dict((key, getattr(args[0], key, None)) for key in set(argkeys).difference(set(["USER"])))
+                new_kw = dict((key, getattr(args[0], key, None)) for key in set(argkeys).difference(set(["USER", "DM"])))
                 #dieser Teil ist superwichtig! args[0] ist immer der DialogueManager, und er gettet dann dinfach IBIS.IS bspw, das heißt das ist nur ein string in den update rules
+                if "DM" in argkeys: new_kw["DM"] = args[0] #DM steht jetzt für die DialogManager-Instanz. Eine Regel kann DM als param haben, um selbst DM an ihre kinder weiter zu geben
             else:
                 # für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
-                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER", "FUNCPOOL"]))
+                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER"]))
                 globals_kw =  dict((key, getattr(args[0], key, None)) for key in globals) #domain, database, grammar sind für alle user selb
-                specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER"])))
+                specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER", "DM"])))
                 user_kw = dict((key, args[1]) for key in set(argkeys).intersection(set(["USER"])))
                 new_kw = {**globals_kw, **specifics_kw, **user_kw}
+                if "DM" in argkeys: new_kw["DM"] = args[0]  # DM steht jetzt für die DialogManager-Instanz. Eine Regel kann DM als param haben, um selbst DM an ihre kinder weiter zu geben
+
             # print(new_kw)
         result = function(**new_kw)
         if settings.VERBOSE["UpdateRules"]:

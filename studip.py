@@ -21,15 +21,13 @@ else:
 
 def executable_rule(function):
     argkeys, varargs, varkw, defaults = inspect.getargspec(function)
-    argkeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
+    replacekeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
+    noreplacekeys = [i for i in argkeys if not i.isupper()]
 
     @functools.wraps(function)
     def wrappedfunc(*args, **kw):
-        #die *args sind bei dem anderen der DialogManager, da die function mit arg0=DialogManager aufgerufen wird!
-        #self.rule_group returns do(self, *rules), which in turn returns rule(self) for rule in rules. und diese rules haben keine extra parameter
-        print("HIERHIERHIER", args)
-        new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
-        result = function(*args, **new_kw)
+        new_kw = dict((key, getattr(args[0], key, None)) for key in replacekeys) #args[0] ist der DM (der als parameter für update-rules speziell behandelt wird), hier werden alle gepacslockten daran gehängt
+        result = function(*noreplacekeys, **new_kw)
         return result
     return wrappedfunc
 
@@ -38,7 +36,7 @@ def executable_rule(function):
 def make_authstring(username, pw, IS):
     auth_bytes = ('%s:%s' % (username, pw)).encode('ascii')
     auth_string = codecs.encode(auth_bytes, 'base64').strip()
-    return Prop(Pred1("auth_string"), Ind(auth_string), True), IS.private.bel.add
+    return Prop(Pred1("auth_string"), Ind(auth_string), True), IS.shared.com.add
 
 
 def download_file(auth_string):

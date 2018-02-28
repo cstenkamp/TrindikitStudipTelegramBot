@@ -566,7 +566,7 @@ def powerset(L, fixedLen=False, incShuffles=True):
         return flatten([list(itertools.permutations(i)) for i in pset])
 
 @update_rule
-def exec_func(IS, DOMAIN, NEXT_MOVES):
+def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
 
     @precondition
     def V():
@@ -583,8 +583,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES):
                 if all(alls):
                     yield R(knowledge=knowledge, move=move)
 
-    print("OJEMINE", inspect.getargspec(function))
-    prop, place = V.move.content(*[i.ind.content for i in V.knowledge]) #executes it!
+    prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
     place(prop)
     IS.private.plan.pop()
 
