@@ -4,6 +4,7 @@
 *.sqlite
 *.db
 settings.py
+Working_Version_DigitalOcean/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

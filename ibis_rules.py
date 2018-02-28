@@ -551,18 +551,19 @@ def exec_inform(IS, NEXT_MOVES):
     IS.private.bel.add(V.move.content)
 
 
-def powerset(s, fixedLen=False, incShuffles = True):
-    if fixedLen:
-        if fixedLen == 1:
-            return [[i] for i in s]
-        tmp = [s[j] for j in range(len(s)) if (fixedLen+1 & (1 << j))]
-    else:
-        tmp = [[s[j] for j in range(len(s)) if (i & (1 << j))] for i in range(1 << len(s))]
-    if not incShuffles:
-        return tmp
-    else:
-        return list(itertools.permutations(tmp))
+flatten = lambda l: [item for sublist in l for item in sublist]
 
+def powerset(L, fixedLen=False, incShuffles=True):
+    pset = set()
+    for n in range(len(L) + 1):
+        for sset in itertools.combinations(L, n):
+            pset.add(sset)
+    if fixedLen:
+        pset = [i for i in pset if len(i) == fixedLen]
+    if not incShuffles:
+        return pset
+    else:
+        return flatten([list(itertools.permutations(i)) for i in pset])
 
 @update_rule
 def exec_func(IS, DOMAIN):
@@ -573,12 +574,14 @@ def exec_func(IS, DOMAIN):
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]
             sources = list(IS.shared.com)+list(IS.private.bel)
-            knowledgecombos = powerset(sources, len(mustknow))
-            if len(knowledgecombos) >= len(mustknow):
-                for knowledge in knowledgecombos:
-                    for i in range(len(mustknow)):
-                        if DOMAIN.resolves(knowledge[i], mustknow[i]):
-                            yield R(knowledge=knowledge, move=move)
+            knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
+            for knowledge in knowledgecombos:
+                alls = [False]*len(mustknow)
+                for i in range(len(mustknow)):
+                    if DOMAIN.resolves(knowledge[i], mustknow[i]):
+                        alls[i] = True
+                if all(alls):
+                    yield R(knowledge=knowledge, move=move)
 
     prop = V.move.content(*[i.ind.content for i in V.knowledge])
     IS.private.bel.add(prop)

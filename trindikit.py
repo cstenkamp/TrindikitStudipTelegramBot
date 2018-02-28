@@ -449,7 +449,7 @@ ProgramState = enum('RUN', 'QUIT')
 # semantic types and dialogue moves
 ######################################################################
 
-class Type(object): 
+class type(object):
     """An abstract base class for semantic types.
     
     This is meant to be subclassed by the types in a specific 

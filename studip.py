@@ -35,6 +35,18 @@ def download_file(auth_string):
             bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
 
 
+def download_file2(auth_string, coursename, filename):
+    print(auth_string, coursename, filename)
+    if settings.MULTIUSER:
+        bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
+        try:
+            userid = load('user', auth_string)['user']['user_id']
+            file = return_file(userid, None, coursename, None, filename, auth_string)
+            bothelper.send_file(settings.MY_CHAT_ID, file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
+        except SystemExit:
+            bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
+
+
 
 def create_domain():
     preds0 = 'return', 'needvisa', 'studip'
@@ -52,7 +64,8 @@ def create_domain():
               'return_day': 'day',
               'username': 'string',
               'password': 'string',
-              'coursename': 'string' #'studip_course'
+              'coursename': 'string', #'studip_course'
+              'filename': 'string' #'studip_filename'
               }
 
     means = 'plane', 'train'
@@ -100,6 +113,18 @@ def create_domain():
                     ], conditions = [
                      "bel(auth_string)"
                     ])
+
+    domain.add_plan("!(download2)",
+                    [Findout("?x.coursename(x)"),
+                     Findout("?x.filename(x)"),
+                     ExecuteFunc(download_file2, "?x.auth_string(x)", "?x.coursename(x)", "?x.filename(x)")
+                    ], conditions = [
+                     "bel(auth_string)"
+                    ])
+
+
+
+    #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
 
 
 
@@ -166,6 +191,7 @@ def loadIBIS():
     grammar.addForm("Ask('?x.password(x)')", "Next up, your password please.")
     grammar.addForm("State('wtf')", "Uhm, wtf")
     grammar.addForm("Ask('?x.coursename(x)')", "From which course do you want to download?")
+    grammar.addForm("Ask('?x.filename(x)')", "Which file from that course do you want to download?")
 
     database = TravelDB()
     database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})

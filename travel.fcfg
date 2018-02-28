@@ -28,6 +28,8 @@ CMD[con=visa] -> 'visa'
 
 CMD[con=download] -> 'download'
 
+CMD[con=download2] -> 'download2'
+
 CAT[cat=coursename, ind=krypto] -> 'krypto'
 
 
