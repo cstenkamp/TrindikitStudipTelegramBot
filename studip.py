@@ -1,7 +1,7 @@
 import os
 import settings
 from cfg_grammar import *
-from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc, State, Statement
+from ibis_types import Findout, If, ConsultDB, Ind, Inform, ExecuteFunc, State, Statement, YesNo
 import trindikit
 import ibis_generals
 import codecs
@@ -9,6 +9,8 @@ from studip_downloader import load, return_file, load_file2
 from singleUser_ibis import singleUser_download
 import inspect
 import functools
+from studip_download import *
+import time
 
 if settings.MULTIUSER:
     import multiUser_ibis
@@ -22,12 +24,11 @@ else:
 def executable_rule(function):
     argkeys, varargs, varkw, defaults = inspect.getargspec(function)
     replacekeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
-    noreplacekeys = [i for i in argkeys if not i.isupper()]
 
     @functools.wraps(function)
     def wrappedfunc(*args, **kw):
         new_kw = dict((key, getattr(args[0], key, None)) for key in replacekeys) #args[0] ist der DM (der als parameter für update-rules speziell behandelt wird), hier werden alle gepacslockten daran gehängt
-        result = function(*noreplacekeys, **new_kw)
+        result = function(*args[1:], **new_kw)
         return result
     return wrappedfunc
 
@@ -39,6 +40,15 @@ def make_authstring(username, pw, IS):
     return Prop(Pred1("auth_string"), Ind(auth_string), True), IS.shared.com.add
 
 
+@executable_rule
+def is_VLZeit(auth_string, NEXT_MOVES):
+    all_semesters = load("semesters", auth_string)['semesters']
+    this_semester = [i["title"] for i in all_semesters if int(i["begin"]) < time.time() < int(i["end"])][0]
+    currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
+    return Answer(YesNo(currently_seminars)), NEXT_MOVES.push
+
+
+@executable_rule
 def download_file(auth_string):
     if settings.MULTIUSER:
         bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
@@ -57,6 +67,7 @@ def download_file(auth_string):
             pass
 
 
+@executable_rule
 def download_file2(auth_string, coursename, filename):
     print(auth_string, coursename, filename)
     if settings.MULTIUSER:
@@ -126,14 +137,14 @@ def create_domain():
                     Findout("?x.password(x)"),
                     Inform("Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string."),
                     ExecuteFunc(make_authstring, "?x.username(x)", "?x.password(x)"),
-                    Inform("The Auth-string is: %s", ["bel(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
+                    Inform("The Auth-string is: %s", ["com(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
                    ])
 
     domain.add_plan("!(download)",
                     [Findout("?x.coursename(x)"),
                      ExecuteFunc(download_file, "?x.auth_string(x)")
                     ], conditions = [
-                     "bel(auth_string)"
+                     "com(auth_string)"
                     ])
 
     domain.add_plan("!(download2)",
@@ -141,12 +152,12 @@ def create_domain():
                      Findout("?x.filename(x)"),
                      ExecuteFunc(download_file2, "?x.auth_string(x)", "?x.coursename(x)", "?x.filename(x)")
                     ], conditions = [
-                     "bel(auth_string)"
+                     "com(auth_string)"
                     ])
 
     domain.add_plan("!(Vorlesungszeit)",
-                    [ExecuteFunc(download_file, "?x.auth_string(x)")],
-                    conditions = ["bel(auth_string)"])
+                    [ExecuteFunc(is_VLZeit, "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
 
 
     #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
@@ -211,6 +222,9 @@ def loadIBIS():
     grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
     grammar.addForm("Ask('?x.class(x)')", "First or second class?")
     grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
+
+    grammar.addForm("Answer(YesNo(False))", "No.")
+    grammar.addForm("Answer(YesNo(True))", "Yes.")
 
     grammar.addForm("Ask('?x.username(x)')", "Before we start, I need to know your username. What is it?")
     grammar.addForm("Ask('?x.password(x)')", "Next up, your password please.")

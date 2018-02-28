@@ -30,6 +30,9 @@ CMD[con=download] -> 'download'
 
 CMD[con=download2] -> 'download2'
 
+CMD[con=Vorlesungszeit] -> 'Vorlesungszeit'
+# CMD[con=Vorlesungszeit] -> 'Ist gerade Vorlesungszeit?' #TODO Irgendwie leerzeichen durch Unterschriche und zurück ersetzen
+
 CAT[cat=coursename, ind=krypto] -> 'krypto'
 
 

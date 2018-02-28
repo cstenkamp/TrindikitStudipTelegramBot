@@ -296,15 +296,11 @@ def get_semester_info(all_semesters, semester):
             % (s['title'], s['begin_iso'][:10], s['seminars_begin_iso'][:10], s['seminars_end_iso'][:10], s['end_iso'][:10] )
 
 
-def is_VLZeit(auth_string):
-    userid = load_userid(auth_string)
-    all_semesters = load("semesters", auth_string)['semesters']
-    currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
-    return "yes" if currently_seminars else "no"
+
 
 
 if __name__ == '__main__':
-    # auth_bytes = ('%s:%s' % ("cstenkamp", "changes_please")).encode('ascii')
+    # auth_bytes = ('%s:%s' % ("cstenkamp", "pw")).encode('ascii')
     # auth_string = codecs.encode(auth_bytes, 'base64').strip()
     # print(auth_string)
     auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
