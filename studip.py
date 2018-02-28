@@ -6,6 +6,9 @@ import trindikit
 import ibis_generals
 import codecs
 from studip_downloader import load, return_file, load_file2
+from singleUser_ibis import singleUser_download
+import inspect
+import functools
 
 if settings.MULTIUSER:
     import multiUser_ibis
@@ -16,15 +19,29 @@ else:
     import singleUser_ibis
 
 
+def executable_rule(function):
+    argkeys, varargs, varkw, defaults = inspect.getargspec(function)
+    argkeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
 
-def make_authstring(username, pw):
+    @functools.wraps(function)
+    def wrappedfunc(*args, **kw):
+        #die *args sind bei dem anderen der DialogManager, da die function mit arg0=DialogManager aufgerufen wird!
+        #self.rule_group returns do(self, *rules), which in turn returns rule(self) for rule in rules. und diese rules haben keine extra parameter
+        print("HIERHIERHIER", args)
+        new_kw = dict((key, getattr(args[0], key, None)) for key in argkeys)
+        result = function(*args, **new_kw)
+        return result
+    return wrappedfunc
+
+
+@executable_rule
+def make_authstring(username, pw, IS):
     auth_bytes = ('%s:%s' % (username, pw)).encode('ascii')
     auth_string = codecs.encode(auth_bytes, 'base64').strip()
-    return Prop(Pred1("auth_string"), Ind(auth_string), True)
+    return Prop(Pred1("auth_string"), Ind(auth_string), True), IS.private.bel.add
 
 
 def download_file(auth_string):
-    print(auth_string)
     if settings.MULTIUSER:
         bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
         try:
@@ -33,6 +50,13 @@ def download_file(auth_string):
             bothelper.send_file(settings.MY_CHAT_ID, file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
         except SystemExit:
             bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
+    else:
+        try:
+            userid = load('user', auth_string)['user']['user_id']
+            file = return_file(userid, None, "Codierungstheorie und Kryptographie", None, "Skript", auth_string)
+            singleUser_download(file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
+        except SystemExit:
+            pass
 
 
 def download_file2(auth_string, coursename, filename):
@@ -122,6 +146,9 @@ def create_domain():
                      "bel(auth_string)"
                     ])
 
+    domain.add_plan("!(Vorlesungszeit)",
+                    [ExecuteFunc(download_file, "?x.auth_string(x)")],
+                    conditions = ["bel(auth_string)"])
 
 
     #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw

@@ -33,6 +33,40 @@ from urllib.request import Request, urlopen
 # AUTH_STRING = b'the_string'
 
 
+def get_courses(user, auth_string, semester=None):
+    pass #GET /user/:user_id/courses
+
+
+def get_semesters(user, auth_string):
+    pass #route /semesters
+
+
+def get_news(user, auth_string):
+    pass #GET /user/:user_id/news
+
+def get_schedule(user, auth_string):
+    pass #GET /user/:user_id/schedule und GET /user/:user_id/schedule/:semester_id
+
+def get_zeitplan(user, auth_string):
+    pass #route  /user/:user_id/schedule/:semester_id
+
+def get_course(user, id, auth_string):
+    pass #GET /course/:course_id
+
+def get_course_files(user, id, auth_string):
+    pass #GET /course/:course_id/files
+
+def get_all_current_news(user, auth_string):
+    pass #für jeden Kurs: GET /course/:course_id/news
+
+def get_file(file_id, auth_string):
+    pass #GET /file/:file_id für metadaten und GET /file/:file_id/content für content
+
+def create_file(adsf):
+    pass #POST /file/:folder_id
+
+
+
 def load(path, auth_string):
     return json.loads(download_file(path, auth_string).decode('utf8'))
 
@@ -50,7 +84,7 @@ def download_file(path, auth_string):
             if e.code != 401:
                 raise
             else:
-                if path == 'user':
+                if path == 'user': #TODO change this as it is not anymore "the first time" iff path==user
                     # we sometimes get error 401 for no reason
                     # but this is the first request the script sends, so
                     # credentials may simply be wrong
@@ -64,7 +98,7 @@ def download_file(path, auth_string):
 ###############################################################################
 
 
-#
+
 win_re = re.compile(r'[<>:"/\\\|\?\*]')
 
 
@@ -81,37 +115,34 @@ def clean_filename(name):
             return win_re.subn('_', name)[0]
 
 
-#
-def load_folder(cid, fid, path, auth_string):
-    data = load('documents/%s/folder%s' % (cid, fid), auth_string)
+#recursively load folder and search for skript
+def load_folder(course_id, file_id, path, auth_string):
+    data = load('documents/%s/folder%s' % (course_id, file_id), auth_string)
     #    print(data)
     #    print(data['documents'])
     for folder in data['folders']:
         if not folder['permissions']['readable']:
-            print('!!! folder not readable %r' % (path + [folder['name']]),
-                  file=sys.stderr)
+            print('!!! folder not readable %r' % (path + [folder['name']]), file=sys.stderr)
             continue
-        load_folder(cid, '/%s' % folder['folder_id'], path + [folder['name']], auth_string)
+        load_folder(course_id, '/%s' % folder['folder_id'], path + [folder['name']], auth_string)
     for doc in data['documents']:
         if doc["name"] == "Skript":
             print(doc)
             print(doc["chdate"])
             print(round(time.time()))
-            #        if int(doc['filesize']) > 50 * 1024 * 1024:
-            #            print('!!! filesize > 50 MB [%r, %d]' % (path + [doc['filename']],
-            #                                                     int(doc['filesize'])),
-            #                  file=sys.stderr)
+            # if int(doc['filesize']) > 50 * 1024 * 1024:
+            #     print('!!! filesize > 50 MB [%r, %d]' % (path + [doc['filename']], int(doc['filesize'])), file=sys.stderr)
             load_file(doc['document_id'], path + [doc['filename']],auth_string)
 
 
-def load_file(fid, components, auth_string):
+def load_file(file_id, components, auth_string):
     path = os.path.join(*(clean_filename(i) for i in components))
     if os.path.exists(path):
         print('>>> already exists, skipping [%s]' % path, file=sys.stderr)
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
-        content = download_file('documents/%s/download' % fid, auth_string)
+        content = download_file('documents/%s/download' % file_id, auth_string)
         with open(path, 'wb') as f:
             f.write(content)
     except HTTPError as e:
@@ -127,8 +158,7 @@ def load_course(cid, path, auth_string):
         load_folder(cid, '', path, auth_string)
     except HTTPError as e:
         if e.code == 400:
-            print('!!! error with course %r / %r' % (cid, path),
-                  file=sys.stderr)
+            print('!!! error with course %r / %r' % (cid, path), file=sys.stderr)
         else:
             raise
 

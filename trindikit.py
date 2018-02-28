@@ -449,7 +449,7 @@ ProgramState = enum('RUN', 'QUIT')
 # semantic types and dialogue moves
 ######################################################################
 
-class type(object):
+class Type(object):
     """An abstract base class for semantic types.
     
     This is meant to be subclassed by the types in a specific 
@@ -872,6 +872,13 @@ def freetextquestion(IS, DOMAIN):
     return isString
 
 
+def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper mergen, sodass er es in singleuser printet und in multiuser als telegram-nachricht sendet
+    if cmd == "/showIS":
+        print(IS.pformat())
+        print("")
+
+
+
 class SimpleInput(object):
     """Naive implementations of an input module and an interpretation module.
     
@@ -905,16 +912,22 @@ class SimpleInput(object):
 
 
     @update_rule
-    def input(INPUT, LATEST_SPEAKER):
+    def input(INPUT, LATEST_SPEAKER, IS):
         """Inputs a string from standard input.
         
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
         """
-        try:
-            str = input("U> ")
-        except EOFError:
-            print("EOF")
-            sys.exit()
+        while True:
+            try:
+                str = input("U> ")
+            except EOFError:
+                print("EOF")
+                sys.exit()
+            if not str.startswith("/"):
+                break
+            else:
+                handle_command(str, IS)
+
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)
         print()

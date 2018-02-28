@@ -3,7 +3,8 @@ from trindikit import stack, DialogueManager, record, stackset, Speaker, Program
 from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 from ibis_rules import *#get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
 import pickle
-import os.path
+import os.path as p
+import os
 
 SAVE_IS = False
 
@@ -37,7 +38,7 @@ class IBISInfostate(DialogueManager):
 
     def pload_IS(self, filename):
         # asdf = ConsultDB("?x.penis(x)") #equal to ConsultDB(Question("?x.penis(x)"))
-        if os.path.exists(filename):
+        if p.exists(filename):
             with open(filename, 'rb') as f:
                 tmp_dict = pickle.load(f)
 
@@ -181,3 +182,15 @@ class IBIS1(IBIS):
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
     select_move   = rule_group(select_answer, select_ask, select_other)
     select_icm    = rule_group(select_icm_sem_neg)
+
+
+######################################################################
+# stuff for single-user
+######################################################################
+
+def singleUser_download(filename, file):
+    dir = p.join(p.dirname(p.abspath(__file__)),'downloads')
+    if not p.exists(dir):
+        os.makedirs(dir)
+    with open(p.join(dir,filename), 'wb') as f:
+        f.write(file)
