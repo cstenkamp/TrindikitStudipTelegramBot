@@ -21,6 +21,7 @@
 
 from trindikit import Type, is_sequence, Move, SingletonMove
 from types import FunctionType
+import functools
 
 ######################################################################
 # IBIS semantic types
@@ -47,7 +48,7 @@ class Atomic(Type):
         except ValueError:
             if not isinstance(atom, bytes):
                 assert atom[0].isalpha()
-                assert all(ch.isalnum() or ch in "_-+: " for ch in atom)
+                assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
         self.content = atom
     
     def __str__(self):
@@ -464,10 +465,10 @@ class Raise(PlanConstructor):
 # Complex plan constructs
 
 class ExecuteFunc(PlanConstructor):
-    contentclass = FunctionType
+    contentclass = (FunctionType, functools.partial)
 
     def __init__(self, funcname, *params):
-        assert isinstance(funcname, FunctionType)
+        assert isinstance(funcname, (FunctionType, functools.partial))
         self.content = funcname
         self.params = params
 

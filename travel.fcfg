@@ -30,8 +30,13 @@ CMD[con=download] -> 'download'
 
 CMD[con=download2] -> 'download2'
 
-CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist gerade Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
-#TODO Irgendwie leerzeichen durch Unterschriche und zurück ersetzen
+CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
+
+CMD[con=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?'
+CMD[con=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?'
+
+CMD[con=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?'
+CMD[con=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
 
 CAT[cat=coursename, ind=krypto] -> 'krypto'
 

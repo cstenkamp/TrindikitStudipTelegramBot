@@ -662,7 +662,7 @@ def update_rule(function):
                 specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER", "DM"])))
                 user_kw = dict((key, args[1]) for key in set(argkeys).intersection(set(["USER"])))
                 new_kw = {**globals_kw, **specifics_kw, **user_kw}
-                if "DM" in argkeys: new_kw["DM"] = args[0]  # DM steht jetzt für die DialogManager-Instanz. Eine Regel kann DM als param haben, um selbst DM an ihre kinder weiter zu geben
+                if "DM" in argkeys: new_kw["DM"] = args[1].state  # bei Multiuser steht DM für den user
 
             # print(new_kw)
         result = function(**new_kw)

@@ -11,6 +11,7 @@ import inspect
 import functools
 from studip_download import *
 import time
+from functools import partial
 
 if settings.MULTIUSER:
     import multiUser_ibis
@@ -28,6 +29,8 @@ def executable_rule(function):
     @functools.wraps(function)
     def wrappedfunc(*args, **kw):
         new_kw = dict((key, getattr(args[0], key, None)) for key in replacekeys) #args[0] ist der DM (der als parameter für update-rules speziell behandelt wird), hier werden alle gepacslockten daran gehängt
+        print("NEW KW", new_kw)
+        new_kw = {**new_kw, **kw} #für die partials mit what
         result = function(*args[1:], **new_kw)
         return result
     return wrappedfunc
@@ -46,6 +49,29 @@ def is_VLZeit(auth_string, NEXT_MOVES):
     this_semester = [i["title"] for i in all_semesters if int(i["begin"]) < time.time() < int(i["end"])][0]
     currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
     return Answer(YesNo(currently_seminars)), NEXT_MOVES.push
+
+
+@executable_rule
+def semesterdays(auth_string, what, NEXT_MOVES):
+    all_semesters = load("semesters", auth_string)['semesters']
+    this_semester = [i["title"] for i in all_semesters if int(i["begin"]) < time.time() < int(i["end"])][0]
+    next_semester = [all_semesters[i+1]['title'] for i in range(len(all_semesters)) if all_semesters[i]['title'] == this_semester][0]
+    currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
+    if what == "db":
+        if currently_seminars:
+            return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
+        else:
+            return State("The Break is right now!"), NEXT_MOVES.push
+    elif what == "wb" or what == "wl":
+        return State(get_semester_info(all_semesters, next_semester)), NEXT_MOVES.push
+    else: #what == "dl"
+        if not currently_seminars:
+            return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
+        else:
+            return State("There are Lectures right now!"), NEXT_MOVES.push
+
+
+
 
 
 @executable_rule
@@ -157,6 +183,23 @@ def create_domain():
 
     domain.add_plan("!(Vorlesungszeit)",
                     [ExecuteFunc(is_VLZeit, "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
+
+
+    domain.add_plan("!(DaysLectures)",
+                    [ExecuteFunc(partial(semesterdays, what="dl"), "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
+
+    domain.add_plan("!(WhenLectures)",
+                    [ExecuteFunc(partial(semesterdays, what="wl"), "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
+
+    domain.add_plan("!(DaysBreak)",
+                    [ExecuteFunc(partial(semesterdays, what="db"), "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
+
+    domain.add_plan("!(WhenBreak)",
+                    [ExecuteFunc(partial(semesterdays, what="wb"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
 

@@ -239,10 +239,10 @@ def get(semesters, name):
 def many_days(semesters, this, next, curr_sems):
     if curr_sems:
         secs = int(get(semesters,this)['seminars_end']) - int(time.time())
-        return secs//60//60//24+1, True
+        return secs//60//60//24+1
     else:
         secs = int(get(semesters,next)['seminars_begin']) - int(time.time())
-        return secs//60//60//24+1, True
+        return secs//60//60//24+1
 
 
 def get_semester_name(string):

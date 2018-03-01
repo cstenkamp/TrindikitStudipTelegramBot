@@ -1,8 +1,9 @@
+-Sätze die Teilweise freie struktur haben (wann ist Semester X, wo "wann ist" fix ist und Semester X halt nicht)
 -deutsche und englische Grammar
 -Auf Telegram packen
 -Textual entailment für Sätze erkennen^^
 -die grammar pre-parsen für verneinungen (CMD[con=Vorlesungszeit]) geht zu not(currently semesterbreak), sodass automatisch erkannt wird dass die YesNos für die beantwortung umgedreht werden müssen 
--Grammar Preprocessen für optionale wörter in texten!
+-Grammar Preprocessen für alternative wörter in texten (geschweite klammern)
 -https://www.ikw.uni-osnabrueck.de/studiengaenge/pruefungsangelegenheiten.html Zeiten!!!
 
 
