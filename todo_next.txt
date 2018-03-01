@@ -1,0 +1,13 @@
+-deutsche und englische Grammar
+-Auf Telegram packen
+-Textual entailment für Sätze erkennen^^
+-die grammar pre-parsen für verneinungen (CMD[con=Vorlesungszeit]) geht zu not(currently semesterbreak), sodass automatisch erkannt wird dass die YesNos für die beantwortung umgedreht werden müssen 
+-Grammar Preprocessen für optionale wörter in texten!
+-https://www.ikw.uni-osnabrueck.de/studiengaenge/pruefungsangelegenheiten.html Zeiten!!!
+
+
+Die sätze
+-Ist gerade Vorlesungszeit?
+-Wann gehen Vorlesungen/Ferien los | In wie vielen Tagen gehen Vorlesungen/Ferien los?
+-Wann ist dieses/nächstes/Semester X?
+-Welches Semester ist gerade?

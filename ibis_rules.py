@@ -232,7 +232,6 @@ def find_plan(IS, DOMAIN):
                     yield R(move=move, plan=plan)
     IS.private.agenda.pop()
     IS.private.plan = V.plan
-    print("DID TRIGGER")
 
 # Executing plans
 
