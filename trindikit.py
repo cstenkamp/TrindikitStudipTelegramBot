@@ -377,7 +377,10 @@ class tset(object):
     def add(self, value):
         self._typecheck(value)
         self.elements.add(value)
-    
+
+    def remove(self, value):
+        self.elements.remove(value)
+
     def clear(self):
         """Clear the set from all values."""
         self.elements.clear()

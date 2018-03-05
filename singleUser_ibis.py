@@ -151,6 +151,7 @@ class IBIS1(IBIS):
     def update(self):
         self.IS.private.agenda.clear()
         self.grounding()()
+        repeat(self.expire())
         maybe(self.integrate())
         maybe(self.downdate_qud())
         maybe(self.load_plan())
@@ -162,7 +163,8 @@ class IBIS1(IBIS):
 
     # rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:
     # rule_group returns lambda self, user=None: lambda: do(self, user, *rules) <- es kriegt ERST rules (siehe hier drunter), und DAS erwarted dann noch self und user (siehe hier drüber), und returned eine funktion (nicht ihr result, deswegen das nested lambda)
-    grounding    = rule_group(get_latest_moves)
+    grounding    = rule_group(get_latest_moves, expire_expirables)
+    expire       = rule_group(expire_expirables)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask, integrate_usr_impr,
                               integrate_answer, integrate_greet,
                               # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt

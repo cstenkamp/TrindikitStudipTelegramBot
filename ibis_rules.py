@@ -20,8 +20,8 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import *#update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
-from ibis_types import *#Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
+from trindikit import * #update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
+from ibis_types import * #Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
 import itertools
 
 ######################################################################
@@ -212,9 +212,9 @@ def downdate_qud_commands(IS, DOMAIN):
 # Finding plans
 
 @update_rule
-def find_plan(IS, DOMAIN):
+def find_plan(IS, DOMAIN, NEXT_MOVES):
     """Find a dialogue plan for resolving a question.
-    
+
     If there is a Respond move first in /private/agenda, and 
     the question is not resolved by any proposition in /private/bel,
     look for a matching dialogue plan in the domain. Put the plan
@@ -224,14 +224,27 @@ def find_plan(IS, DOMAIN):
     def V():
         move = IS.private.agenda.top()
         if isinstance(move, Respond):
-            resolved = any(DOMAIN.resolves(prop, move.content) 
+            resolved = any(DOMAIN.resolves(prop, move.content)
                            for prop in IS.private.bel)
             if not resolved:
                 plan = DOMAIN.get_plan(move.content, IS)
-                if plan:
-                    yield R(move=move, plan=plan)
-    IS.private.agenda.pop()
-    IS.private.plan = V.plan
+                if plan[0] and plan[1]:
+                    yield R(move=move, plan=plan[1])
+                elif not plan[0]:
+                    string = ", ".join(["%s"]*len(plan[1]))
+                    string = "The plan for this cannot be conducted yet, as the following Information is missing: " + string
+                    IS.private.agenda.push(Inform(string, plan[1]))
+            else:
+                for prop in IS.private.bel:
+                    if DOMAIN.resolves(prop, move.content):
+                        yield R(move=move, answer=prop)
+
+    if V._typedict.get("plan", False):
+        IS.private.agenda.pop()
+        IS.private.plan = V.plan
+    else:
+        IS.private.agenda.pop()
+        NEXT_MOVES.push(Answer(V.answer))
 
 # Executing plans
 
@@ -309,8 +322,8 @@ def recover_plan(IS, DOMAIN):
         if not IS.private.agenda and not IS.private.plan:
             que = IS.shared.qud.top()
             plan = DOMAIN.get_plan(que, IS)
-            if plan:
-                yield R(que=que, plan=plan)
+            if plan[0] and plan[1]:
+                yield R(que=que, plan=plan[1])
 
     IS.private.plan = V.plan
     if isinstance(V.que, Command):
@@ -373,6 +386,7 @@ def select_respond(IS, DOMAIN):
                         yield R(que=que, prop=prop)
     IS.private.agenda.push(Respond(V.que))
 
+
 @update_rule
 def reraise_issue(IS, DOMAIN):
     """Reraise the topmost question on the QUD.
@@ -384,7 +398,8 @@ def reraise_issue(IS, DOMAIN):
     @precondition
     def V():
         que = IS.shared.qud.top()
-        if not DOMAIN.get_plan(que, IS) and isinstance(que, Question):
+        tmp = DOMAIN.get_plan(que, IS)
+        if tmp[0] and not tmp[1] and isinstance(que, Question):  #vorher hat get_plan nur den planstack returned, jetzt muss sowohl die erste True sein als auch der planstack != None für not(tmp)
             yield R(que=que)
     IS.private.agenda.push(Raise(V.que))
 
@@ -481,6 +496,7 @@ def select_other(IS, NEXT_MOVES):
 ######################################################################
 # Other rules
 ######################################################################
+
 @update_rule
 def handle_empty_plan_agenda_qud(IS, PROGRAM_STATE):
     """Handles the end of a conversation.
@@ -550,6 +566,7 @@ def exec_inform(IS, NEXT_MOVES):
     IS.private.bel.add(V.move.content)
 
 
+
 flatten = lambda l: [item for sublist in l for item in sublist]
 
 def powerset(L, fixedLen=False, incShuffles=True):
@@ -613,3 +630,20 @@ def make_command_old(IS):
             yield R(cmd=cmd)
 
     V.cmd.new = False
+
+
+@update_rule
+def expire_expirables(IS):
+
+    @precondition
+    def V():
+        for i in IS.private.bel:
+            if isinstance(i, Prop):
+                if i.expires and i.expires < round(time.time()):
+                    yield R(prop=i, pos=IS.private.bel)
+        for i in IS.shared.com:
+            if isinstance(i, Prop):
+                if i.expires and i.expires < round(time.time()):
+                    yield R(prop=i, pos=IS.shared.com)
+
+    V.pos.remove(V.prop)

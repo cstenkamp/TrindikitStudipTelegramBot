@@ -211,14 +211,15 @@ class Domain(object):
         """Return (a new copy of) the plan that is relevant to 'question', 
         or None if there is no relevant plan.
         """
-        if len(self.check_for_plan(question, IS)) > 0:
-            return
+        missings = self.check_for_plan(question, IS)
+        if len(missings) > 0:
+            return False, missings
         planstack = stack(PlanConstructor)
         # print(question, type(question))
         if self.plans.get(question) is not None:
             for construct in reversed(self.plans.get(question)["plan"]):
                 planstack.push(construct)
-        return planstack
+        return True, planstack
 
 
     def check_for_plan(self, question, IS):

@@ -22,6 +22,7 @@
 from trindikit import Type, is_sequence, Move, SingletonMove
 from types import FunctionType
 import functools
+import time
 
 ######################################################################
 # IBIS semantic types
@@ -47,12 +48,12 @@ class Atomic(Type):
             atom = int(atom)
         except ValueError:
             if not isinstance(atom, bytes):
-                assert atom[0].isalpha()
+                # assert atom[0].isalpha()
                 assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
         self.content = atom
     
     def __str__(self):
-        return "%s" % self.content
+        return "%s" % self.content.__str__()
 
 class Ind(Atomic): 
     """Individuals."""
@@ -78,6 +79,9 @@ class Pred1(Atomic):
         # print(*args, **kwargs) #HIER
         # self._typecheck(args[0])
         super(Pred1, self).__init__(*args, **kwargs)
+
+    def __str__(self):
+        return self.content.__str__()
 
 class Sort(Pred1): 
     """Sort."""
@@ -106,6 +110,9 @@ class Sentence(Type):
 
     def __getnewargs__(self): #https://stackoverflow.com/questions/37753425/cannot-unpickle-pickled-object sonst kann man nicht picklen/unpicklen
         return (self.content, )
+
+    # def __repr__(self):
+    #     return self.content.__repr__()
 
 
 ######################################################################
@@ -144,10 +151,13 @@ class Ans(Sentence):
         else:
             return Sentence.__new__(cls, ans, *args, **kw)
 
+    # def __repr__(self):
+    #     return self.content.__repr__()
+
 
 class Prop(Ans): 
     """Proposition."""
-    def __init__(self, pred, ind=None, yes=True):
+    def __init__(self, pred, ind=None, yes=True, expires=None):
         assert (isinstance(pred, (Pred0, str)) and ind is None or
                 isinstance(pred, Pred1) and isinstance(ind, Ind)), \
                 ("%s must be a predicate, and %s must be None or an individual" % 
@@ -168,6 +178,7 @@ class Prop(Ans):
                 pred = Pred0(pred)
                 ind = None
         self.content = pred, ind, yes
+        self.expires = expires
     
     @property
     def pred(self): return self.content[0]
@@ -182,8 +193,23 @@ class Prop(Ans):
     
     def __str__(self):
         pred, ind, yes = self.content
-        return "%s%s(%s)" % ("" if yes else "-", pred, ind or "")
-    
+        if self.expires:
+            return "%s%s(%s) - expires in %s" % ("" if yes else "-", pred, ind or "", self.expires)
+        else:
+            return "%s%s(%s)" % ("" if yes else "-", pred, ind or "")
+
+    def __repr__(self):
+        if self.expires:
+            expires_in = int(self.__dict__['expires'])-round(time.time())
+            if expires_in > 0:
+                return "Prop({0}) - expires in {1} secs".format(self.__dict__['content'], expires_in)
+            else:
+                return "Prop({}) - expired".format(self.__dict__['content'])
+        else:
+            return "Prop({})".format(self.__dict__['content'])
+        # return "%s(%r)" % (self.__class__, self.__dict__)
+
+
     def _typecheck(self, context):
         pred, ind, yes = self.content
         assert (isinstance(pred, Pred0) and ind is None or
@@ -291,7 +317,7 @@ class Question(Sentence):
 class WhQ(Question): 
     """Wh-question."""
     contentclass = Pred1
-    
+
     def __init__(self, pred):
         assert isinstance(pred, (Pred1, str))
         if isinstance(pred, str):
@@ -304,7 +330,7 @@ class WhQ(Question):
     def pred(self): return self.content
     
     def __str__(self):
-        return "?x.%s(x)" % self.content
+        return "?x.%s(x)" % self.content.__str__()
 
 class YNQ(Question): 
     """Yes/no-question."""
@@ -322,7 +348,7 @@ class YNQ(Question):
     def prop(self): return self.content
     
     def __str__(self):
-        return "?%s" % self.content
+        return "?%s" % self.content.__str__()
 
 class AltQ(Question): 
     """Alternative question."""
@@ -364,7 +390,7 @@ class Command(Sentence):
         self.new = True
 
     def __str__(self):
-        return "cmd: %s" % self.content
+        return "cmd: %s" % self.content.__str__()
 
 
 ######################################################################
@@ -382,7 +408,7 @@ class Statement(Sentence):
         self.content = sent
 
     def __str__(self):
-        return "statement: %s" % self.content
+        return "statement: %s" % self.content.__str__()
 
 
 ##################################################################################################################

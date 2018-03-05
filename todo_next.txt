@@ -12,3 +12,4 @@ Die sätze
 -Wann gehen Vorlesungen/Ferien los | In wie vielen Tagen gehen Vorlesungen/Ferien los?
 -Wann ist dieses/nächstes/Semester X?
 -Welches Semester ist gerade?
+-Wann ist meine Nächste Veranstaltung?
