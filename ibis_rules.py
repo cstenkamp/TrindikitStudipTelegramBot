@@ -23,6 +23,7 @@
 from trindikit import * #update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
 from ibis_types import * #Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
 import itertools
+import ibis_generals
 
 ######################################################################
 # IBIS update rules
@@ -75,7 +76,10 @@ def integrate_usr_ask(IS):
                     yield R(move=move, que=move.content)
 
     IS.shared.qud.push(V.que)
-    IS.private.agenda.push(Respond(V.que))
+    if isinstance(V.que, SecOrdQ): #AND die frage steht noch offen, also V.que.whatever ist noch nicht vergeben
+        IS.private.agenda.push(ClarifyPred2(V.que))
+    else:
+        IS.private.agenda.push(Respond(V.que))
 
 
 @update_rule
@@ -93,6 +97,23 @@ def integrate_usr_impr(IS):
                     yield R(move=move, que=move.content)
 
     IS.shared.qud.push(V.que)
+
+@update_rule
+def integrate_secordq_clarify(IS, DOMAIN):
+
+    @precondition
+    def V():
+        que = IS.shared.qud.top()
+        if isinstance(que, SecOrdQ):
+            #que ist bspw SecOrdQ(Pred2(WhenIs, ['semester', 'WhenSemester'])), arg1[0] ist dann semester. Wenn das im IS ist, dann mach draus arg1[1]
+            tmp = ibis_generals.check_for_something(IS, que.content.arg1[0])
+            if tmp[0]:
+               yield R(que=que, firstarg=tmp[1])
+
+    tmp = Pred1(V.que.content.arg1[1], V.firstarg)
+    IS.shared.qud.pop()
+    IS.shared.qud.push(WhQ(tmp))
+
 
 
 @update_rule
@@ -209,10 +230,28 @@ def downdate_qud_commands(IS, DOMAIN):
 #                 yield R(que=que, issue=issue)
 #     IS.shared.qud.remove(V.issue)
 
+#muss for find_plan kommen!
+@update_rule
+def clarify_pred2(IS, DOMAIN, NEXT_MOVES):
+
+    @precondition
+    def V():
+        move = IS.private.agenda.top()
+        if isinstance(move, ClarifyPred2):
+            que  = "?x." + move.content.content.arg1[0] + "(x)"
+            resolved = any(DOMAIN.resolves(prop, que) for prop in IS.private.bel)
+            if not resolved:
+                yield R(move=move, question=que)
+
+    IS.private.agenda.push(Ask(V.question))
+
+
+
+
 # Finding plans
 
 @update_rule
-def find_plan(IS, DOMAIN, NEXT_MOVES):
+def find_plan1(IS, DOMAIN, NEXT_MOVES):
     """Find a dialogue plan for resolving a question.
 
     If there is a Respond move first in /private/agenda, and 
@@ -222,29 +261,54 @@ def find_plan(IS, DOMAIN, NEXT_MOVES):
     """
     @precondition
     def V():
-        move = IS.private.agenda.top()
-        if isinstance(move, Respond):
-            resolved = any(DOMAIN.resolves(prop, move.content)
-                           for prop in IS.private.bel)
+        move = IS.private.agenda.top(soft=True)
+        scnd = IS.private.agenda.penutop(soft=True)
+        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and str(move.content.content) == scnd.content.content.arg1[0]:
+            move = scnd
+
+        if isinstance(move, (Respond, ClarifyPred2)):
+            resolved = any(DOMAIN.resolves(prop, move.content) for prop in IS.private.bel)
             if not resolved:
                 plan = DOMAIN.get_plan(move.content, IS)
                 if plan[0] and plan[1]:
-                    yield R(move=move, plan=plan[1])
+                    yield R(move=move, plan=plan[1], wasSecond=(move==scnd))
                 elif not plan[0]:
                     string = ", ".join(["%s"]*len(plan[1]))
                     string = "The plan for this cannot be conducted yet, as the following Information is missing: " + string
                     IS.private.agenda.push(Inform(string, plan[1]))
-            else:
-                for prop in IS.private.bel:
-                    if DOMAIN.resolves(prop, move.content):
-                        yield R(move=move, answer=prop)
 
-    if V._typedict.get("plan", False):
+    if not V.wasSecond:
         IS.private.agenda.pop()
-        IS.private.plan = V.plan
-    else:
-        IS.private.agenda.pop()
-        NEXT_MOVES.push(Answer(V.answer))
+    IS.private.plan = V.plan
+
+
+
+
+@update_rule
+def find_plan2(IS, DOMAIN, NEXT_MOVES):
+    """Find a dialogue plan for resolving a question.
+
+    If there is a Respond move first in /private/agenda, and
+    the question is not resolved by any proposition in /private/bel,
+    look for a matching dialogue plan in the domain. Put the plan
+    in /private/plan, and pop the Respond move from /private/agenda.
+    """
+    @precondition
+    def V():
+        move = IS.private.agenda.top(soft=True)
+        scnd = IS.private.agenda.penutop(soft=True)
+        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and str(move.content.content) == scnd.content.content.arg1[0]:
+            move = scnd
+
+        if isinstance(move, (Respond, ClarifyPred2)):
+            resolved = any(DOMAIN.resolves(prop, move.content) for prop in IS.private.bel)
+            if resolved:
+                 for prop in IS.private.bel:
+                     if DOMAIN.resolves(prop, move.content):
+                         yield R(move=move, answer=prop)
+
+    IS.private.agenda.pop()
+    NEXT_MOVES.push(Answer(V.answer))
 
 # Executing plans
 
@@ -459,24 +523,25 @@ def select_answer(IS, DOMAIN, NEXT_MOVES):
     is a relevant proposition in /private/bel which is not in
     /shared/com, add an Answer move to NEXT_MOVES.
     """
-    V = precondition(lambda: 
-                     (R(prop=prop)
-                      for move in [IS.private.agenda.top()]
-                      if isinstance(move, Respond)
-                      for prop in IS.private.bel
-                      if prop not in IS.shared.com
-                      if DOMAIN.relevant(prop, move.content)))
+    # V = precondition(lambda:
+    #                  (R(prop=prop)
+    #                   for move in [IS.private.agenda.top()]
+    #                   if isinstance(move, Respond)
+    #                   for prop in IS.private.bel
+    #                   if prop not in IS.shared.com
+    #                   if DOMAIN.relevant(prop, move.content)))
     
-#     @precondition
-#     def V():
-#         move = IS.private.agenda.top()
-#         if isinstance(move, Respond):
-#             for prop in IS.private.bel:
-#                 if prop not in IS.shared.com:
-#                     if DOMAIN.relevant(prop, move.content):
-#                         yield R(prop=prop)
+    @precondition
+    def V():
+        move = IS.private.agenda.top()
+        if isinstance(move, Respond):
+            for prop in IS.private.bel:
+                if prop not in IS.shared.com:
+                    if DOMAIN.relevant(prop, move.content):
+                        yield R(prop=prop)
 
     NEXT_MOVES.push(Answer(V.prop))
+
 
 @update_rule
 def select_other(IS, NEXT_MOVES):

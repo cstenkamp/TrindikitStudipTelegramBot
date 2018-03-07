@@ -58,19 +58,31 @@ def semesterdays(auth_string, what, NEXT_MOVES, IS):
     currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
     if what == "db":
         if currently_seminars:
-            return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
-        else:
-            return State("The Break is right now!"), NEXT_MOVES.push
-    elif what == "wb" or what == "wl":
-        return State(get_semester_info(all_semesters, next_semester)), NEXT_MOVES.push
-    else: #what == "dl"
-        if not currently_seminars:
-            return Prop(Pred1("DaysLectures"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time())+30), IS.private.bel.add
+            return Prop(Pred1("DaysBreak"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time()) + 3600), IS.private.bel.add
             # return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
         else:
-            return State("There are Lectures right now!"), NEXT_MOVES.push
+            return Prop(Pred1("DaysBreak"), Ind("The break is right now!"), True, expires=round(time.time())+3600), IS.private.bel.add
+            # return State("The Break is right now!"), NEXT_MOVES.push
+    elif what == "wb":
+        return Prop(Pred1("WhenBreak"), Ind(str(get_semester_info(all_semesters, next_semester))), True, expires=round(time.time())+3600*240), IS.private.bel.add
+    elif what == "wl":
+        return Prop(Pred1("WhenLectures"), Ind(str(get_semester_info(all_semesters, next_semester))), True, expires=round(time.time()) + 3600 * 240), IS.private.bel.add
+        # return State(get_semester_info(all_semesters, next_semester)), NEXT_MOVES.push
+    else: #what == "dl"
+        if not currently_seminars:
+            return Prop(Pred1("DaysLectures"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time())+3600), IS.private.bel.add
+            # return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
+        else:
+            return Prop(Pred1("DaysLectures"), Ind("There are lectures right now!"), True, expires=round(time.time())+3600), IS.private.bel.add
+            # return State("There are Lectures right now!"), NEXT_MOVES.push
 
 
+@executable_rule
+def get_semester_inf(sem_name, auth_string, IS):
+    all_semesters = load("semesters", auth_string)['semesters']
+    result = get_semester_info(all_semesters, sem_name)
+    IS.shared.com.remove("semester")
+    return Prop(Pred1("WhenSemester", sem_name), Ind(result), True, expires=round(time.time())+3600*240), IS.private.bel.add
 
 
 
@@ -106,6 +118,25 @@ def download_file2(auth_string, coursename, filename):
             bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
 
 
+class StudIP_grammar(CFG_Grammar):
+
+    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None):
+        res = super().interpret(input, DOMAIN, anyString=anyString, moves=moves, IS=IS)
+        if res:
+            return res
+        else: #bspw empty set
+            if any(isinstance(move.content, Question) and move.content.content.content == 'semester' for move in moves):
+                try:
+                    tmp = ibis_generals.check_for_something(IS, "auth_string")
+                    if tmp[0]: #dann kann "this" und "next" nachgucken
+                        this, next = get_semesters(tmp[1].content)
+                        return Answer(ShortAns(Ind(get_relative_semester_name(input, this, next)), True))
+                    else:
+                        return Answer(ShortAns(Ind(get_semester_name(input)), True))
+                except ValueError:
+                    pass
+
+
 
 def create_domain():
     preds0 = 'return', 'needvisa', 'studip'
@@ -125,8 +156,15 @@ def create_domain():
               'password': 'string',
               'coursename': 'string', #'studip_course'
               'filename': 'string', #'studip_filename'
-              'DaysLectures': 'int'
+              'DaysLectures': 'int',
+              'DaysBreak': 'int',
+              'WhenLectures': 'int',
+              'WhenBreak': 'int',
+              'WhenSemester': 'string',
+              'semester': 'semester'
               }
+
+    preds2 = {'WhenIs': ['semester', 'WhenSemester']} #1st element is first ind needed, second is the resulting pred1!
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
@@ -141,7 +179,7 @@ def create_domain():
              'studip_course': courses
              }
 
-    domain = ibis_generals.Domain(preds0, preds1, sorts)
+    domain = ibis_generals.Domain(preds0, preds1, preds2, sorts)
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -167,6 +205,8 @@ def create_domain():
                     Inform("The Auth-string is: %s", ["com(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
                    ])
 
+    #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
+
     domain.add_plan("!(download)",
                     [Findout("?x.coursename(x)"),
                      ExecuteFunc(download_file, "?x.auth_string(x)")
@@ -191,20 +231,24 @@ def create_domain():
                     [ExecuteFunc(partial(semesterdays, what="dl"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    domain.add_plan("!(WhenLectures)",
+    domain.add_plan("?x.WhenLectures(x)",
                     [ExecuteFunc(partial(semesterdays, what="wl"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    domain.add_plan("!(DaysBreak)",
+    domain.add_plan("?x.DaysBreak(x)",
                     [ExecuteFunc(partial(semesterdays, what="db"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    domain.add_plan("!(WhenBreak)",
+    domain.add_plan("?x.WhenBreak(x)",
                     [ExecuteFunc(partial(semesterdays, what="wb"), "?x.auth_string(x)")],
-                    conditions = ["com(auth_string)"])
+                    conditions=["com(auth_string)"])
 
 
-    #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
+    domain.add_plan("?x.y.WhenIs(y)(x)", #TODO - hier kommt die meldung "can't be done weil following info missing ist..." nicht mehr!
+                    [ExecuteFunc(get_semester_inf, "?x.semester(x)", "?x.auth_string(x)")],
+                    conditions=["com(auth_string)"])
+
+
 
 
 
@@ -244,7 +288,7 @@ class TravelDB(ibis_generals.Database):
         self.entries.append(entry)
 
 
-class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
+class TravelGrammar(ibis_generals.SimpleGenGrammar, StudIP_grammar):
     def generateMove(self, move):
         try:
             assert isinstance(move, Answer)

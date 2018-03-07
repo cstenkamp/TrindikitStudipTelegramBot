@@ -296,6 +296,11 @@ def get_semester_info(all_semesters, semester):
             % (s['title'], s['begin_iso'][:10], s['seminars_begin_iso'][:10], s['seminars_end_iso'][:10], s['end_iso'][:10] )
 
 
+def get_semesters(auth_string):
+    all_semesters = load("semesters", auth_string)['semesters']
+    this_semester = [i["title"] for i in all_semesters if int(i["begin"]) < time.time() < int(i["end"])][0]
+    next_semester = [all_semesters[i+1]['title'] for i in range(len(all_semesters)) if all_semesters[i]['title'] == this_semester][0]
+    return this_semester, next_semester
 
 
 

@@ -31,7 +31,8 @@ import inspect
 import functools
 import collections
 import sys
-
+from copy import deepcopy
+import ibis_types
 
 if settings.MULTIUSER:
     import stateDB
@@ -205,6 +206,15 @@ class record(object):
         self._typecheck(key)
         del self.__dict__[key]
 
+
+    # def __contains__(self, item):
+    #     for content in self.__dict__[_TYPEDICT].keys():
+    #         if isinstance(self.__dict__[content], record):
+    #             print("REC", type(self.__dict__[content]), self.__dict__[content].__contains__(item))
+    #         else:
+    #             print(self.__dict__[content])
+
+
     def pprint(self, prefix="", indent="    "):
         """Pretty-print a record to standard output."""
         print(self.pformat(prefix, indent)) #NICHT abhängig von verbose, sind nur IS und MVIS
@@ -234,6 +244,16 @@ def R(**kw):
 ######################################################################
 # stacks and similar types
 ######################################################################
+
+class set(set):
+    def remove(self, elem):
+        for i in self:
+            if isinstance(i, ibis_types.Prop):
+                if str(i.content[0]) == elem:
+                    elem = i
+                    break
+        super().remove(elem)
+
 
 class stack(object):
     """Stacks with (optional) typechecking. 
@@ -265,15 +285,30 @@ class stack(object):
         else:
             raise ValueError("The argument (%s) should be a type or a sequence" % elements)
 
-    def top(self):
+    def top(self, soft=False):
         """Return the topmost element in a stack. 
         
         If the stack is empty, raise StopIteration instead of IndexError. 
         This means that the method can be used in preconditions for update rules.
         """
         if len(self.elements) == 0:
-            raise StopIteration
+            if soft:
+                return None
+            else:
+                raise StopIteration
         return self.elements[-1]
+
+
+    def penutop(self, soft=False):
+        if len(self.elements) <= 1:
+            if soft:
+                return None
+            else:
+                raise StopIteration
+        return self.elements[-2]
+
+    def remove(self, elem):
+        return self.elements.remove(elem)
 
     def pop(self):
         """Pop the topmost value in a stack. 
@@ -311,7 +346,11 @@ class stack(object):
 
     def __repr__(self):
         return "<stack with %s elements>" % len(self)
-    
+
+    def __contains__(self, item):
+        return item in self.elements
+
+
     def aslist(self):
         return self.elements
 
@@ -563,7 +602,7 @@ def do(*rules):
 
 def maybe(*rules):
     """Execute the first rule whose precondition matches. 
-    
+
     If no rule matches, do *not* report a failure.
 
     If the first argument is a DialogueManager instance, then that 
@@ -574,6 +613,14 @@ def maybe(*rules):
         return do(*rules)
     except PreconditionFailure:
         pass
+
+
+def maybe_all(*rules):
+    for rule in rules:
+        try:
+            return do(rule)
+        except PreconditionFailure:
+            pass
 
 def repeat(*rules):
     """Repeat executing the group of rules as long as possible.
@@ -902,9 +949,10 @@ class SimpleInput(object):
         Calls GRAMMAR.interpret to convert the string in INPUT
         to a set of LATEST_MOVES.
         """
+        old_moves = deepcopy(LATEST_MOVES)
         LATEST_MOVES.clear()
         if INPUT.value != '':
-            move_or_moves = GRAMMAR.interpret(INPUT.get(), anyString = freetextquestion(IS,DOMAIN))
+            move_or_moves = GRAMMAR.interpret(INPUT.get(), DOMAIN, anyString = freetextquestion(IS,DOMAIN), moves=old_moves, IS=IS)
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht

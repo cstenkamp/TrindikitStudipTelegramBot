@@ -7,6 +7,8 @@ USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]
 
 ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
 ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
+ASK[sem=[Ask=?q, subtype=SecOrdQ]] -> SecOrdQ[q=?q]
+
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
 
@@ -33,10 +35,14 @@ CMD[con=download2] -> 'download2'
 CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
 
 WHQ[q=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?' | 'DaysLectures'
-CMD[con=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?'
+WHQ[q=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?'
 
-CMD[con=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?'
-CMD[con=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
+WHQ[q=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?' | 'S'
+WHQ[q=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
+
+SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?' | 'W'
+
+SecOrdQ[q=WhenIs, f=next] -> 'Wann ist nächstes Semester?'
 
 CAT[cat=coursename, ind=krypto] -> 'krypto'
 

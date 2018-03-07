@@ -154,6 +154,7 @@ class IBIS1(IBIS):
         repeat(self.expire())
         maybe(self.integrate())
         maybe(self.downdate_qud())
+        maybe(self.clarify())
         maybe(self.load_plan())
         repeat(self.exec_plan())
         maybe(self.downdate_qud2())
@@ -170,7 +171,8 @@ class IBIS1(IBIS):
                               # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                               integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
-    load_plan     = rule_group(mention_command_conditions, recover_plan, find_plan)
+    clarify       = rule_group(clarify_pred2)
+    load_plan     = rule_group(integrate_secordq_clarify, mention_command_conditions, recover_plan, find_plan1, find_plan2)
     exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func)
     downdate_qud2 = rule_group(downdate_qud_commands)
     finalize_IS = rule_group(make_command_old, handle_empty_plan_agenda_qud)

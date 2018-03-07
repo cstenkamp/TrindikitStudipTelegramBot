@@ -49,7 +49,8 @@ class Atomic(Type):
         except ValueError:
             if not isinstance(atom, bytes):
                 # assert atom[0].isalpha()
-                assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
+                # assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
+                assert all(ch.isalnum() or ch in "_-+: \n.?()/!" for ch in atom)
         self.content = atom
     
     def __str__(self):
@@ -65,6 +66,7 @@ class Pred0(Atomic):
     def _typecheck(self, context):
         assert self.content in context.preds0
 
+
 class Pred1(Atomic): 
     """1-place predicates."""
     def apply(self, ind):
@@ -76,12 +78,62 @@ class Pred1(Atomic):
         assert self.content in context.preds1
 
     def __init__(self, *args, **kwargs):
-        # print(*args, **kwargs) #HIER
+        # print("PRED1",*args, **kwargs) #HIER
         # self._typecheck(args[0])
-        super(Pred1, self).__init__(*args, **kwargs)
+        super(Pred1, self).__init__(args[0], **kwargs)
+        if len(args) > 1:
+            self.arg2 = args[1]
 
     def __str__(self):
         return self.content.__str__()
+
+    def __repr__(self):
+        if hasattr(self, "arg2"):
+            return "Pred1(" + self.content + ", " + self.arg2 if isinstance(self.arg2, str) else self.arg2.content + ")"
+        else:
+            return "Pred1("+self.content+")"
+
+
+
+class Pred2(Atomic):
+    """2-place predicates."""
+    def apply(self, ind):
+        """Apply the predicate to an individual, returning a 1st order predicate."""
+        assert isinstance(ind, Ind), "%s must be an individual" % ind
+        return Pred1(self, ind)
+
+    def _typecheck(self, context):
+        assert self.content in context.preds2
+
+    def __init__(self, pred, domaincontext, *args, **kwargs):
+        # print("PRED2", *args, **kwargs) #HIER
+        # # self._typecheck(pred)
+        # print(pred, type(pred))
+        assert isinstance(pred, (str, Pred2))
+        self.arg1 = domaincontext.preds2.get(pred, "") #bspw ['semester', 'WhenSemester'] -> means: you need to get to know semester, such that it becomes the 1-order-predicate "WhenSemester"
+        if isinstance(pred, str) and len(pred) > 0:
+            if pred.startswith('?x.y.') and pred.endswith('(y)(x)'):
+                self.appliedContent = pred[3:-3]
+                self.content = self.appliedContent[2:-3]
+            elif pred.startswith('?x.') and pred.endswith('(x)'):
+                self.appliedContent = pred
+                self.content = self.appliedContent[3:-3]
+            else:
+                self.content = pred
+                self.appliedContent = pred
+        else:
+            self.content = pred.content #noo clue warum die Pred1 und Pred2 immer 2 mal gerunnt werden, einmal mit string und einmal mit PredX als argument >.<
+            self.appliedContent = pred.content
+
+    def __str__(self):
+        if hasattr(self, "arg1"):
+            return self.content+"("+str(self.arg1[0])+")"
+        return self.contentclass
+
+    def __repr__(self):
+        return "Pred2("+self.content+", "+str(self.arg1)+")"
+
+
 
 class Sort(Pred1): 
     """Sort."""
@@ -302,7 +354,9 @@ class Question(Sentence):
         if cls is Question:
             # print("QUESTION's que:", que)
             assert isinstance(que, str)
-            assert not args and not kw
+            if que.startswith('?x.y.') and que.endswith('(y)(x)'):
+                return SecOrdQ(que[5:-6], args[0])
+            assert not args and not kw #second-order-question erwartet als zweites arg die domain
             if que.startswith('?x.') and que.endswith('(x)'):
                 return WhQ(que[3:-3])
             elif que.startswith('?'):
@@ -313,8 +367,33 @@ class Question(Sentence):
             return Sentence.__new__(cls, que, *args, **kw)
 
 
+class SecOrdQ(Question):
+    contentclass = Pred2
 
-class WhQ(Question): 
+    def __init__(self, pred, domaincontext=None):
+        assert isinstance(pred, (Pred2, str))
+        if isinstance(pred, str):
+            self.content = Pred2(pred, domaincontext)
+        else:
+            self.content = pred
+
+
+    def _typecheck(self, context=None):
+        assert isinstance(self.content, self.contentclass)
+        if hasattr(self.content, '_typecheck'):
+            self.content._typecheck(context)
+
+
+    def __repr__(self):
+        return "SecOrdQ({})".format(self.content)
+
+    def __str__(self):
+        if hasattr(self.content, "arg1"):
+            return "?x.y." + str(self.content) + "(x)"
+        return "?x.y." + str(self.content) + "(y)(x)"
+
+
+class WhQ(Question):
     """Wh-question."""
     contentclass = Pred1
 
@@ -325,12 +404,20 @@ class WhQ(Question):
                 pred = pred[3:-3]
             pred = Pred1(pred)
         self.content = pred
-    
+
+
     @property
     def pred(self): return self.content
-    
+
     def __str__(self):
-        return "?x.%s(x)" % self.content.__str__()
+        if hasattr(self.content, "arg2"):
+            return "?x.%s(%s)(x)" % (self.content.__str__(), self.content.arg2)
+        else:
+            return "?x.%s(x)" % self.content.__str__()
+
+    def __repr__(self):
+        return "WhQ("+str(self.content)+")"
+
 
 class YNQ(Question): 
     """Yes/no-question."""
@@ -462,11 +549,19 @@ class ICM(Move):
 class PlanConstructor(Type): 
     """An abstract base class for plan constructors."""
 
-class Respond(PlanConstructor): 
+class ClarifyPred2(PlanConstructor):
+    contentclass = Question
+
+    def __str__(self):
+        return "ClarifyPred2('%s')" % self.content.__str__()
+
+
+class Respond(PlanConstructor):
     contentclass = Question
 
     def __str__(self):
         return "Respond('%s')" % self.content.__str__()
+
 
 class ConsultDB(PlanConstructor):
     contentclass = Question

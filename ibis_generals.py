@@ -48,7 +48,7 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
                 str += "."
         return str
 
-    def interpret(self, input, anyString=False): #Haupt-Sache die cfg_grammar überschreibt
+    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None): #Haupt-Sache von cfg_grammar überschrieben wird
         """Parse an input string into a dialogue move or a set of moves."""
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
@@ -123,13 +123,23 @@ class Domain(object):
         where each sort is mapped to a collection of its individuals.
     """
     
-    def __init__(self, preds0, preds1, sorts):
+    def __init__(self, preds0, preds1, preds2, sorts):
         self.preds0 = set(preds0)                           # return
         self.preds1 = dict(preds1)                          # city, day-of, ...
+        self.preds2 = dict(preds2)
         self.sorts = dict(sorts)                            # {'city': ('paris', 'london', 'berlin')}
         self.inds = dict((ind,sort) for sort in self.sorts 
                          for ind in self.sorts[sort])       # {'berlin': 'city', 'train': 'means', 'today': 'day', 'tuesday': 'day', ...}
         self.plans = {}
+
+    def get_sort_from_ind(self, answer):
+        res = self.inds.get(answer)
+        if res: return res
+        if "SS" in answer and any(str(i) in answer for i in range(2000, 2050)) or "WS" in answer and any(str(i)+'/'+str(i-1999).zfill(2) in answer for i in range(2000, 2050)):
+            return "semester"
+
+    def get_sort_from_question(self, question):
+        return self.preds1.get(question)
 
 
     def add_plan(self, trigger, plan, conditions=[]):  #("?x.price(x)", [Findout("?x.how(x)")])
@@ -138,11 +148,15 @@ class Domain(object):
             "The plan trigger %s must be a Question" % trigger
         if isinstance(trigger, str):
             try:
-                trigger = Question(trigger)
+                trigger = Question(trigger, self) #second-order-questions brauchen die preds2-typen argh Kill me
             except:
-                trigger = Command(trigger)
+                try:
+                    trigger = Question(trigger)
+                except:
+                    trigger = Command(trigger)
         assert trigger not in self.plans, \
             "There is already a plan with trigger %s" % trigger
+        # print("TRIGGERTYPE", type(trigger))
         trigger._typecheck(self)
         for m in plan:
             m._typecheck(self)
@@ -162,8 +176,8 @@ class Domain(object):
             if isinstance(answer, Prop):
                 return answer.pred == question.pred
             elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
-                sort1 = self.inds.get(answer.ind.content)
-                sort2 = self.preds1.get(question.pred.content)
+                sort1 = self.get_sort_from_ind(answer.ind.content)
+                sort2 = self.get_sort_from_question(question.pred.content)
                 return (sort1 and sort2 and sort1 == sort2) or sort2 == "string" #letzterer Fall ist freetextquestion
         elif isinstance(question, YNQ):
             # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
@@ -230,23 +244,10 @@ class Domain(object):
             else:
                 mustbe = [False] * len(plan.get("conditions"))
                 relevants = {}
-                index = -1
-                for i in plan.get("conditions"):
-                    index += 1
-                    if i.startswith("bel("):
-                        relevantpart = i[4:-1]
-                        for j in IS.private.bel:
-                            if isinstance(j, Prop):
-                                if str(j.content[0]) == relevantpart:
-                                    mustbe[index] = True
-                                    relevants[i] = j.content[1]
-                    elif i.startswith("com("):
-                        relevantpart = i[4:-1]
-                        for j in IS.shared.com:
-                            if isinstance(j, Prop):
-                                if str(j.content[0]) == relevantpart:
-                                    mustbe[index] = True
-                                    relevants[i] = j.content[1]
+                for ind, cond in enumerate(plan.get("conditions")):
+                    must, cont = check_for_something(IS, cond)
+                    mustbe[ind] = must
+                    relevants[cond] = cont
                 if all(mustbe):
                     return []
                 else:
@@ -254,3 +255,25 @@ class Domain(object):
                     missing = [i[0] for i in missing if not i[1]]
                     return missing
         return []
+
+
+def check_for_something(IS, something):
+    if something.startswith("bel("):
+        relevantpart = something[4:-1]
+        for j in IS.private.bel:
+            if isinstance(j, Prop):
+                if str(j.content[0]) == relevantpart:
+                    return True, j.content[1]
+    elif something.startswith("com("):
+        relevantpart = something[4:-1]
+        for j in IS.shared.com:
+            if isinstance(j, Prop):
+                if str(j.content[0]) == relevantpart:
+                    return True, j.content[1]
+    else:
+        tmp = check_for_something(IS, "bel("+something+")")
+        if tmp[0]:
+            return tmp
+        else:
+            return check_for_something(IS, "com("+something+")")
+    return False, None

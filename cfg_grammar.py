@@ -19,7 +19,7 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-from ibis_types import Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0, Command, Imperative, ShortAns
+from ibis_types import * #Answer, Ask, WhQ, Pred1, Quit, YNQ, Prop, Pred0, Command, Imperative, ShortAns
 import nltk  #parse ist deprecated, https://stackoverflow.com/questions/31308497/attributeerror-featurechartparser-object-has-no-attribute-nbest-parse
 from ibis_generals import Grammar
 import settings
@@ -46,9 +46,9 @@ class CFG_Grammar(Grammar):
         self.parser = nltk.parse.FeatureEarleyChartParser(nltk.grammar.FeatureGrammar.fromstring(preprocessed), trace=1 if settings.VERBOSE["Parse"] else 0)
 
 
-    def interpret(self, input, anyString=False):
+    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None): #überschreibe ich nochmal in studip
         """Parse an input string into a dialogue move or a set of moves."""
-        try: return self.parseString(input, anyString)
+        try: return self.parseString(input, DOMAIN)
         except: pass
         try: return eval(input)
         except: pass
@@ -57,16 +57,19 @@ class CFG_Grammar(Grammar):
         return set([])
 
 
-    def parseString(self, input, anyString):
-        if not anyString:
-            input = self.preprocess_input(input)
-        tokens = input.split()
+    def parseString(self, input, DOMAIN):
+        tokens = self.preprocess_input(input).split()
         trees = next(self.parser.parse(tokens))
         root = trees[0].label()
         try:
-            return self.sem2move(root['sem'])
+            return self.sem2move(root['sem'], DOMAIN)
         except:
-            return self.type2move(root[list(dict(root).keys())[0]]) #geez.
+            pass
+        try:
+            return self.type2move(root[list(dict(root).keys())[0]])  # geez.
+        except:
+            pass
+        return ""
 
 
     def preprocess_input(self, input):
@@ -80,9 +83,10 @@ class CFG_Grammar(Grammar):
     def type2move(self, roottype):
         if roottype == "QUIT":
             return Quit()
+        raise Exception
 
 
-    def sem2move(self, sem):
+    def sem2move(self, sem, DOMAIN):
         #sem bspw: [Ask = 'needvisa'] [ subtype = 'YNQ']
         try: return Answer(sem['Answer'])
         except: pass
@@ -93,12 +97,15 @@ class CFG_Grammar(Grammar):
             #return Answer(Prop((Pred1(pred, Ind(ind), True))))
             return Answer(pred+"("+ind+")")
         except: pass
+
         try:
             sem["Ask"]
             if sem["subtype"] == "YNQ":
                 return Ask(YNQ(Prop(Pred0(sem["Ask"]))))
             elif sem["subtype"] == "WHQ":
                 return Ask(WhQ(Pred1(sem['Ask'])))
+            elif sem["subtype"] == "SecOrdQ":
+                return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)))
         except:
             pass
         try:

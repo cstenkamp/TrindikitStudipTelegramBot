@@ -117,7 +117,7 @@ class IBIS2(MultiUserIBIS):
                                 integrate_answer, integrate_greet,      #integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                                 integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
-    load_plan     = rule_group(recover_plan, find_plan)
+    load_plan     = rule_group(integrate_secordq_clarify, mention_command_conditions, recover_plan, clarify_pred2, find_plan)
     exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func, mention_command_conditions)
     downdate_qud2 = rule_group(downdate_qud_commands)
     finalize_IS = rule_group(make_command_old, handle_empty_plan_agenda_qud)
