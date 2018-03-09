@@ -7,6 +7,7 @@ import os.path as p
 import os
 
 SAVE_IS = False
+USE_SAVED = True
 
 ######################################################################
 # IBIS information state
@@ -15,7 +16,7 @@ SAVE_IS = False
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        if SAVE_IS:
+        if USE_SAVED:
             self.pload_IS("CurrState.pkl")
         else:
             self.reset_IS()
@@ -184,7 +185,7 @@ class IBIS1(IBIS):
         maybe(self.select_move())
 
     select_action = rule_group(select_respond, select_from_plan, reraise_issue)
-    select_move   = rule_group(select_answer, select_ask, select_other)
+    select_move   = rule_group(select_answer, select_ask, select_other, reselect_ask)
     select_icm    = rule_group(select_icm_sem_neg)
 
 

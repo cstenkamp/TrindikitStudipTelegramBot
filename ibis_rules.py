@@ -19,7 +19,6 @@
 # and the GNU Lesser General Public License along with this program.  
 # If not, see <http://www.gnu.org/licenses/>.
 
-
 from trindikit import * #update_rule, precondition, Speaker, ProgramState, Move, R, record, freetextquestion
 from ibis_types import * #Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
 import itertools
@@ -130,8 +129,10 @@ def integrate_answer(IS, DOMAIN):
             if isinstance(move, Answer):
                 if DOMAIN.relevant(move.content, que):
                     yield R(que=que, ans=move.content)
+
     prop = DOMAIN.combine(V.que, V.ans)
     IS.shared.com.add(prop)
+    IS.private.bel.remove(prop, silent=True)
 
 @update_rule
 def integrate_greet(IS): 
@@ -445,9 +446,9 @@ def select_respond(IS, DOMAIN):
         if not IS.private.agenda and not IS.private.plan:
             que = IS.shared.qud.top()
             for prop in IS.private.bel:
-                if prop not in IS.shared.com:
-                    if DOMAIN.relevant(prop, que):
-                        yield R(que=que, prop=prop)
+                # if prop not in IS.shared.com: #I get warum das nicht so sein sollte, aber wenn das hier ist fragt er halt mich sachen die ich ihn frage, weil statt select_respond halt reraise_issue triggert
+                if DOMAIN.relevant(prop, que):
+                    yield R(que=que, prop=prop)
     IS.private.agenda.push(Respond(V.que))
 
 
@@ -515,6 +516,24 @@ def select_ask(IS, NEXT_MOVES):
         if isinstance(move, Raise) and move.content == V.que:
             IS.private.plan.pop()
 
+
+@update_rule
+def reselect_ask(IS, NEXT_MOVES):
+    """this one cames after all the other select_... rules. select_ask for example re-asks a question originally
+    from the plan (at first select_from_plan, then select_ask). If however a 2-place-pred was not correctly answered,
+    the system doesn't know at all what to ask anymore --> this will look if something was not correctly answered, there
+    is no other question to be asked, and if so, re-asks the top-qud-question"""
+    @precondition
+    def V():
+        qud = IS.shared.qud.top(soft=True)
+        if qud and NEXT_MOVES:
+            if all(isinstance(i, ICM) for i in NEXT_MOVES):
+                yield R(qud=qud)
+
+    NEXT_MOVES.push(Ask(V.qud))
+
+
+
 @update_rule
 def select_answer(IS, DOMAIN, NEXT_MOVES):
     """Select an Answer move from the agenda.
@@ -536,9 +555,9 @@ def select_answer(IS, DOMAIN, NEXT_MOVES):
         move = IS.private.agenda.top()
         if isinstance(move, Respond):
             for prop in IS.private.bel:
-                if prop not in IS.shared.com:
-                    if DOMAIN.relevant(prop, move.content):
-                        yield R(prop=prop)
+                # if prop not in IS.shared.com: #siehe select_respond
+                if DOMAIN.relevant(prop, move.content):
+                    yield R(prop=prop)
 
     NEXT_MOVES.push(Answer(V.prop))
 

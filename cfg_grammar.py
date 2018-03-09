@@ -101,11 +101,11 @@ class CFG_Grammar(Grammar):
         try:
             sem["Ask"]
             if sem["subtype"] == "YNQ":
-                return Ask(YNQ(Prop(Pred0(sem["Ask"]))))
+                return Ask(YNQ(Prop(Pred0(sem["Ask"]))), askedby="USR")
             elif sem["subtype"] == "WHQ":
-                return Ask(WhQ(Pred1(sem['Ask'])))
+                return Ask(WhQ(Pred1(sem['Ask'])), askedby="USR")
             elif sem["subtype"] == "SecOrdQ":
-                return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)))
+                return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)), askedby="USR")
         except:
             pass
         try:

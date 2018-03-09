@@ -33,6 +33,7 @@ import collections
 import sys
 from copy import deepcopy
 import ibis_types
+import pickle
 
 if settings.MULTIUSER:
     import stateDB
@@ -246,13 +247,19 @@ def R(**kw):
 ######################################################################
 
 class set(set):
-    def remove(self, elem):
-        for i in self:
-            if isinstance(i, ibis_types.Prop):
-                if str(i.content[0]) == elem:
-                    elem = i
-                    break
-        super().remove(elem)
+    def remove(self, elem, silent=False):
+        try:
+            for i in self:
+                if isinstance(i, ibis_types.Prop):
+                    if str(i.content[0]) == elem:
+                        elem = i
+                        break
+            super().remove(elem)
+        except Exception as e:
+            if silent:
+                pass
+            else:
+                raise e
 
 
 class stack(object):
@@ -307,8 +314,14 @@ class stack(object):
                 raise StopIteration
         return self.elements[-2]
 
-    def remove(self, elem):
-        return self.elements.remove(elem)
+    def remove(self, elem, silent=False):
+        try:
+            return self.elements.remove(elem)
+        except Exception as e:
+            if silent:
+                pass
+            else:
+                raise e
 
     def pop(self):
         """Pop the topmost value in a stack. 
@@ -929,6 +942,11 @@ def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper merg
     if cmd == "/showIS":
         print(IS.pformat())
         print("")
+    elif cmd == "/save":
+        odict = IS.asdict(recursive=True)
+        with open("CurrState.pkl", 'wb') as f:
+            pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
+
 
 
 

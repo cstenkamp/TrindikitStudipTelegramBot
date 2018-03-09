@@ -94,7 +94,6 @@ class Pred1(Atomic):
             return "Pred1("+self.content+")"
 
 
-
 class Pred2(Atomic):
     """2-place predicates."""
     def apply(self, ind):
@@ -519,6 +518,19 @@ class Ask(Move):
 
     def __str__(self):
         return "Ask('%s')" % self.content.__str__()
+
+    def __repr__(self):
+        if hasattr(self, 'askedby'):
+            return "Ask('%s' by %s)" % (self.content.__str__(), self.askedby)
+        else:
+            return "Ask('%s')" % self.content.__str__()
+
+    def __init__(self, *args, **kwargs):
+        self.askedby = kwargs.get('askedby', 'SYS')
+        kwargs.pop('askedby', None)
+        super().__init__(*args, **kwargs)
+
+
 
 class Answer(Move): 
     contentclass = Ans
