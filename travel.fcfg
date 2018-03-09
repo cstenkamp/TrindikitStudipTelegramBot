@@ -7,7 +7,7 @@ USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]
 
 ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
 ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
-ASK[sem=[Ask=?q, subtype=SecOrdQ]] -> SecOrdQ[q=?q]
+ASK[sem=[Ask=?q, subtype=SecOrdQ, f=?f]] -> SecOrdQ[q=?q, f=?f]
 
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
@@ -42,7 +42,7 @@ WHQ[q=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] F
 
 SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?' | 'W'
 
-SecOrdQ[q=WhenIs, f=next] -> 'Wann ist nächstes Semester?'
+SecOrdQ[q=WhenIs, f=next_semester] -> 'Wann ist nächstes Semester?' | 'ww'
 
 CAT[cat=coursename, ind=krypto] -> 'krypto'
 

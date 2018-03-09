@@ -80,9 +80,12 @@ class Pred1(Atomic):
     def __init__(self, *args, **kwargs):
         # print("PRED1",*args, **kwargs) #HIER
         # self._typecheck(args[0])
-        super(Pred1, self).__init__(args[0], **kwargs)
+        super(Pred1, self).__init__(args[0], **{})
         if len(args) > 1:
             self.arg2 = args[1]
+        if kwargs.get("createdfrom"):
+            self.createdfrom = kwargs["createdfrom"]
+
 
     def __str__(self):
         return self.content.__str__()
@@ -125,9 +128,9 @@ class Pred2(Atomic):
             self.appliedContent = pred.content
 
     def __str__(self):
-        if hasattr(self, "arg1"):
+        if hasattr(self, "arg1") and len(self.arg1) > 1:
             return self.content+"("+str(self.arg1[0])+")"
-        return self.contentclass
+        return self.content
 
     def __repr__(self):
         return "Pred2("+self.content+", "+str(self.arg1)+")"

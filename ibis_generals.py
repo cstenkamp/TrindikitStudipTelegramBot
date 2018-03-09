@@ -48,7 +48,7 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
                 str += "."
         return str
 
-    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None): #Haupt-Sache von cfg_grammar überschrieben wird
+    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None): #Haupt-Sache von cfg_grammar überschrieben wird
         """Parse an input string into a dialogue move or a set of moves."""
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
@@ -123,13 +123,14 @@ class Domain(object):
         where each sort is mapped to a collection of its individuals.
     """
     
-    def __init__(self, preds0, preds1, preds2, sorts):
+    def __init__(self, preds0, preds1, preds2, sorts, converters):
         self.preds0 = set(preds0)                           # return
         self.preds1 = dict(preds1)                          # city, day-of, ...
         self.preds2 = dict(preds2)
         self.sorts = dict(sorts)                            # {'city': ('paris', 'london', 'berlin')}
         self.inds = dict((ind,sort) for sort in self.sorts 
                          for ind in self.sorts[sort])       # {'berlin': 'city', 'train': 'means', 'today': 'day', 'tuesday': 'day', ...}
+        self.converters = converters #welche funktionen nötig sind um aus strings "sorts" zu machen
         self.plans = {}
 
     def get_sort_from_ind(self, answer):
@@ -154,6 +155,11 @@ class Domain(object):
                     trigger = Question(trigger)
                 except:
                     trigger = Command(trigger)
+
+        if isinstance(trigger, SecOrdQ):
+            pred1 = "?x."+self.preds2[str(trigger.content)][1]+"(x)"
+            self.add_plan(pred1, plan, conditions)
+
         assert trigger not in self.plans, \
             "There is already a plan with trigger %s" % trigger
         # print("TRIGGERTYPE", type(trigger))
@@ -168,6 +174,8 @@ class Domain(object):
 
     def relevant(self, answer, question):
         """True if 'answer' is relevant to 'question'."""
+        if isinstance(answer, Answer):
+            answer = answer.content
         if not isinstance(answer, (ShortAns, Prop)): #YesNo is a subclass of ShortAns
             return False
         if not isinstance(question, Question):
@@ -195,6 +203,8 @@ class Domain(object):
     def resolves(self, answer, question):
         """True if 'question' is resolved by 'answer'."""
         if self.relevant(answer, question):
+            if isinstance(answer, Answer):
+                answer = answer.content
             if isinstance(question, YNQ):
                 return True
             return answer.yes == True

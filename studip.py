@@ -81,7 +81,7 @@ def semesterdays(auth_string, what, NEXT_MOVES, IS):
 def get_semester_inf(sem_name, auth_string, IS):
     all_semesters = load("semesters", auth_string)['semesters']
     result = get_semester_info(all_semesters, sem_name)
-    IS.shared.com.remove("semester")
+    IS.shared.com.remove("semester", silent=True)
     return Prop(Pred1("WhenSemester", sem_name), Ind(result), True, expires=round(time.time())+3600*240), IS.private.bel.add
 
 
@@ -120,8 +120,8 @@ def download_file2(auth_string, coursename, filename):
 
 class StudIP_grammar(CFG_Grammar):
 
-    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None):
-        res = super().interpret(input, DOMAIN, anyString=anyString, moves=moves, IS=IS)
+    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None):
+        res = super().interpret(input, IS, DOMAIN, anyString=anyString, moves=moves)
         if res:
             return res
         else: #bspw empty set
@@ -164,7 +164,9 @@ def create_domain():
               'semester': 'semester'
               }
 
-    preds2 = {'WhenIs': ['semester', 'WhenSemester']} #1st element is first ind needed, second is the resulting pred1!
+    preds2 = {'WhenIs': ['semester', 'WhenSemester']} #1st element is first ind needed, second is the resulting pred1
+
+    converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string))}
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
@@ -179,7 +181,7 @@ def create_domain():
              'studip_course': courses
              }
 
-    domain = ibis_generals.Domain(preds0, preds1, preds2, sorts)
+    domain = ibis_generals.Domain(preds0, preds1, preds2, sorts, converters)
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -244,12 +246,9 @@ def create_domain():
                     conditions=["com(auth_string)"])
 
 
-    domain.add_plan("?x.y.WhenIs(y)(x)", #TODO - hier kommt die meldung "can't be done weil following info missing ist..." nicht mehr!
+    domain.add_plan("?x.y.WhenIs(y)(x)",
                     [ExecuteFunc(get_semester_inf, "?x.semester(x)", "?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
-
-
-
 
 
     return domain

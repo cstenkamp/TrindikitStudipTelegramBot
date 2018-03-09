@@ -43,6 +43,9 @@ if settings.MULTIUSER:
 # helper functions
 ######################################################################
 
+VARIABLES = ['x', 'y', 'z', 'q', 'v', 'w']
+CONSTANTS = ['a', 'b', 'c', 'd', 'e', 'f']
+
 def is_sequence(seq):
     """True if the argument is a sequence, but not a string type."""
     return hasattr(seq, '__iter__') and not isinstance(seq, str)
@@ -261,6 +264,12 @@ class set(set):
             else:
                 raise e
 
+    def get(self, elem):
+        for i in self:
+            if isinstance(i, ibis_types.Prop):
+                if str(i.content[0]) == elem:
+                    return i
+        return None
 
 class stack(object):
     """Stacks with (optional) typechecking. 
@@ -946,6 +955,8 @@ def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper merg
         odict = IS.asdict(recursive=True)
         with open("CurrState.pkl", 'wb') as f:
             pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
+    elif cmd == "/deletepw":
+        IS.shared.com.remove("password")
 
 
 
@@ -970,7 +981,7 @@ class SimpleInput(object):
         old_moves = deepcopy(LATEST_MOVES)
         LATEST_MOVES.clear()
         if INPUT.value != '':
-            move_or_moves = GRAMMAR.interpret(INPUT.get(), DOMAIN, anyString = freetextquestion(IS,DOMAIN), moves=old_moves, IS=IS)
+            move_or_moves = GRAMMAR.interpret(INPUT.get(), IS, DOMAIN, anyString = freetextquestion(IS,DOMAIN), moves=old_moves)
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht

@@ -46,9 +46,9 @@ class CFG_Grammar(Grammar):
         self.parser = nltk.parse.FeatureEarleyChartParser(nltk.grammar.FeatureGrammar.fromstring(preprocessed), trace=1 if settings.VERBOSE["Parse"] else 0)
 
 
-    def interpret(self, input, DOMAIN, anyString=False, moves=None, IS=None): #überschreibe ich nochmal in studip
+    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None): #überschreibe ich nochmal in studip
         """Parse an input string into a dialogue move or a set of moves."""
-        try: return self.parseString(input, DOMAIN)
+        try: return self.parseString(input, IS, DOMAIN)
         except: pass
         try: return eval(input)
         except: pass
@@ -57,12 +57,12 @@ class CFG_Grammar(Grammar):
         return set([])
 
 
-    def parseString(self, input, DOMAIN):
+    def parseString(self, input, IS, DOMAIN):
         tokens = self.preprocess_input(input).split()
         trees = next(self.parser.parse(tokens))
         root = trees[0].label()
         try:
-            return self.sem2move(root['sem'], DOMAIN)
+            return self.sem2move(root['sem'], IS, DOMAIN)
         except:
             pass
         try:
@@ -86,7 +86,7 @@ class CFG_Grammar(Grammar):
         raise Exception
 
 
-    def sem2move(self, sem, DOMAIN):
+    def sem2move(self, sem, IS, DOMAIN):
         #sem bspw: [Ask = 'needvisa'] [ subtype = 'YNQ']
         try: return Answer(sem['Answer'])
         except: pass
@@ -105,7 +105,16 @@ class CFG_Grammar(Grammar):
             elif sem["subtype"] == "WHQ":
                 return Ask(WhQ(Pred1(sem['Ask'])), askedby="USR")
             elif sem["subtype"] == "SecOrdQ":
-                return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)), askedby="USR")
+                if not sem.get("f") or str(sem["f"]).startswith("?"):
+                    return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)), askedby="USR")
+                else:
+                    range = DOMAIN.preds2[sem['Ask']] #range[1] ist die neue frage, range[0] der answer-typ
+                    try:
+                        auth_string = IS.shared.com.get("auth_string").content[1].content
+                        content = DOMAIN.converters[range[0]](auth_string, "next_semester")
+                    except:
+                        pass #wenn es noch keinen auth-string gibt versteht er das einfach nicht(!)
+                    return Ask(WhQ(Pred1(range[1], content, createdfrom=sem['Ask'])), askedby="USR")
         except:
             pass
         try:
@@ -117,6 +126,7 @@ class CFG_Grammar(Grammar):
             pass
 
         raise Exception
+
 
     ####################################################################################################################
     ############################################# preprocessing stuff ##################################################

@@ -284,7 +284,7 @@ def get_semester_name(string):
 def get_relative_semester_name(string, this, next):
     if string in ["this semester", "current semester"]:
         return this
-    elif string in ["next semester", "upcoming semester", "the semester after this"]:
+    elif string in ["next semester", "upcoming semester", "the semester after this", "next_semester"]:
         return next
     else:
         return get_semester_name(string)

@@ -109,7 +109,7 @@ def integrate_secordq_clarify(IS, DOMAIN):
             if tmp[0]:
                yield R(que=que, firstarg=tmp[1])
 
-    tmp = Pred1(V.que.content.arg1[1], V.firstarg)
+    tmp = Pred1(V.que.content.arg1[1], V.firstarg, createdfrom=V.que)
     IS.shared.qud.pop()
     IS.shared.qud.push(WhQ(tmp))
 
@@ -673,7 +673,15 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
         move = IS.private.plan.top()
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]
-            sources = list(IS.shared.com)+list(IS.private.bel)
+
+            if isinstance(IS.shared.qud.top(), WhQ) and isinstance(IS.shared.qud.top().content, Pred1) and hasattr(IS.shared.qud.top().content, "createdfrom"):
+                topqud = IS.shared.qud.top().content
+                anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
+                prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content)]
+            else:
+                prop = []
+
+            sources = list(IS.shared.com)+list(IS.private.bel)+list(prop)
             knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
             for knowledge in knowledgecombos:
                 alls = [False]*len(mustknow)
