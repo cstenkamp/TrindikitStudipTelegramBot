@@ -284,7 +284,6 @@ def find_plan1(IS, DOMAIN, NEXT_MOVES):
 
 
 
-
 @update_rule
 def find_plan2(IS, DOMAIN, NEXT_MOVES):
     """Find a dialogue plan for resolving a question.
@@ -674,12 +673,12 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]
 
-            if isinstance(IS.shared.qud.top(), WhQ) and isinstance(IS.shared.qud.top().content, Pred1) and hasattr(IS.shared.qud.top().content, "createdfrom"):
+            prop = []
+            if isinstance(IS.shared.qud.top(), WhQ):
                 topqud = IS.shared.qud.top().content
-                anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
-                prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content)]
-            else:
-                prop = []
+                if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
+                    anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
+                    prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content)]
 
             sources = list(IS.shared.com)+list(IS.private.bel)+list(prop)
             knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
@@ -694,6 +693,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
     prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
     place(prop)
     IS.private.plan.pop()
+
 
 
 @update_rule

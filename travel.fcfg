@@ -9,6 +9,8 @@ ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
 ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
 ASK[sem=[Ask=?q, subtype=SecOrdQ, f=?f]] -> SecOrdQ[q=?q, f=?f]
 
+ASK[sem=[Ask=?q, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=?q, f=given] Semester[]
+
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
 
@@ -40,11 +42,16 @@ WHQ[q=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Seme
 WHQ[q=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?' | 'S'
 WHQ[q=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
 
-SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?' | 'W'
+SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?'
 
-SecOrdQ[q=WhenIs, f=next_semester] -> 'Wann ist nächstes Semester?' | 'ww'
+SecOrdQ[q=WhenIs, f=next_semester] -> 'Wann ist nächstes Semester?'
+SecOrdQ[q=WhenIs, f=this_semester] -> 'Wann ist dieses Semester?'
 
-CAT[cat=coursename, ind=krypto] -> 'krypto'
+SecOrdQ[q=WhenIs] -> 'Wann ist' | 'When is'
+
+Semester[f=given] -> '{semester}'
+
+CAT[cat=coursename, ind=krypto] -> '{krypto}'
 
 
 # travel
