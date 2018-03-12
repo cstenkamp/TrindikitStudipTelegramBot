@@ -82,7 +82,7 @@ def get_semester_inf(sem_name, auth_string, IS):
     all_semesters = load("semesters", auth_string)['semesters']
     result = get_semester_info(all_semesters, sem_name)
     IS.shared.com.remove("semester", silent=True)
-    return Prop(Pred1("WhenSemester", sem_name), Ind(result), True, expires=round(time.time())+3600*240), IS.private.bel.add
+    return Prop(Pred1("WhenSemester", sem_name), Ind(result), True, expires=round(time.time())+3600*24), IS.private.bel.add
 
 
 
@@ -245,7 +245,6 @@ def create_domain():
                     [ExecuteFunc(partial(semesterdays, what="wb"), "?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
 
-
     domain.add_plan("?x.y.WhenIs(y)(x)",
                     [ExecuteFunc(get_semester_inf, "?x.semester(x)", "?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
@@ -321,6 +320,7 @@ def loadIBIS():
     grammar.addForm("State('wtf')", "Uhm, wtf")
     grammar.addForm("Ask('?x.coursename(x)')", "From which course do you want to download?")
     grammar.addForm("Ask('?x.filename(x)')", "Which file from that course do you want to download?")
+    grammar.addForm("Ask('?x.semester(x)')", "Which semester?")
 
     database = TravelDB()
     database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})

@@ -77,7 +77,7 @@ class CFG_Grammar(Grammar):
             trees = next(self.parser.parse(tokens))
             root = trees[0].label()
             root = deepcopy(dict(root))
-            root["sem"]["f"] = converted
+            if root["sem"]["f"] == "given": root["sem"]["f"] = converted
         try:
             return self.sem2move(root['sem'], IS, DOMAIN)
         except:

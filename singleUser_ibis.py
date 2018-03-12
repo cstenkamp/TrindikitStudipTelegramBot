@@ -168,8 +168,7 @@ class IBIS1(IBIS):
     grounding    = rule_group(get_latest_moves, expire_expirables)
     expire       = rule_group(expire_expirables)
     integrate    = rule_group(integrate_usr_ask, integrate_sys_ask, integrate_usr_impr,
-                              integrate_answer, integrate_greet,
-                              # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
+                              integrate_answer, integrate_greet, # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
                               integrate_usr_quit, integrate_sys_quit)
     downdate_qud  = rule_group(downdate_qud)
     clarify       = rule_group(clarify_pred2)
