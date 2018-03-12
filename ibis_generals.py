@@ -19,7 +19,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-from trindikit import stack
+from trindikit import stack, set
 from ibis_types import *#Ask, Question, Answer, Ans, Command, Imperative, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
 
 ######################################################################

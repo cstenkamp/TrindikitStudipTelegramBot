@@ -32,7 +32,6 @@ import functools
 import collections
 import sys
 from copy import deepcopy
-import ibis_types
 import pickle
 
 if settings.MULTIUSER:
@@ -169,7 +168,7 @@ class record(object):
                 elif isinstance(val, set):
                     tmp[key] = list(val)
                 else:
-                    raise Exception("No type I know of")
+                    raise Exception("No type I know of: "+str(val)+" "+str(type(val)))
             return tmp
 
 
@@ -253,7 +252,7 @@ class set(set):
     def remove(self, elem, silent=False):
         try:
             for i in self:
-                if isinstance(i, ibis_types.Prop):
+                if str(type(i)) == "<class 'ibis_types.Prop'>": #TODO geht nicht mehr sobald Prop vererbt! Aber so sind cicrular inputs: if isinstance(i, ibis_types.Prop):
                     if str(i.content[0]) == elem:
                         elem = i
                         break
@@ -266,10 +265,11 @@ class set(set):
 
     def get(self, elem):
         for i in self:
-            if isinstance(i, ibis_types.Prop):
+            if str(type(i)) == "<class 'ibis_types.Prop'>":  #TODO geht nicht mehr sobald Prop vererbt! Aber so sind cicrular inputs: if isinstance(i, ibis_types.Prop):
                 if str(i.content[0]) == elem:
                     return i
         return None
+
 
 class stack(object):
     """Stacks with (optional) typechecking. 

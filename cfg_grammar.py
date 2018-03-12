@@ -26,6 +26,7 @@ import settings
 import re
 from myparser import MyParser
 from copy import deepcopy
+from trindikit import set
 
 if settings.MULTIUSER:
     nltk.data.path.append("/var/www/")
@@ -159,7 +160,7 @@ class CFG_Grammar(Grammar):
         self.longstrings = {}
         self.variables = {}
         self.variablepath = {}
-        with open(grammarFilename, "r") as f:
+        with open(grammarFilename, "r", encoding="utf-8") as f:
             lines = [line for line in f]
         for i in range(len(lines)):
             lines[i] = self.line_ops(lines[i], self.variablepath)

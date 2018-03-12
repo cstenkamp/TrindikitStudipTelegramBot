@@ -6,6 +6,7 @@ from sqlalchemy import event
 import pickle
 
 import trindikit
+from trindikit import set
 from botserver import db
 
 
@@ -107,10 +108,12 @@ class ConversationState(db.Model):
         self.INPUT.set(self.bk_mivs_input)
         self.LATEST_SPEAKER.set(trindikit.Speaker.USR if self.bk_mivs_latest_speaker == "USR" else trindikit.Speaker.SYS)
         if self.bk_mivs_latest_moves != "":
-            self.LATEST_MOVES = set(self.bk_mivs_latest_moves.split(';'))
+            # self.LATEST_MOVES = set(self.bk_mivs_latest_moves.split(';'))
+            self.LATEST_MOVES = trindikit.set(pickle.loads(self.bk_mivs_latest_moves))
         if self.bk_mivs_next_moves != "":
-            for elem in self.bk_mivs_next_moves.split(';'):
-                self.NEXT_MOVES.push(elem)
+            self.NEXT_MOVES = trindikit.stack(pickle.loads(self.bk_mivs_next_moves), fixedType=trindikit.Move)
+            # for elem in self.bk_mivs_next_moves.split(';'):
+            #     self.NEXT_MOVES.push(elem)
         self.OUTPUT.set(self.bk_mivs_output)
         self.PROGRAM_STATE.set(trindikit.ProgramState.RUN) #must run, other stuff would be bullshit
 
@@ -118,8 +121,10 @@ class ConversationState(db.Model):
     def save_MIVS_to_DB(self):
         self.bk_mivs_input = self.INPUT.get()
         self.bk_mivs_latest_speaker = "USR" if self.LATEST_SPEAKER.get() == trindikit.Speaker.USR else "SYS"
-        self.bk_mivs_latest_moves = ';'.join([str(i) for i in list(self.LATEST_MOVES)])
-        self.bk_mivs_next_moves = ';'.join([str(i) for i in list(self.NEXT_MOVES)])
+        # self.bk_mivs_latest_moves = ';'.join([str(i) for i in list(self.LATEST_MOVES)])
+        self.bk_mivs_latest_moves = pickle.dumps(self.LATEST_MOVES)
+        # self.bk_mivs_next_moves = ';'.join([str(i) for i in list(self.NEXT_MOVES)])
+        self.bk_mivs_next_moves = pickle.dumps(self.NEXT_MOVES)
         self.bk_mivs_output = self.OUTPUT.get()
         # self.bk_mivs_program_state =
 

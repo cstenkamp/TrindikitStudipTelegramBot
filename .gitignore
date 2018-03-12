@@ -5,6 +5,7 @@
 *.db
 settings.py
 Working_Version_DigitalOcean/*
+copy_newest/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -23,6 +23,7 @@ from trindikit import * #update_rule, precondition, Speaker, ProgramState, Move,
 from ibis_types import * #Ask, Respond, Answer, Greet, Quit, If, YNQ, Findout, ICM, Raise, ConsultDB, Command, Imperative, Inform, State
 import itertools
 import ibis_generals
+from trindikit import set
 
 ######################################################################
 # IBIS update rules

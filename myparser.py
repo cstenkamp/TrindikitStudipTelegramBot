@@ -1,6 +1,5 @@
 import nltk.parse
 import re
-import numpy as np
 
 class MyParser(nltk.parse.FeatureEarleyChartParser):
 

@@ -1,10 +1,9 @@
-import settings
-from trindikit import stack, DialogueManager, record, stackset, Speaker, ProgramState, StandardMIVS, SimpleInput, SimpleOutput, maybe, do, repeat, rule_group, _TYPEDICT
-from ibis_types import Ask, Question, Answer, Ans, ICM, ShortAns, Prop, YesNo, YNQ, AltQ, WhQ, PlanConstructor, Greet, Quit
-from ibis_rules import *#get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
+from ibis_rules import * #get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
+from ibis_rules import * #get_latest_moves, integrate_usr_ask, integrate_sys_ask, integrate_answer, integrate_greet, integrate_usr_quit, integrate_sys_quit, downdate_qud, recover_plan, find_plan, remove_findout, remove_raise, exec_consultDB, execute_if, select_respond, select_from_plan, reraise_issue, select_answer, select_ask, select_other, select_icm_sem_neg, handle_empty_plan_agenda_qud, integrate_usr_impr, exec_inform
 import pickle
 import os.path as p
 import os
+from trindikit import set
 
 SAVE_IS = False
 USE_SAVED = True
@@ -175,7 +174,7 @@ class IBIS1(IBIS):
     load_plan     = rule_group(integrate_secordq_clarify, mention_command_conditions, recover_plan, find_plan1, find_plan2)
     exec_plan     = rule_group(remove_findout, remove_raise, exec_consultDB, execute_if, exec_inform, exec_func)
     downdate_qud2 = rule_group(downdate_qud_commands)
-    finalize_IS = rule_group(make_command_old, handle_empty_plan_agenda_qud)
+    finalize_IS   = rule_group(make_command_old, handle_empty_plan_agenda_qud)
 
     def select(self):
         if not self.IS.private.agenda:
