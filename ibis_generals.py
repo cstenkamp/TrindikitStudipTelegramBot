@@ -182,7 +182,14 @@ class Domain(object):
             return False
         if isinstance(question, WhQ):
             if isinstance(answer, Prop):
-                return answer.pred == question.pred
+                if isinstance(question.content, Pred1) and hasattr(question.content, "arg2"):
+                    cnt = answer.content[0] if isinstance(answer.content, tuple) else answer.content
+                    if isinstance(cnt, Pred1) and hasattr(cnt, "arg2"):
+                        return question.content.arg2 == cnt.arg2 and answer.pred == question.pred
+                    else:
+                        return False
+                else:
+                    return answer.pred == question.pred
             elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
                 sort1 = self.get_sort_from_ind(answer.ind.content)
                 sort2 = self.get_sort_from_question(question.pred.content)

@@ -675,11 +675,14 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
             mustknow = [Question(i) for i in move.params]
 
             prop = []
-            if isinstance(IS.shared.qud.top(), WhQ):
-                topqud = IS.shared.qud.top().content
-                if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
-                    anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
-                    prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content)]
+            try:
+                if isinstance(IS.shared.qud.top(), WhQ):
+                    topqud = IS.shared.qud.top().content
+                    if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
+                        anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
+                        prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content)]
+            except:
+                pass
 
             sources = list(IS.shared.com)+list(IS.private.bel)+list(prop)
             knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
