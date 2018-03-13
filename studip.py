@@ -85,6 +85,19 @@ def get_semester_inf(sem_name, auth_string, IS):
     return Prop(Pred1("WhenSemester", sem_name), Ind(result), True, expires=round(time.time())+3600*24), IS.private.bel.add
 
 
+@executable_rule
+def get_my_courses(sem_name, auth_string, IS):
+    w_courses, s_courses = get_user_courses(auth_string, semester=sem_name)
+    s = " "+"\n ".join([i["name"] + " (" + i["event_number"] + ")" for i in s_courses])
+    w = " "+"\n ".join([i["name"] + " (" + i["event_number"] + ")" for i in w_courses])
+    txt = ""
+    if len(s) > 2: txt += "Courses you take:\n"+s+"\n"
+    if len(w) > 2: txt += "Courses you work for:\n"+w+"\n"
+    txt = txt[:-1]
+    if len(txt) < 2: txt = "You don't have any courses for that semester!"
+    IS.shared.com.remove("semester", silent=True)
+    return Prop(Pred1("ClassesForSemester", sem_name), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
+
 
 @executable_rule
 def download_file(auth_string):
@@ -137,6 +150,14 @@ class StudIP_grammar(CFG_Grammar):
                     pass
 
 
+class studip_domain(ibis_generals.Domain):
+
+    def get_sort_from_ind(self, answer):
+        res = self.inds.get(answer)
+        if res: return res
+        if "SS" in answer and any(str(i) in answer for i in range(2000, 2050)) or "WS" in answer and any(str(i)+'/'+str(i-1999).zfill(2) in answer for i in range(2000, 2050)):
+            return "semester"
+
 
 def create_domain():
     preds0 = 'return', 'needvisa', 'studip'
@@ -161,10 +182,13 @@ def create_domain():
               'WhenLectures': 'int',
               'WhenBreak': 'int',
               'WhenSemester': 'string',
+              'ClassesForSemester': 'string',
               'semester': 'semester'
               }
 
-    preds2 = {'WhenIs': ['semester', 'WhenSemester']} #1st element is first ind needed, second is the resulting pred1
+    preds2 = {'WhenIs': ['semester', 'WhenSemester'], #1st element is first ind needed, second is the resulting pred1
+              'ClassesFor': ['semester', 'ClassesForSemester']
+              }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string))}
 
@@ -181,7 +205,7 @@ def create_domain():
              'studip_course': courses
              }
 
-    domain = ibis_generals.Domain(preds0, preds1, preds2, sorts, converters)
+    domain = studip_domain(preds0, preds1, preds2, sorts, converters)
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -247,6 +271,10 @@ def create_domain():
 
     domain.add_plan("?x.y.WhenIs(y)(x)",
                     [ExecuteFunc(get_semester_inf, "?x.semester(x)", "?x.auth_string(x)")],
+                    conditions=["com(auth_string)"])
+
+    domain.add_plan("?x.y.ClassesFor(y)(x)",
+                    [ExecuteFunc(get_my_courses, "?x.semester(x)", "?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
 
 

@@ -134,10 +134,8 @@ class Domain(object):
         self.plans = {}
 
     def get_sort_from_ind(self, answer):
-        res = self.inds.get(answer)
-        if res: return res
-        if "SS" in answer and any(str(i) in answer for i in range(2000, 2050)) or "WS" in answer and any(str(i)+'/'+str(i-1999).zfill(2) in answer for i in range(2000, 2050)):
-            return "semester"
+        return self.inds.get(answer)
+
 
     def get_sort_from_question(self, question):
         return self.preds1.get(question)
