@@ -51,7 +51,7 @@ SecOrdQ[q=WhenIs] -> 'Wann ist' | 'When is'
 
 Semester[f=given] -> '{semester}'
 
-SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'What courses do I have in'
+SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'Was sind meine Kurse in' | 'Welche Kurse habe ich in' | 'What courses do I have in'
 
 
 CAT[cat=coursename, ind=krypto] -> '{krypto}'

@@ -37,6 +37,7 @@ def handle_update(update, ibis):
             send_message("New user! You were added to the system", chat)
         else:
             send_message("New User that didn't send /start", chat)
+        send_message("To use Stud.IP capabilities, start by sending the message 'studip' to the bot. After that, you must enter your Stud.IP username and password, such that you can use most of the functionalities of this bot", chat)
         user.state.IS.private.agenda.push(Greet())
         ibis.respond(user)
     else:

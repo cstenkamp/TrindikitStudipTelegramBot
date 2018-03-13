@@ -195,8 +195,10 @@ def get_user_courses(auth_string, semester=None):
     if semester:
         all_semesters = load("semesters", auth_string)['semesters']
         semesterid = get(all_semesters, get_semester_name(semester))["semester_id"]
-    s_courses = courses['courses']['study']
-    w_courses = courses['courses']['work']
+    s_courses = courses['courses']['study'] or []
+    w_courses = courses['courses']['work'] or []
+    w_courses = [] if w_courses is None else w_courses
+    s_courses = [] if s_courses is None else s_courses
     w_courses.extend([i for i in s_courses if i["perms"] not in ["autor", "user"]])
     s_courses = [i for i in s_courses if i["perms"] in ["autor", "user"]]
     if semester:
@@ -204,7 +206,7 @@ def get_user_courses(auth_string, semester=None):
         semesterid = get(all_semesters, get_semester_name(semester))["semester_id"]
         s_courses = [i for i in s_courses if i["semester_id"] == semesterid]
         w_courses = [i for i in w_courses if i["semester_id"] == semesterid]
-    return w_courses, s_courses
+    return w_courses or [], s_courses or []
 
 
 if __name__ == '__main__':
