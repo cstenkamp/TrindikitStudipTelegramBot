@@ -33,39 +33,6 @@ from urllib.request import Request, urlopen
 # AUTH_STRING = b'the_string'
 
 
-def get_courses(user, auth_string, semester=None):
-    pass #GET /user/:user_id/courses
-
-
-def get_semesters(user, auth_string):
-    pass #route /semesters
-
-
-def get_news(user, auth_string):
-    pass #GET /user/:user_id/news
-
-def get_schedule(user, auth_string):
-    pass #GET /user/:user_id/schedule und GET /user/:user_id/schedule/:semester_id
-
-def get_zeitplan(user, auth_string):
-    pass #route  /user/:user_id/schedule/:semester_id
-
-def get_course(user, id, auth_string):
-    pass #GET /course/:course_id
-
-def get_course_files(user, id, auth_string):
-    pass #GET /course/:course_id/files
-
-def get_all_current_news(user, auth_string):
-    pass #für jeden Kurs: GET /course/:course_id/news
-
-def get_file(file_id, auth_string):
-    pass #GET /file/:file_id für metadaten und GET /file/:file_id/content für content
-
-def create_file(adsf):
-    pass #POST /file/:folder_id
-
-
 
 def load(path, auth_string):
     return json.loads(download_file(path, auth_string).decode('utf8'))
@@ -200,6 +167,7 @@ def return_file(userid, semester, course, folder, name, auth_string):
     else:
         courses = [i for i in load('user/%s/courses' % userid, auth_string)['courses']['study'] if i[
             'semester_name' == CURR_SEMESTER]]  # TODO - das semester_name == muss auch noch auf 200 verschiedene Arten gehen
+
     demanded = []
     for course in courses:
         if course['name'] == KURSNAME:
@@ -236,11 +204,13 @@ def return_file(userid, semester, course, folder, name, auth_string):
 
 
 if __name__ == '__main__':
-    auth_string = ""
+    auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
 
     userid = load('user', auth_string)['user']['user_id']
+    print(userid)
     file = return_file(userid, None, "Codierungstheorie und Kryptographie", None, "Skript", auth_string)
-    print(load_file2(file[1]["document_id"]), auth_string)
+    print("so far", file)
+    print(load_file2(file[1]["document_id"], auth_string))
 
 #    folders = []
 ##    print("COURSES", load('user/%s/courses' % userid, auth_string)['courses']['study'])

@@ -88,8 +88,8 @@ def get_semester_inf(sem_name, auth_string, IS):
 @executable_rule
 def get_my_courses(sem_name, auth_string, IS):
     w_courses, s_courses = get_user_courses(auth_string, semester=sem_name)
-    s = " "+"\n ".join([i["name"] + " (" + i["event_number"] + ")" for i in s_courses])
-    w = " "+"\n ".join([i["name"] + " (" + i["event_number"] + ")" for i in w_courses])
+    s = " "+"\n ".join([i["name"] + " (" + (i["event_number"] if i["event_number"] else "None") + ")" for i in s_courses]) if s_courses else ""
+    w = " "+"\n ".join([i["name"] + " (" + (i["event_number"] if i["event_number"] else "None") + ")" for i in w_courses]) if w_courses else ""
     txt = ""
     if len(s) > 2: txt += "Courses you take:\n"+s+"\n"
     if len(w) > 2: txt += "Courses you work for:\n"+w+"\n"

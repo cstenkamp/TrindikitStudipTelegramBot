@@ -12,13 +12,15 @@ from studip_downloader import *
 import os.path as p
 import os
 import time
+import datetime
+import calendar
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################
 ########################################################################################################################
-
-def get_courses(user, auth_string, semester=None):
-    pass #GET /user/:user_id/courses
+#
+# def get_courses(user, auth_string, semester=None):
+#     pass #GET /user/:user_id/courses
 
 def get_semesters(user, auth_string):
     pass #route /semesters
@@ -95,8 +97,14 @@ def load_userid(auth_string):
 ################################################## Semester & Zeiten ###################################################
 ########################################################################################################################
 
-def get(semesters, name):
-    return [i for i in semesters if i['title'] == name][0]
+def get(fromwhat, name):
+    try: return [i for i in fromwhat if i['title'] == name][0]
+    except: pass
+    try: return [i for i in fromwhat if i['name'] == name][0]
+    except: pass
+    try: return [i for i in fromwhat if i == name][0]
+    except: pass
+    return []
 
 
 def semesters_with_courses(userid, auth_string):
@@ -197,8 +205,6 @@ def get_user_courses(auth_string, semester=None):
         semesterid = get(all_semesters, get_semester_name(semester))["semester_id"]
     s_courses = courses['courses']['study'] or []
     w_courses = courses['courses']['work'] or []
-    w_courses = [] if w_courses is None else w_courses
-    s_courses = [] if s_courses is None else s_courses
     w_courses.extend([i for i in s_courses if i["perms"] not in ["autor", "user"]])
     s_courses = [i for i in s_courses if i["perms"] in ["autor", "user"]]
     if semester:
@@ -209,15 +215,172 @@ def get_user_courses(auth_string, semester=None):
     return w_courses or [], s_courses or []
 
 
+def get_alltimes(auth_string, semester=None, timerel_courses=None, one_course=None):
+    if not one_course:
+        if not (timerel_courses and not semester): #wenn nicht timerelevant-courses vom speicherstand genutzt wurde
+            if semester:
+                w_courses, s_courses = get_user_courses(auth_string, semester)
+            else:
+                w_courses, s_courses = get_user_courses(auth_string)
+            timerel_courses = w_courses + s_courses
+    else:
+        timerel_courses = [one_course] #wenn one_course gesetzt ist soll man nur infos VON KURS XYZ suchen
+    curr_time = round(time.time())
+    all_times = {}
+    for course in timerel_courses:
+        kurs = course["course_id"]
+        kursevents = load("courses/%s/events" % kurs, auth_string)
+        if all(int(event["start"]) < curr_time or event["canceled"] for event in kursevents["events"]): continue
+        next_event_time = min(int(event["start"]) for event in kursevents["events"] if int(event["start"]) >= curr_time and not event["canceled"])
+        next_event = [event for event in kursevents["events"] if event["start"] == str(next_event_time)][0]
+        all_times[course["name"]] = next_event
+    return all_times, timerel_courses
+
+
+def get_timerelevant_courses(auth_string):
+    current_events, all_courses = get_alltimes(auth_string)
+    curr_ev_ids = [ev['course_id'] for ev in current_events.values()]
+    current_courses = [course for course in all_courses if course['course_id'] in curr_ev_ids]
+    return current_courses
+
+
+def get_session_info(what, auth_string, semester=None, timerel_courses=None, one_course_str=None):
+    one_course = get_course_by_name(auth_string, one_course_str, semester=semester) if one_course_str else None  #throwed ggf ne exception die das dialogsystem hoffnetlich fängt und dann semester "nachliefert"
+
+    all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
+    curr_time = round(time.time())
+
+    next_time = min(int(event["start"]) for event in all_times.values())
+    next_ev = [(kurs, event) for kurs, event in all_times.items() if event["start"] == str(next_time)][0] # -> dict(Kursname: Kurs)
+    time_starts = next_ev[1]["iso_start"][:next_ev[1]["iso_start"].find("+")].replace("T", " at ")
+    time_starts = calendar.day_abbr[datetime.datetime.fromtimestamp(int(next_ev[1]["start"])).weekday()] + ", " + time_starts # -> Mon, 2018-03-19 at 09:00:00
+    starts_in = str(datetime.timedelta(seconds=int(next_ev[1]["start"]) - curr_time)) # -> 5 days, 8:19:21
+    length = str(datetime.timedelta(seconds=int(next_ev[1]["end"]) - int(next_ev[1]["start"])))[:-3] # -> 9:00
+
+    if what == "all":
+        if one_course:
+            txt = "Your next session of "+next_ev[0]+" is a "+next_ev[1]["categories"]+". It starts in "+starts_in+" hours ("+time_starts+") and takes "+length+" hours. It is in room "+next_ev[1]["room"]+"."
+        else:
+            txt = "Your next session is a "+next_ev[1]["categories"]+" of '"+next_ev[0]+"'. It starts in "+starts_in+" hours ("+time_starts+") and takes "+length+" hours. It is in room "+next_ev[1]["room"]+"."
+        if next_ev[1]["title"]: txt += "\nIts title is '" + next_ev[1]["title"] + "'."
+        if next_ev[1]["description"]: txt += "\nIts description is '" + next_ev[1]["description"] + "'."
+    elif what == "where":
+        txt = "room " + next_ev[1]["room"]
+    elif what == "when":
+        txt = time_starts + " (in "+starts_in+"hours )"
+    elif what == "what":
+        txt = next_ev[0]
+
+    return txt
+
+
+def easify_coursename(name):
+    i = name.lower()
+    i = i.replace("&", "und")
+    i = re.sub(r"\bi\b", "eins", i)
+    i = re.sub(r"\bii\b", "zwei", i)
+    i = re.sub(r"\biii\b", "drei", i)
+    i = re.sub(r"\biv\b", "vier", i)
+    i = re.sub(r"\bv\b", "fünf", i)
+    i = re.sub(r"\bvi\b", "sechs", i)
+    i = re.sub(r"\bvii\b", "sieben", i)
+    i = re.sub(r"\bviii\b", "acht", i)
+    i = i.replace("(Lecture + Tutorial)", "")
+    i = i.replace("(Lecture + Practice)", "")
+    j = re.sub("\(.*?\)", "", i).replace("(", "").replace(")", "")
+    while j[0] == " ": j = j[:1]
+    while j[-1] == " ": j = j[:-1]
+    j = j.replace(" für studierende der cognitive science und für studenten mit nebenfach biologie", "") #hachja jeserich
+    k = re.sub("[^a-zA-Z0-9 äöüß]", "", j)
+    k = re.sub(' +', ' ', k)
+    while k[0] == " ": k = k[:1]
+    while k[-1] == " ": k = k[:-1]
+    return i,j,k
+
+
+def get_courses(auth_string, semester=""):
+    w_courses, s_courses = get_user_courses(auth_string, semester=semester)
+    courseinfo = [(course["name"], course["semester_name"], course['course_id'], course in w_courses) for course in w_courses+s_courses]
+    coursenames = [c[0] for c in courseinfo]
+    coursenames2 = [(name, *easify_coursename(name)) for name in coursenames]
+    return coursenames, coursenames2
+
+
+def find_real_coursename(auth_string, name, semester=""):
+    coursenames, coursenames2 = get_courses(auth_string, semester="")
+    results = []
+    for i in coursenames:
+        if i == name:
+            return i
+    #         results.append(i)
+    # if len(results) >= 1:
+    #     return results[0] if len(results) == 1 else results
+    #else, falls es keinen perfekten match gab:
+    for i in coursenames2:
+        if any(tryit in i for tryit in easify_coursename(name)): #probiert die varianten von name jeweils für varianten von coursenames2 aus
+            return i[0]
+    #         results.append(i[0])
+    # return results[0] if len(results) == 1 else (results or None)
+
+
+class MoreThan1Exception(Exception):
+    pass
+
+
+def get_course_by_name(auth_string, name, semester=None):
+    w_courses, s_courses = get_user_courses(auth_string, semester=semester)
+    coursename = find_real_coursename(auth_string, name)
+    res = [i for i in w_courses + s_courses if i['name'] == coursename]
+    if len(res) > 1:
+        raise MoreThan1Exception("course")
+    else:
+        return res[0]
+
+
+
+
+
+
+
 if __name__ == '__main__':
     # auth_bytes = ('%s:%s' % ("cstenkamp", "pw")).encode('ascii')
     # auth_string = codecs.encode(auth_bytes, 'base64').strip()
     # print(auth_string)
     auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
+    userid = load_userid(auth_string)
+
+    # timerel_courses = get_timerelevant_courses(auth_string)  #der wird beim ersten mal errechnet, für 72 Stunden gespeichert, und jedes mal wenn eine zeitabfrage OHNE SEMESTERANGABE KOMMT soll der das hier  nehmen stall all_courses
+    timerel_courses = None
+    # print(get_session_info("when", auth_string, "SS18", timerel_courses))
+
+    print(get_courses(auth_string, semester="SS18"))
+
+    # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
+                                                                            # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
+                                                                            # im optimalfall kann es das immer fangen, auch wenn diese funktion von einer anderen aufgerufen wird...
+                                                                            # und kann aus dem error-text ("course") ne frage ("?x.course(x)") erstellen
 
 
-    w_courses, s_courses = get_user_courses(auth_string, "SS 2015")
-    print(len(w_courses+s_courses))
+
+    print(get_session_info("what", auth_string, "SS18", timerel_courses))
+
+
+
+
+
+    #/user/:id/schedule also seems to be gone
+
+    #/news is empty
+
+    # user/id/events seems to be gone from new API
+
+
+    # kursinfo = load("courses/%s" % kurs, auth_string) #nothing interesting from here
+    # print(kursinfo)
+
+
+    # documents = load("documents/%s/folder" % kurs, auth_string)
+    # print(documents)
 
 
 
