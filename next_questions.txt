@@ -11,9 +11,10 @@
 -Give me information about all sessions of xyz
 -when is the last session
 -when is the last session OF XYZ
--when is the first session OF SEMSTER X
 -when is the last session OF SEMSTER X
--was habe ich heute/morgen/dienstag [noch] für kurse
+-when is the first session OF SEMSTER X
+-when is the first session OF XYZ
+-was habe ich heute/morgen/dienstag [noch] für kurse (mit zeiten)
 -bis wie spät hab ich heute/morgen/dienstag Uni
 -remind me if the room of a session changes
 -remind me if the room of a session is not as expected

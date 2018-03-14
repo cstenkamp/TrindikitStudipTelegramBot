@@ -224,7 +224,8 @@ def get_alltimes(auth_string, semester=None, timerel_courses=None, one_course=No
                 w_courses, s_courses = get_user_courses(auth_string)
             timerel_courses = w_courses + s_courses
     else:
-        timerel_courses = [one_course] #wenn one_course gesetzt ist soll man nur infos VON KURS XYZ suchen
+        timerel_courses = one_course if isinstance(one_course, list) else [one_course]  #wenn one_course gesetzt ist soll man nur infos VON KURS XYZ suchen
+
     curr_time = round(time.time())
     all_times = {}
     for course in timerel_courses:
@@ -245,11 +246,13 @@ def get_timerelevant_courses(auth_string):
 
 
 def get_session_info(what, auth_string, semester=None, timerel_courses=None, one_course_str=None):
-    one_course = get_course_by_name(auth_string, one_course_str, semester=semester) if one_course_str else None  #throwed ggf ne exception die das dialogsystem hoffnetlich fängt und dann semester "nachliefert"
+    one_course = get_course_by_name(auth_string, one_course_str, semester=semester, supress=True) if one_course_str else None  #throwed ggf ne exception die das dialogsystem hoffnetlich fängt und dann semester "nachliefert"
 
     all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
     curr_time = round(time.time())
 
+    if len(all_times) == 0:
+        return "You don't have any upcoming sessions"+(" at all" if not one_course_str else " for "+one_course_str)+"!"
     next_time = min(int(event["start"]) for event in all_times.values())
     next_ev = [(kurs, event) for kurs, event in all_times.items() if event["start"] == str(next_time)][0] # -> dict(Kursname: Kurs)
     time_starts = next_ev[1]["iso_start"][:next_ev[1]["iso_start"].find("+")].replace("T", " at ")
@@ -327,12 +330,13 @@ class MoreThan1Exception(Exception):
     pass
 
 
-def get_course_by_name(auth_string, name, semester=None):
+def get_course_by_name(auth_string, name, semester=None, supress=False):
     w_courses, s_courses = get_user_courses(auth_string, semester=semester)
     coursename = find_real_coursename(auth_string, name)
     res = [i for i in w_courses + s_courses if i['name'] == coursename]
     if len(res) > 1:
-        raise MoreThan1Exception("course")
+        if not supress: raise MoreThan1Exception("course")
+        else: return res
     else:
         return res[0]
 
@@ -353,17 +357,15 @@ if __name__ == '__main__':
     timerel_courses = None
     # print(get_session_info("when", auth_string, "SS18", timerel_courses))
 
-    print(get_courses(auth_string, semester="SS18"))
+    # print(get_courses(auth_string, semester="SS18"))
 
     # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
                                                                             # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
                                                                             # im optimalfall kann es das immer fangen, auch wenn diese funktion von einer anderen aufgerufen wird...
                                                                             # und kann aus dem error-text ("course") ne frage ("?x.course(x)") erstellen
 
-
-
-    print(get_session_info("what", auth_string, "SS18", timerel_courses))
-
+    # print(get_session_info("what", auth_string, "", timerel_courses, "Informatik A")) # hier wird diese exception suppressed, weil get_session_info nur die zeitlich noch relevanten kurse interessiert
+                                                                                        # der fehler wird uns daher wohl erst bei document-api-routen begegnen
 
 
 
