@@ -1,12 +1,12 @@
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
 -general info about next session of semester X get_session_info("all", auth_string, "SS18")
 -general info about next session of course z   get_session_info("all", auth_string, "", timerel_courses, "Scientific programming in Python")        What is my next session of Codierungstheorie und Kryptographie?
--where is my next session                      get_session_info("where", auth_string, "SS18", timerel_courses)
--where is my next session OF XYZ               get_session_info("where", auth_string, "SS18", timerel_courses, "Scientific programming in Python")
+-where is my next session                      get_session_info("where", auth_string, "SS18", timerel_courses)                                      Where is my next session?
+-where is my next session OF XYZ               get_session_info("where", auth_string, "SS18", timerel_courses, "Scientific programming in Python")  Where is my next session of Scientific Programming in Python?
 -remind me as soon as a session is cancelled   
 -auto-reminder X stunden vor einer gecancelleten session dass sie gecancelled ist
--when is my next session                       get_session_info("when", auth_string, "SS18", timerel_courses)
--when is my next session OF XYZ                get_session_info("when", auth_string, "SS18", timerel_courses, "Scientific programming in Python")
+-when is my next session                       get_session_info("when", auth_string, "SS18", timerel_courses)                                       When is my next session?
+-when is my next session OF XYZ                get_session_info("when", auth_string, "SS18", timerel_courses, "Scientific programming in Python")   When is my next session of Codierungstheorie und Kryptographie?
 -what is my next session                       get_session_info("what", auth_string, "SS18", timerel_courses)
 -Give me information about all sessions of xyz
 -when is the last session

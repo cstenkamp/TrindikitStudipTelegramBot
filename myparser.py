@@ -74,7 +74,7 @@ class MyParser(nltk.parse.FeatureEarleyChartParser):
         if result:
             return result
 
-        return None, None
+        return [(None, None)]
 
 
 def rem_spaces(text):

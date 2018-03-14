@@ -110,12 +110,12 @@ class CFG_Grammar(Grammar):
                 raise NotRecognizedException
             return content
         except Exception as e: #wenn es noch keinen auth-string gibt versteht er das einfach nicht(!)
-            raise e
+            raise NotRecognizedException
 
 
     def preprocess_input(self, input):
         input = input.lower()
-        for tofind, replacewith in self.longstrings.items():
+        for tofind, replacewith in sorted(list(self.longstrings.items()), key=lambda item: len(item[1]), reverse=True):
             if tofind in input:
                 input = input.replace(tofind, replacewith) #anders gehen keine leerzeichen in einem speech act
         return input
@@ -186,7 +186,7 @@ class CFG_Grammar(Grammar):
         preprocessed = "\n".join(lines)
         #other overall operations here (on preprocessed)
         for key,val in self.longstrings.items():
-            preprocessed = preprocessed.replace(key, val)
+            preprocessed = preprocessed.replace("'"+key+"'", "'"+val+"'")
 
         return preprocessed
 

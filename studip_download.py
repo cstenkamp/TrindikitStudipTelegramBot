@@ -272,7 +272,7 @@ def get_session_info(what, auth_string, semester=None, timerel_courses=None, one
     elif what == "where":
         txt = "room " + next_ev[1]["room"]
     elif what == "when":
-        txt = time_starts + " (in "+starts_in+"hours )"
+        txt = time_starts + " (in "+starts_in+" hours)"
     elif what == "what":
         txt = next_ev[0]
 
