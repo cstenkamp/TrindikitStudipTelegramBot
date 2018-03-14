@@ -238,7 +238,7 @@ def create_domain():
 
     preds2 = {'WhenIs': ['semester', 'WhenSemester'], #1st element is first ind needed, second is the resulting pred1
               'ClassesFor': ['semester', 'ClassesForSemester'],
-              #'WhatNextSecOrd': ['semester', 'WhatNextSem'], #asdf
+              'WhatNextSecOrd': ['semester', 'WhatNextSem'], #asdf
               'WhatNextSecOrd': ['kurs', 'WhatNextKurs'],
               #'WhereNextSecOrd': ['semester', 'WhereNextSem'], #asdf
               'WhereNextSecOrd': ['kurs', 'WhereNextKurs'],
@@ -273,7 +273,7 @@ def create_domain():
                     Findout("?x.class(x)"),
                     Findout("?return()"),
                     If("?return()",
-                        [Findout("?x.return_day(x)")]),
+                       [Findout("?x.return_day(x)")]),
                     ConsultDB("?x.price(x)")  #das was precond der update-rule ist, nicht die funktion von unten!
                    ])
 
@@ -349,14 +349,11 @@ def create_domain():
                     [ExecuteFunc(partial(session_info, what="all"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    # domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
-    #                 [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
-    #                 conditions=["com(auth_string)"])  #asdf
-
     domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
-                    [ExecuteFunc(partial(session_info, what="all"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")],
-                    conditions=["com(auth_string)"])
-
+                    [If("?x.semester(x)",
+                        [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+                        [ExecuteFunc(partial(session_info, what="all"), semester="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
+                        conditions=["com(auth_string)"])
 
     domain.add_plan("?x.WhereNext(x)",
                     [ExecuteFunc(partial(session_info, what="where"), "?x.auth_string(x)")],

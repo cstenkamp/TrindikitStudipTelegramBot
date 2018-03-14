@@ -327,6 +327,7 @@ def execute_if(IS):
         move = IS.private.plan.top()
         if isinstance(move, If):
             if isinstance(move.cond, YNQ):
+                print("OHA", move.iftrue, "UND", move.iffalse)
                 if move.cond.content in (IS.private.bel | IS.shared.com):
                     yield R(test=move.cond, success=True, subplan=move.iftrue)
                 else:
@@ -335,6 +336,7 @@ def execute_if(IS):
     IS.private.plan.pop()
     for move in reversed(V.subplan):
         IS.private.plan.push(move)
+        print(IS.pformat())
 
 @update_rule
 def remove_findout(IS, DOMAIN):
