@@ -672,7 +672,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
     def V():
         move = IS.private.plan.top()
         if isinstance(move, ExecuteFunc):
-            mustknow = [Question(i) for i in move.params]
+            mustknow = [Question(i) for i in move.params]+[Question(i) for i in move.kwparams.values()]
 
             prop = []
             try:
@@ -692,9 +692,17 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
                     if DOMAIN.resolves(knowledge[i], mustknow[i]):
                         alls[i] = True
                 if all(alls):
-                    yield R(knowledge=knowledge, move=move)
+                    if len(knowledge) > len(move.params): #dann sind die hinteren nämlich kw-args
+                        kw = dict(zip(move.kwparams.keys(), knowledge[len(move.params):]))
+                        yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw)
+                    else:
+                        yield R(knowledge=knowledge, move=move)
 
-    prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
+    if "kwknowledge" in V._typedict:
+        kwknowledge = {key: val.ind.content for key, val in V.kwknowledge.items()}
+        prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge], **kwknowledge)  # executes it!
+    else:
+        prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
     place(prop)
     IS.private.plan.pop()
 
@@ -734,11 +742,11 @@ def expire_expirables(IS):
     @precondition
     def V():
         for i in IS.private.bel:
-            if isinstance(i, Prop):
+            if isinstance(i, (Prop, Knowledge)):
                 if i.expires and i.expires < round(time.time()):
                     yield R(prop=i, pos=IS.private.bel)
         for i in IS.shared.com:
-            if isinstance(i, Prop):
+            if isinstance(i, (Prop, Knowledge)):
                 if i.expires and i.expires < round(time.time()):
                     yield R(prop=i, pos=IS.shared.com)
 

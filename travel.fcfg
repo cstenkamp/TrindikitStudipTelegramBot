@@ -9,7 +9,8 @@ ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
 ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
 ASK[sem=[Ask=?q, subtype=SecOrdQ, f=?f]] -> SecOrdQ[q=?q, f=?f]
 
-ASK[sem=[Ask=?q, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=?q, f=given] Semester[]
+ASK[sem=[Ask=WhenIs, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenIs, f=given] Semester[]
+ASK[sem=[Ask=WhatNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhatNextSecOrd, f=given] Semester[]
 
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
@@ -52,6 +53,12 @@ SecOrdQ[q=WhenIs] -> 'Wann ist' | 'When is'
 Semester[f=given] -> '{semester}'
 
 SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'Was sind meine Kurse in' | 'Welche Kurse habe ich in' | 'What courses do I have in'
+
+WHQ[q=WhatNext] -> 'What is my next Session?'
+
+SecOrdQ[q=WhatNextSecOrd] -> 'What is my next session of'
+
+
 
 
 CAT[cat=coursename, ind=krypto] -> '{krypto}'

@@ -126,6 +126,7 @@ class CFG_Grammar(Grammar):
         except: pass
 
         try:
+            print("THE QUESTION WAS", sem)
             sem["Ask"]
             if sem["subtype"] == "YNQ":
                 return Ask(YNQ(Prop(Pred0(sem["Ask"]))), askedby="USR")

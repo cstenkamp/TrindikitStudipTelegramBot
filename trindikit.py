@@ -955,10 +955,21 @@ def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper merg
         odict = IS.asdict(recursive=True)
         with open("CurrState.pkl", 'wb') as f:
             pickle.dump(odict, f, pickle.HIGHEST_PROTOCOL)
+        print("saved")
     elif cmd == "/deletepw":
         IS.shared.com.remove("password")
-
-
+        print("done")
+    elif cmd == "/add_timerel":
+        from ibis_types import Knowledge, Pred1
+        import ibis_generals
+        from studip import get_timerelevant_courses
+        import time
+        auth_string = ibis_generals.check_for_something(IS, "auth_string")[1].content
+        IS.private.bel.add(Knowledge(Pred1("timerel_courses"), get_timerelevant_courses(auth_string), True, expires=round(time.time()) + 3600 * 72))
+        if ibis_generals.check_for_something(IS, "bel(timerel_courses)")[0]:
+            print("SUCESSFULL!")
+        else:
+            print("not sucessful! :(")
 
 
 class SimpleInput(object):

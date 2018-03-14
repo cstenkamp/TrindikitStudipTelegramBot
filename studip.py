@@ -100,6 +100,23 @@ def get_my_courses(sem_name, auth_string, IS):
 
 
 @executable_rule
+def session_info(auth_string, what, IS, semester=None, one_course_str=None):
+
+    if not ibis_generals.check_for_something(IS, "bel(timerel_courses)")[0]:
+        timerel_courses = get_timerelevant_courses(auth_string)
+        IS.private.bel.add(Knowledge(Pred1("timerel_courses"), timerel_courses, True, expires=round(time.time()) + 3600 * 72))
+    timerel_courses = ibis_generals.check_for_something(IS, "bel(timerel_courses)")[1] #danach ist es save da
+
+    thepred = Pred1("asdf") if one_course_str else (Pred1("WhatNextSem", semester) if semester else Pred1("WhatNext"))
+
+    txt = get_session_info(what, auth_string, semester=semester, timerel_courses=timerel_courses, one_course_str=one_course_str)
+    if what == "all":
+        return Prop(thepred, Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
+
+
+
+
+@executable_rule
 def download_file(auth_string):
     if settings.MULTIUSER:
         bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
@@ -183,11 +200,15 @@ def create_domain():
               'WhenBreak': 'int',
               'WhenSemester': 'string',
               'ClassesForSemester': 'string',
+              'WhatNext': 'string',
+              'WhatNextSecOrd': 'string',
+              'WhatNextSem': 'string',
               'semester': 'semester'
               }
 
     preds2 = {'WhenIs': ['semester', 'WhenSemester'], #1st element is first ind needed, second is the resulting pred1
-              'ClassesFor': ['semester', 'ClassesForSemester']
+              'ClassesFor': ['semester', 'ClassesForSemester'],
+              'WhatNextSecOrd': ['semester', 'WhatNextSem']
               }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string))}
@@ -277,6 +298,13 @@ def create_domain():
                     [ExecuteFunc(get_my_courses, "?x.semester(x)", "?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
 
+    domain.add_plan("?x.WhatNext(x)",
+                    [ExecuteFunc(partial(session_info, what="all"), "?x.auth_string(x)")],
+                    conditions = ["com(auth_string)"])
+
+    domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
+                    [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+                    conditions=["com(auth_string)"])
 
     return domain
 

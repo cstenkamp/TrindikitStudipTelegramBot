@@ -183,7 +183,7 @@ class Domain(object):
                 if isinstance(question.content, Pred1) and hasattr(question.content, "arg2"):
                     cnt = answer.content[0] if isinstance(answer.content, tuple) else answer.content
                     if isinstance(cnt, Pred1) and hasattr(cnt, "arg2"):
-                        return question.content.arg2 == cnt.arg2 and answer.pred == question.pred
+                        return str(question.content.arg2) == str(cnt.arg2) and answer.pred == question.pred
                     else:
                         return False
                 else:
@@ -276,13 +276,13 @@ def check_for_something(IS, something):
     if something.startswith("bel("):
         relevantpart = something[4:-1]
         for j in IS.private.bel:
-            if isinstance(j, Prop):
+            if isinstance(j, (Knowledge, Prop)):
                 if str(j.content[0]) == relevantpart:
                     return True, j.content[1]
     elif something.startswith("com("):
         relevantpart = something[4:-1]
         for j in IS.shared.com:
-            if isinstance(j, Prop):
+            if isinstance(j, (Knowledge, Prop)):
                 if str(j.content[0]) == relevantpart:
                     return True, j.content[1]
     else:

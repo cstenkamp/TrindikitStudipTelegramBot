@@ -263,6 +263,8 @@ def get_session_info(what, auth_string, semester=None, timerel_courses=None, one
     if what == "all":
         if one_course:
             txt = "Your next session of "+next_ev[0]+" is a "+next_ev[1]["categories"]+". It starts in "+starts_in+" hours ("+time_starts+") and takes "+length+" hours. It is in room "+next_ev[1]["room"]+"."
+        elif semester:
+            txt = "Your next session of "+semester+" is a "+next_ev[1]["categories"]+" of '"+next_ev[0]+"'. It starts in "+starts_in+" hours ("+time_starts+") and takes "+length+" hours. It is in room "+next_ev[1]["room"]+"."
         else:
             txt = "Your next session is a "+next_ev[1]["categories"]+" of '"+next_ev[0]+"'. It starts in "+starts_in+" hours ("+time_starts+") and takes "+length+" hours. It is in room "+next_ev[1]["room"]+"."
         if next_ev[1]["title"]: txt += "\nIts title is '" + next_ev[1]["title"] + "'."

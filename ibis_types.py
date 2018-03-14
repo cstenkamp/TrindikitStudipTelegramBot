@@ -50,7 +50,8 @@ class Atomic(Type):
             if not isinstance(atom, bytes):
                 # assert atom[0].isalpha()
                 # assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
-                assert all(ch.isalnum() or ch in "_-+: \n.?()/!öüä," for ch in atom)
+                atom = atom.replace("'", "`")
+                assert all(ch.isalnum() or ch in "_-+: \n.?()/!öüä,`" for ch in atom)
         self.content = atom
     
     def __str__(self):
@@ -207,6 +208,18 @@ class Ans(Sentence):
 
     # def __repr__(self):
     #     return self.content.__repr__()
+
+class Knowledge(Ans):
+    def __init__(self, pred, ind=None, yes=True, expires=None):
+        assert (isinstance(pred, (Pred0, Pred1, Pred2, str)))
+        self.content = pred, ind, yes
+        self.expires = expires
+    def __hash__(self):
+        return hash((type(self), self.content[0], str(self.content[1]), self.content[2]))
+    def __str__(self):
+        return "Knowledge(Pred1("+str(self.content[0])+"), <not shown>)"+(" - expires in "+str(self.expires)+" secs" if self.expires else "")
+    def __repr__(self):
+        return "Knowledge(Pred1("+str(self.content[0])+"), <not shown>)"+(" - expires in "+str(self.expires)+" secs" if self.expires else "")
 
 
 class Prop(Ans): 
@@ -603,10 +616,11 @@ class Raise(PlanConstructor):
 class ExecuteFunc(PlanConstructor):
     contentclass = (FunctionType, functools.partial)
 
-    def __init__(self, funcname, *params):
+    def __init__(self, funcname, *params, **kwparams):
         assert isinstance(funcname, (FunctionType, functools.partial))
         self.content = funcname
         self.params = params
+        self.kwparams = kwparams
 
     def __str__(self):
         return "ExecuteFunc('%s') needing params %s" % (self.content.__str__(), self.params)
