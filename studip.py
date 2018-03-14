@@ -107,7 +107,7 @@ def session_info(auth_string, what, IS, semester=None, one_course_str=None):
         IS.private.bel.add(Knowledge(Pred1("timerel_courses"), timerel_courses, True, expires=round(time.time()) + 3600 * 72))
     timerel_courses = ibis_generals.check_for_something(IS, "bel(timerel_courses)")[1] #danach ist es save da
 
-    thepred = Pred1("asdf") if one_course_str else (Pred1("WhatNextSem", semester) if semester else Pred1("WhatNext"))
+    thepred = Pred1("WhatNextKurs", one_course_str) if one_course_str else (Pred1("WhatNextSem", semester) if semester else Pred1("WhatNext"))
 
     txt = get_session_info(what, auth_string, semester=semester, timerel_courses=timerel_courses, one_course_str=one_course_str)
     if what == "all":
@@ -150,8 +150,8 @@ def download_file2(auth_string, coursename, filename):
 
 class StudIP_grammar(CFG_Grammar):
 
-    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None):
-        res = super().interpret(input, IS, DOMAIN, anyString=anyString, moves=moves)
+    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None):
+        res = super().interpret(input, IS, DOMAIN, NEXT_MOVES, anyString=anyString, moves=moves)
         if res:
             return res
         else: #bspw empty set
@@ -169,11 +169,24 @@ class StudIP_grammar(CFG_Grammar):
 
 class studip_domain(ibis_generals.Domain):
 
-    def get_sort_from_ind(self, answer):
+    def get_sort_from_ind(self, answer, *args, **kwargs):
         res = self.inds.get(answer)
         if res: return res
         if "SS" in answer and any(str(i) in answer for i in range(2000, 2050)) or "WS" in answer and any(str(i)+'/'+str(i-1999).zfill(2) in answer for i in range(2000, 2050)):
             return "semester"
+        if "kurs" in kwargs and answer in kwargs["kurs"]:
+            return "kurs"
+
+    def collect_sort_info(self, forwhat, IS=None):
+        try:
+            if forwhat == "kurs":
+                auth_string = ibis_generals.check_for_something(IS, "auth_string")
+                if auth_string[0]:
+                    auth_string = auth_string[1].content
+                    return {"kurs": get_courses(auth_string, semester="")[0]}
+        except:
+            pass
+        return None
 
 
 def create_domain():
@@ -203,15 +216,19 @@ def create_domain():
               'WhatNext': 'string',
               'WhatNextSecOrd': 'string',
               'WhatNextSem': 'string',
-              'semester': 'semester'
+              'WhatNextKurs': 'string',
+              'semester': 'semester',
+              'kurs': 'kurs'
               }
 
     preds2 = {'WhenIs': ['semester', 'WhenSemester'], #1st element is first ind needed, second is the resulting pred1
               'ClassesFor': ['semester', 'ClassesForSemester'],
-              'WhatNextSecOrd': ['semester', 'WhatNextSem']
+              #'WhatNextSecOrd': ['semester', 'WhatNextSem'], #asdf
+              'WhatNextSecOrd': ['kurs', 'WhatNextKurs']
               }
 
-    converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string))}
+    converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
+                  'kurs': lambda auth_string, string: find_real_coursename(auth_string, string)}
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
@@ -302,8 +319,12 @@ def create_domain():
                     [ExecuteFunc(partial(session_info, what="all"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
+    # domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
+    #                 [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+    #                 conditions=["com(auth_string)"])  #asdf
+
     domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
-                    [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+                    [ExecuteFunc(partial(session_info, what="all"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
 
     return domain

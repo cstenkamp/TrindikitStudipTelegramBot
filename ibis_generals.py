@@ -48,7 +48,7 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
                 str += "."
         return str
 
-    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None): #Haupt-Sache von cfg_grammar überschrieben wird
+    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None): #Haupt-Sache von cfg_grammar überschrieben wird
         """Parse an input string into a dialogue move or a set of moves."""
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
@@ -133,7 +133,7 @@ class Domain(object):
         self.converters = converters #welche funktionen nötig sind um aus strings "sorts" zu machen
         self.plans = {}
 
-    def get_sort_from_ind(self, answer):
+    def get_sort_from_ind(self, answer, *args, **kwargs):
         return self.inds.get(answer)
 
 
@@ -169,8 +169,11 @@ class Domain(object):
         else:
             self.plans[trigger] = {"plan": tuple(plan), "conditions": tuple(conditions)}
 
+    def collect_sort_info(self, forwhat, IS=None):
+        return None
 
-    def relevant(self, answer, question):
+
+    def relevant(self, answer, question, IS=None, verbose=False):
         """True if 'answer' is relevant to 'question'."""
         if isinstance(answer, Answer):
             answer = answer.content
@@ -189,9 +192,10 @@ class Domain(object):
                 else:
                     return answer.pred == question.pred
             elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
-                sort1 = self.get_sort_from_ind(answer.ind.content)
-                sort2 = self.get_sort_from_question(question.pred.content)
-                return (sort1 and sort2 and sort1 == sort2) or sort2 == "string" #letzterer Fall ist freetextquestion
+                sort1 = self.get_sort_from_question(question.pred.content)
+                sortinfo = self.collect_sort_info(sort1, IS) or {}
+                sort2 = self.get_sort_from_ind(answer.ind.content, **sortinfo)
+                return (sort1 and sort2 and sort1 == sort2) or sort1 == "string" #letzterer Fall ist freetextquestion
         elif isinstance(question, YNQ):
             # integrate macht aus question+answer proposition! aus "?return()" und "YesNo(False)" wird "Prop((Pred0('return'), None, False))", und das auf IS.shared.com gepackt
             # print("#####")                                                                      # OB YESNOANS DIE QUESTION RESOLVED (dann wird aus YesNo(False) ne Prop) # OB DIE ENTSTANDENE PROP WAS VOM QUD RESOLVED
@@ -216,11 +220,11 @@ class Domain(object):
         return False
 
 
-    def combine(self, question, answer):
+    def combine(self, question, answer, IS=None):
         """Return the proposition that is the result of combining 'question' 
         with 'answer'. This presupposes that 'answer' is relevant to 'question'.
         """
-        assert self.relevant(answer, question)
+        assert self.relevant(answer, question, IS=IS)
         if isinstance(question, WhQ):
             if isinstance(answer, ShortAns):
                 prop = question.pred.apply(answer.ind)

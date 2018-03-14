@@ -1,6 +1,6 @@
--general info about next session               get_session_info("all", auth_string, "", timerel_courses)
+-general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
 -general info about next session of semester X get_session_info("all", auth_string, "SS18")
--general info about next session of course z   get_session_info("all", auth_string, "", timerel_courses, "Scientific programming in Python")
+-general info about next session of course z   get_session_info("all", auth_string, "", timerel_courses, "Scientific programming in Python")        What is my next session of Codierungstheorie und Kryptographie?
 -where is my next session                      get_session_info("where", auth_string, "SS18", timerel_courses)
 -where is my next session OF XYZ               get_session_info("where", auth_string, "SS18", timerel_courses, "Scientific programming in Python")
 -remind me as soon as a session is cancelled   
@@ -14,6 +14,7 @@
 -when is the last session OF SEMSTER X
 -when is the first session OF SEMSTER X
 -when is the first session OF XYZ
+-wann ist die klausur/nachklausur von .. (bspw krypto hat das als solchen)
 -was habe ich heute/morgen/dienstag [noch] für kurse (mit zeiten)
 -bis wie spät hab ich heute/morgen/dienstag Uni
 -remind me if the room of a session changes

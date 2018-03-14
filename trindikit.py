@@ -983,7 +983,7 @@ class SimpleInput(object):
 
 
     @update_rule
-    def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, GRAMMAR):
+    def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, NEXT_MOVES, GRAMMAR):
         """Convert an INPUT string to a set of LATEST_MOVES.
         
         Calls GRAMMAR.interpret to convert the string in INPUT
@@ -992,7 +992,7 @@ class SimpleInput(object):
         old_moves = deepcopy(LATEST_MOVES)
         LATEST_MOVES.clear()
         if INPUT.value != '':
-            move_or_moves = GRAMMAR.interpret(INPUT.get(), IS, DOMAIN, anyString = freetextquestion(IS,DOMAIN), moves=old_moves)
+            move_or_moves = GRAMMAR.interpret(INPUT.get(), IS, DOMAIN, NEXT_MOVES, anyString = freetextquestion(IS,DOMAIN), moves=old_moves)
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht

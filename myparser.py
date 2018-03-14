@@ -55,6 +55,7 @@ class MyParser(nltk.parse.FeatureEarleyChartParser):
         # print("\n".join(constituents))
         # print("\n".join(terminals))
 
+        result = []
         for i in constituents:
             tmp = rem_spaces(i[6:])
             for j in neighbours:
@@ -64,12 +65,14 @@ class MyParser(nltk.parse.FeatureEarleyChartParser):
                         for k in terminals:
                             if i[3] == k[1]:
                                 # print("THIS ONE NEEDS TO BE", j[2][2:-2], ":", re.findall("\'(.*?)\'", k)[0])
-                                return j[2][2:-2], k[k.find("'")+1:-1]
+                                result.append((j[2][2:-2], k[k.find("'")+1:-1]))
                     elif j[1] == "l":
                         for k in terminals:
                             if i[1] == k[3]:
                                 # print("THIS ONE NEEDS TO BE", j[2][2:-2], ":", re.findall("\'(.*?)\'", k)[0])
-                                return j[2][2:-2], k[k.find("'") + 1:-1]
+                                result.append((j[2][2:-2], k[k.find("'") + 1:-1]))
+        if result:
+            return result
 
         return None, None
 

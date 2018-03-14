@@ -252,7 +252,7 @@ def get_session_info(what, auth_string, semester=None, timerel_courses=None, one
     curr_time = round(time.time())
 
     if len(all_times) == 0:
-        return "You don't have any upcoming sessions"+(" at all" if not one_course_str else " for "+one_course_str)+"!"
+        return "You don't have any upcoming sessions"+(" at all" if not one_course_str and not semester else " for "+(one_course if one_course else semester))+"!"
     next_time = min(int(event["start"]) for event in all_times.values())
     next_ev = [(kurs, event) for kurs, event in all_times.items() if event["start"] == str(next_time)][0] # -> dict(Kursname: Kurs)
     time_starts = next_ev[1]["iso_start"][:next_ev[1]["iso_start"].find("+")].replace("T", " at ")
@@ -359,7 +359,7 @@ if __name__ == '__main__':
     timerel_courses = None
     # print(get_session_info("when", auth_string, "SS18", timerel_courses))
 
-    # print(get_courses(auth_string, semester="SS18"))
+    print(get_courses(auth_string, semester="")[0])
 
     # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
                                                                             # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     # print(get_session_info("what", auth_string, "", timerel_courses, "Informatik A")) # hier wird diese exception suppressed, weil get_session_info nur die zeitlich noch relevanten kurse interessiert
                                                                                         # der fehler wird uns daher wohl erst bei document-api-routen begegnen
 
-
+    print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
 
 
     #/user/:id/schedule also seems to be gone

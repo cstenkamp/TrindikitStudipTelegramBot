@@ -40,6 +40,9 @@ else:
 # CFG grammar based on NLTK
 ######################################################################
 
+class NotRecognizedException(Exception):
+    pass
+
 class CFG_Grammar(Grammar):
     """CFG parser based on NLTK."""
     
@@ -51,9 +54,9 @@ class CFG_Grammar(Grammar):
         self.parser = MyParser(nltk.grammar.FeatureGrammar.fromstring(preprocessed), trace=settings.VERBOSE["Parse"])
 
 
-    def interpret(self, input, IS, DOMAIN, anyString=False, moves=None): #überschreibe ich nochmal in studip
+    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None): #überschreibe ich nochmal in studip
         """Parse an input string into a dialogue move or a set of moves."""
-        try: return self.parseString(input, IS, DOMAIN)
+        try: return self.parseString(input, IS, DOMAIN, NEXT_MOVES)
         except: pass
         try: return eval(input)
         except: pass
@@ -62,16 +65,25 @@ class CFG_Grammar(Grammar):
         return set([])
 
 
-    def parseString(self, input, IS, DOMAIN):
+    def parseString(self, input, IS, DOMAIN, NEXT_MOVES):
         tokens = self.preprocess_input(input).split()
         try:
             trees = next(self.parser.parse(tokens))  # http://www.nltk.org/book/ch09.html
             root = trees[0].label()
         except:
-            typ, string = self.parser.partial_parse(tokens, self.neighbours)
-            string2 = string.replace("_", " ").replace("?", "")
-            # print("STRING", string)
-            converted = self.use_converters(IS, DOMAIN, string2, typ)
+            typstringlist = self.parser.partial_parse(tokens, self.neighbours) #TODO der partialparser muss besser sodass er ne einduetige antwort zurückgibt >.<
+            for i, (typ, string) in enumerate(typstringlist):
+                string2 = string.replace("_", " ").replace("?", "")
+                # print("STRING", string)
+                try:
+                    converted = self.use_converters(IS, DOMAIN, string2, typ, NEXT_MOVES)
+                    break
+                except NotRecognizedException as e:
+                    if i < len(typstringlist):
+                        pass
+                    else:
+                        NEXT_MOVES.push(State("I did not recognize the " + typ + " you queried!"))
+                        raise e
             # print("CONVERTED", converted)
             tokens = " ".join(tokens).replace(string, "{"+typ+"}").split(" ")
             # print("NEU ZU PARSEN:", tokens)
@@ -80,7 +92,7 @@ class CFG_Grammar(Grammar):
             root = deepcopy(dict(root))
             if root["sem"]["f"] == "given": root["sem"]["f"] = converted
         try:
-            return self.sem2move(root['sem'], IS, DOMAIN)
+            return self.sem2move(root['sem'], IS, DOMAIN, NEXT_MOVES)
         except:
             pass
         try:
@@ -90,10 +102,12 @@ class CFG_Grammar(Grammar):
         return ""
 
 
-    def use_converters(self, IS, DOMAIN, string, answertype):
+    def use_converters(self, IS, DOMAIN, string, answertype, NEXT_MOVES):
         try:
             auth_string = IS.shared.com.get("auth_string").content[1].content
             content = DOMAIN.converters[answertype](auth_string, string)
+            if not content:
+                raise NotRecognizedException
             return content
         except Exception as e: #wenn es noch keinen auth-string gibt versteht er das einfach nicht(!)
             raise e
@@ -113,7 +127,7 @@ class CFG_Grammar(Grammar):
         raise Exception
 
 
-    def sem2move(self, sem, IS, DOMAIN):
+    def sem2move(self, sem, IS, DOMAIN, NEXT_MOVES):
         #sem bspw: [Ask = 'needvisa'] [ subtype = 'YNQ']
         try: return Answer(sem['Answer'])
         except: pass
@@ -137,7 +151,7 @@ class CFG_Grammar(Grammar):
                     return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)), askedby="USR")
                 else:
                     range = DOMAIN.preds2[sem['Ask']] #range[1] ist die neue frage, range[0] der answer-typ
-                    content = self.use_converters(IS, DOMAIN, sem["f"], range[0])
+                    content = self.use_converters(IS, DOMAIN, sem["f"], range[0], NEXT_MOVES)
                     return Ask(WhQ(Pred1(range[1], content, createdfrom=sem['Ask'])), askedby="USR")
         except:
             pass
