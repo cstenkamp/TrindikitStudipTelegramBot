@@ -10,13 +10,13 @@ ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
 ASK[sem=[Ask=?q, subtype=SecOrdQ, f=?f]] -> SecOrdQ[q=?q, f=?f]
 
 ASK[sem=[Ask=WhenIs, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenIs, f=given] Semester[]
+ASK[sem=[Ask=ClassesFor, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=ClassesFor, f=given] Semester[]
+
 ASK[sem=[Ask=WhatNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhatNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhatNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhatNextSecOrd, f=given] Kurs[]
-
-#asdf ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Semester[]
+ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Kurs[]
-
-#asdf ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
+ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Kurs[]
 
 

@@ -1,5 +1,18 @@
+Ist gerade Vorlesungszeit?
+In wie vielen Tagen geht das Semester los?
+Wann geht das Semester los?
+In wie vielen Tagen gehen die Semesterferien los?
+Wann gehen die Semesterferien los?
+Wann ist ein Semester? -> <semester> / Wann ist nächstes Semester? / Wann ist <semester>?
+Was für Kurse habe ich in <semester>?
+What is my next Session? / What is my next Session of <Kurs>? / What is my next Session of <semester>? / What is my next session of -> <semester>
+When is my next Session? / When is my next Session of <Kurs>? / When is my next Session of <semester>? / When is my next session of -> <semester>
+Where is my next Session? / Where is my next Session of <Kurs>? / Where is my next Session of <semester>? / Where is my next session of -> <semester>
+
+
+
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
--general info about next session of semester X get_session_info("all", auth_string, "SS18")
+-general info about next session of semester X get_session_info("all", auth_string, "SS18")                                                         What is my next session of SS18?
 -general info about next session of course z   get_session_info("all", auth_string, "", timerel_courses, "Scientific programming in Python")        What is my next session of Codierungstheorie und Kryptographie?
 -where is my next session                      get_session_info("where", auth_string, "SS18", timerel_courses)                                      Where is my next session?
 -where is my next session OF XYZ               get_session_info("where", auth_string, "SS18", timerel_courses, "Scientific programming in Python")  Where is my next session of Scientific Programming in Python?

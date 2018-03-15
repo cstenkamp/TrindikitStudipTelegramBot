@@ -141,7 +141,8 @@ class CFG_Grammar(Grammar):
         except: pass
 
         try:
-            print("THE QUESTION WAS:\n"+str(sem))
+            if settings.VERBOSE["Question"]:
+                print("THE QUESTION WAS:\n"+str(sem))
             sem["Ask"]
             if sem["subtype"] == "YNQ":
                 return Ask(YNQ(Prop(Pred0(sem["Ask"]))), askedby="USR")
@@ -152,9 +153,9 @@ class CFG_Grammar(Grammar):
                     return Ask(SecOrdQ(Pred2(sem['Ask'], DOMAIN)), askedby="USR")
                 else:
                     range = DOMAIN.preds2[sem['Ask']] #range[1] ist die neue frage, range[0] der answer-typ
-                    print("HIER IST DAS PROBLEM", range)
-                    content = self.use_converters(IS, DOMAIN, sem["f"], range[0], NEXT_MOVES)
-                    return Ask(WhQ(Pred1(range[1], content, createdfrom=sem['Ask'])), askedby="USR")
+                    if sem.get("fulfilltype"): range = [i for i in range if i[0] == sem["fulfilltype"]]
+                    content = self.use_converters(IS, DOMAIN, sem["f"], range[0][0], NEXT_MOVES)
+                    return Ask(WhQ(Pred1(range[0][1], content, createdfrom=sem['Ask'])), askedby="USR")
         except:
             pass
         try:

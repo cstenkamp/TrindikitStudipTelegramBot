@@ -326,6 +326,7 @@ def find_real_coursename(auth_string, name, semester=""):
             return i[0]
     #         results.append(i[0])
     # return results[0] if len(results) == 1 else (results or None)
+    return None
 
 
 class MoreThan1Exception(Exception):

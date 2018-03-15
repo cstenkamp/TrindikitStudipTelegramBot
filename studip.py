@@ -172,6 +172,15 @@ class StudIP_grammar(CFG_Grammar):
                         return Answer(ShortAns(Ind(get_semester_name(input)), True))
                 except ValueError:
                     pass
+            elif any(isinstance(move.content, Question) and move.content.content.content == 'kurs' for move in moves):
+                try:
+                    tmp = ibis_generals.check_for_something(IS, "auth_string")
+                    if tmp[0]: #dann kann "this" und "next" nachgucken
+                        name = find_real_coursename(tmp[1].content, input)
+                        if name:
+                            return Answer(ShortAns(Ind(name), True))
+                except ValueError:
+                    pass
 
 
 class studip_domain(ibis_generals.Domain):
@@ -236,14 +245,11 @@ def create_domain():
               'kurs': 'kurs'
               }
 
-    preds2 = {'WhenIs': ['semester', 'WhenSemester'], #1st element is first ind needed, second is the resulting pred1
-              'ClassesFor': ['semester', 'ClassesForSemester'],
-              'WhatNextSecOrd': ['semester', 'WhatNextSem'], #asdf
-              'WhatNextSecOrd': ['kurs', 'WhatNextKurs'],
-              #'WhereNextSecOrd': ['semester', 'WhereNextSem'], #asdf
-              'WhereNextSecOrd': ['kurs', 'WhereNextKurs'],
-              #'WhenNextSecOrd': ['semester', 'WhenNextSem'], #asdf
-              'WhenNextSecOrd': ['kurs', 'WhenNextKurs']
+    preds2 = {'WhenIs': [['semester', 'WhenSemester']], #1st element is first ind needed, second is the resulting pred1
+              'ClassesFor': [['semester', 'ClassesForSemester']],
+              'WhatNextSecOrd': [['semester', 'WhatNextSem'], ['kurs', 'WhatNextKurs']],
+              'WhereNextSecOrd': [['semester', 'WhereNextSem'], ['kurs', 'WhereNextKurs']],
+              'WhenNextSecOrd': [['semester', 'WhenNextSem'], ['kurs', 'WhenNextKurs']]
               }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
@@ -352,33 +358,28 @@ def create_domain():
     domain.add_plan("?x.y.WhatNextSecOrd(y)(x)",
                     [If("?x.semester(x)",
                         [ExecuteFunc(partial(session_info, what="all"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
-                        [ExecuteFunc(partial(session_info, what="all"), semester="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
+                        [ExecuteFunc(partial(session_info, what="all"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
                         conditions=["com(auth_string)"])
 
     domain.add_plan("?x.WhereNext(x)",
                     [ExecuteFunc(partial(session_info, what="where"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    # domain.add_plan("?x.y.WhereNextSecOrd(y)(x)",
-    #                 [ExecuteFunc(partial(session_info, what="where"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
-    #                 conditions=["com(auth_string)"])  #asdf
-
     domain.add_plan("?x.y.WhereNextSecOrd(y)(x)",
-                    [ExecuteFunc(partial(session_info, what="where"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")],
-                    conditions=["com(auth_string)"])
-
+                    [If("?x.semester(x)",
+                        [ExecuteFunc(partial(session_info, what="where"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+                        [ExecuteFunc(partial(session_info, what="where"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
+                        conditions=["com(auth_string)"])
 
     domain.add_plan("?x.WhenNext(x)",
                     [ExecuteFunc(partial(session_info, what="when"), "?x.auth_string(x)")],
                     conditions = ["com(auth_string)"])
 
-    # domain.add_plan("?x.y.WhenNextSecOrd(y)(x)",
-    #                 [ExecuteFunc(partial(session_info, what="when"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
-    #                 conditions=["com(auth_string)"])  #asdf
-
     domain.add_plan("?x.y.WhenNextSecOrd(y)(x)",
-                    [ExecuteFunc(partial(session_info, what="when"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")],
-                    conditions=["com(auth_string)"])
+                    [If("?x.semester(x)",
+                        [ExecuteFunc(partial(session_info, what="when"), semester="?x.semester(x)", auth_string="?x.auth_string(x)")],
+                        [ExecuteFunc(partial(session_info, what="when"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
+                        conditions=["com(auth_string)"])
 
 
 
@@ -453,6 +454,7 @@ def loadIBIS():
     grammar.addForm("Ask('?x.coursename(x)')", "From which course do you want to download?")
     grammar.addForm("Ask('?x.filename(x)')", "Which file from that course do you want to download?")
     grammar.addForm("Ask('?x.semester(x)')", "Which semester?")
+    grammar.addForm("Ask('?x.kurs(x)')", "Which course?")
 
     database = TravelDB()
     database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})

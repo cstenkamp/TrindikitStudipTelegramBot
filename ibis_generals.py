@@ -155,8 +155,9 @@ class Domain(object):
                     trigger = Command(trigger)
 
         if isinstance(trigger, SecOrdQ):
-            pred1 = "?x."+self.preds2[str(trigger.content)][1]+"(x)"
-            self.add_plan(pred1, plan, conditions)
+            for candidate in self.preds2[str(trigger.content)]:
+                pred1 = "?x."+candidate[1]+"(x)"
+                self.add_plan(pred1, plan, conditions)
 
         assert trigger not in self.plans, \
             "There is already a plan with trigger %s" % trigger
@@ -209,9 +210,9 @@ class Domain(object):
             return any(answer == ynq.prop for ynq in question.ynqs)
 
 
-    def resolves(self, answer, question):
+    def resolves(self, answer, question, IS=None):
         """True if 'question' is resolved by 'answer'."""
-        if self.relevant(answer, question):
+        if self.relevant(answer, question, IS=IS):
             if isinstance(answer, Answer):
                 answer = answer.content
             if isinstance(question, YNQ):

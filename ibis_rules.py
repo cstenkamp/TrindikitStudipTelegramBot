@@ -106,11 +106,13 @@ def integrate_secordq_clarify(IS, DOMAIN):
         que = IS.shared.qud.top()
         if isinstance(que, SecOrdQ):
             #que ist bspw SecOrdQ(Pred2(WhenIs, ['semester', 'WhenSemester'])), arg1[0] ist dann semester. Wenn das im IS ist, dann mach draus arg1[1]
-            tmp = ibis_generals.check_for_something(IS, que.content.arg1[0])
-            if tmp[0]:
-               yield R(que=que, firstarg=tmp[1])
+            for candidate in que.content.arg1:
+                tmp = ibis_generals.check_for_something(IS, candidate[0])
+                if tmp[0]:
+                   yield R(que=que, firstarg=tmp[1], candidate=candidate)
+                   break
 
-    tmp = Pred1(V.que.content.arg1[1], V.firstarg, createdfrom=V.que)
+    tmp = Pred1(V.candidate[1], V.firstarg, createdfrom=V.que)
     IS.shared.qud.pop()
     IS.shared.qud.push(WhQ(tmp))
 
@@ -128,10 +130,10 @@ def integrate_answer(IS, DOMAIN):
         que = IS.shared.qud.top()
         for move in IS.shared.lu.moves:
             if isinstance(move, Answer):
-                if DOMAIN.relevant(move.content, que):
+                if DOMAIN.relevant(move.content, que, IS=IS):
                     yield R(que=que, ans=move.content)
 
-    prop = DOMAIN.combine(V.que, V.ans)
+    prop = DOMAIN.combine(V.que, V.ans, IS=IS)
     IS.shared.com.add(prop)
     IS.private.bel.remove(prop, silent=True)
 
@@ -240,7 +242,7 @@ def clarify_pred2(IS, DOMAIN, NEXT_MOVES):
     def V():
         move = IS.private.agenda.top()
         if isinstance(move, ClarifyPred2):
-            que  = "?x." + move.content.content.arg1[0] + "(x)"
+            que  = "?x." + move.content.content.arg1[0][0] + "(x)"  #TODO - er fragt jetzt immer nach der ERSTEN möglichkeit das zu fulfillen, das kann unintended sein
             resolved = any(DOMAIN.resolves(prop, que) for prop in IS.private.bel)
             if not resolved:
                 yield R(move=move, question=que)
@@ -265,7 +267,7 @@ def find_plan1(IS, DOMAIN, NEXT_MOVES):
     def V():
         move = IS.private.agenda.top(soft=True)
         scnd = IS.private.agenda.penutop(soft=True)
-        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and str(move.content.content) == scnd.content.content.arg1[0]:
+        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and any(str(move.content.content) == candidate[0] for candidate in scnd.content.content.arg1):
             move = scnd
 
         if isinstance(move, (Respond, ClarifyPred2)):
@@ -298,7 +300,7 @@ def find_plan2(IS, DOMAIN, NEXT_MOVES):
     def V():
         move = IS.private.agenda.top(soft=True)
         scnd = IS.private.agenda.penutop(soft=True)
-        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and str(move.content.content) == scnd.content.content.arg1[0]:
+        if isinstance(move, Ask) and isinstance(scnd, ClarifyPred2) and any(str(move.content.content) == candidate[0] for candidate in scnd.content.content.arg1):
             move = scnd
 
         if isinstance(move, (Respond, ClarifyPred2)):
@@ -314,7 +316,7 @@ def find_plan2(IS, DOMAIN, NEXT_MOVES):
 # Executing plans
 
 @update_rule
-def execute_if(IS):
+def execute_if(IS, DOMAIN):
     """Execute an If(...) plan construct.
     
     If the topmost construct in /private/plan is an If,
@@ -327,16 +329,21 @@ def execute_if(IS):
         move = IS.private.plan.top()
         if isinstance(move, If):
             if isinstance(move.cond, YNQ):
-                print("OHA", move.iftrue, "UND", move.iffalse)
                 if move.cond.content in (IS.private.bel | IS.shared.com):
                     yield R(test=move.cond, success=True, subplan=move.iftrue)
                 else:
                     yield R(test=move.cond, success=False, subplan=move.iffalse)
+            elif isinstance(move.cond, WhQ): #dann prüft er lediglich ob das wissen dazu da ist
+                sources = list(IS.shared.com) + list(IS.private.bel) + list(find_knowledge_from_question(IS, DOMAIN))
+                if any(DOMAIN.resolves(candidate, move.cond) for candidate in sources):
+                    yield R(test=move.cond, success=True, subplan=move.iftrue)
+                else:
+                    yield R(test=move.cond, success=False, subplan=move.iffalse)
+
     
     IS.private.plan.pop()
     for move in reversed(V.subplan):
         IS.private.plan.push(move)
-        print(IS.pformat())
 
 @update_rule
 def remove_findout(IS, DOMAIN):
@@ -667,6 +674,23 @@ def powerset(L, fixedLen=False, incShuffles=True):
     else:
         return flatten([list(itertools.permutations(i)) for i in pset])
 
+
+def find_knowledge_from_question(IS, DOMAIN):
+    prop = []
+    try:
+        if isinstance(IS.shared.qud.top(), WhQ):
+            topqud = IS.shared.qud.top().content
+            if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
+                for candidate in DOMAIN.preds2[str(topqud.createdfrom)]:
+                    anotherquestion = Question("?x." + candidate[0] + "(x)")
+                    if DOMAIN.resolves(Answer(topqud.arg2).content, anotherquestion, IS=IS):
+                        prop.append(DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content, IS=IS))
+    except:
+        pass
+    return prop
+
+
+
 @update_rule
 def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
 
@@ -676,16 +700,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
         if isinstance(move, ExecuteFunc):
             mustknow = [Question(i) for i in move.params]+[Question(i) for i in move.kwparams.values()]
 
-            prop = []
-            try:
-                if isinstance(IS.shared.qud.top(), WhQ):
-                    topqud = IS.shared.qud.top().content
-                    if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
-                        anotherquestion = Question("?x."+DOMAIN.preds2[str(topqud.createdfrom)][0]+"(x)")
-                        prop = [DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content, IS=IS)]
-            except:
-                pass
-
+            prop = find_knowledge_from_question(IS, DOMAIN)
             sources = list(IS.shared.com)+list(IS.private.bel)+list(prop)
             knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
             for knowledge in knowledgecombos:
@@ -699,6 +714,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
                         yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw)
                     else:
                         yield R(knowledge=knowledge, move=move)
+
 
     if "kwknowledge" in V._typedict:
         kwknowledge = {key: val.ind.content for key, val in V.kwknowledge.items()}

@@ -129,8 +129,12 @@ class Pred2(Atomic):
             self.appliedContent = pred.content
 
     def __str__(self):
-        if hasattr(self, "arg1") and len(self.arg1) > 1:
-            return self.content+"("+str(self.arg1[0])+")"
+        if hasattr(self, "arg1"):
+            cnt = ""
+            for candidate in self.arg1:
+                if len(candidate) > 1:
+                    cnt += str(candidate[0])
+            return self.content+"("+cnt+")" if len(cnt) > 0 else self.content
         return self.content
 
     def __repr__(self):
