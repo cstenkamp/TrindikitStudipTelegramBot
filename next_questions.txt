@@ -8,7 +8,7 @@ Was für Kurse habe ich in <semester>?
 What is my next Session? / What is my next Session of <Kurs>? / What is my next Session of <semester>? / What is my next session of -> <semester>
 When is my next Session? / When is my next Session of <Kurs>? / When is my next Session of <semester>? / When is my next session of -> <semester>
 Where is my next Session? / Where is my next Session of <Kurs>? / Where is my next Session of <semester>? / Where is my next session of -> <semester>
-
+When is the exam of <Kurs>?
 
 
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
@@ -27,7 +27,7 @@ Where is my next Session? / Where is my next Session of <Kurs>? / Where is my ne
 -when is the last session OF SEMSTER X
 -when is the first session OF SEMSTER X
 -when is the first session OF XYZ
--wann ist die klausur/nachklausur von .. (bspw krypto hat das als solchen)
+-wann ist die klausur/nachklausur von ..       find_klausurtermin(auth_string, "Codierungstheorie und Kryptographie")                               When is the exam of <Kurs>?
 -was habe ich heute/morgen/dienstag [noch] für kurse (mit zeiten)
 -bis wie spät hab ich heute/morgen/dienstag Uni
 -remind me if the room of a session changes

@@ -18,6 +18,7 @@ ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextS
 ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Kurs[]
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=WhenExamSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenExamSecOrd, f=given] Kurs[]
 
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
@@ -65,6 +66,7 @@ SecOrdQ[q=WhenNextSecOrd] -> 'When is my next session of' | 'When is the next se
 
 Kurs[f=given] -> '{kurs}'
 
+SecOrdQ[q=WhenExamSecOrd] -> 'When is the exam of'
 
 
 

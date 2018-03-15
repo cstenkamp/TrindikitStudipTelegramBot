@@ -194,7 +194,7 @@ def debug_print_semesterstuff(auth_string, userid):
 
 
 ########################################################################################################################
-################################################## Semester & Zeiten ###################################################
+############################################ Kurse/Sessions & Zeiten ###################################################
 ########################################################################################################################
 
 def get_user_courses(auth_string, semester=None):
@@ -344,6 +344,35 @@ def get_course_by_name(auth_string, name, semester=None, supress=False):
         return res[0]
 
 
+def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=None):
+    one_course = get_course_by_name(auth_string, course_str, semester=semester, supress=True)
+
+    all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
+    curr_time = round(time.time())
+
+    next_time = min(int(event["start"]) for event in all_times.values())
+    next_ev = [event for event in all_times.values() if event["start"] >= str(next_time)]
+    Klausur = None
+    Nachklausur = None
+    for i in next_ev:
+        if i["categories"] == "Klausur":
+            Klausur = i
+        if i["categories"] == "Nachklausur":
+            Nachklausur = i
+
+    if Klausur == Nachklausur == None:
+        return "Unfortunately, there is no information about exams for this course on Stud.IP!"
+
+    txt = ""
+    for curr in [Klausur, Nachklausur]:
+        if curr:
+            time_starts = curr["iso_start"][:curr["iso_start"].find("+")].replace("T", " at ")
+            starts_in = str(datetime.timedelta(seconds=int(curr["start"]) - curr_time))[:-3]
+            length = str(datetime.timedelta(seconds=int(curr["end"]) - int(curr["start"])))[:-3]
+            txt += "The "+("exam" if curr == Klausur else "make-up exam")+" is in "+starts_in+" hours ("+time_starts+", in room "+curr["room"]+"). It takes "+length+" hours.\n"
+    return txt[:-1]
+
+
 
 
 
@@ -370,7 +399,14 @@ if __name__ == '__main__':
     # print(get_session_info("what", auth_string, "", timerel_courses, "Informatik A")) # hier wird diese exception suppressed, weil get_session_info nur die zeitlich noch relevanten kurse interessiert
                                                                                         # der fehler wird uns daher wohl erst bei document-api-routen begegnen
 
-    print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
+    # print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
+
+    print(find_klausurtermin(auth_string, "Codierungstheorie und Kryptographie"))
+
+
+
+
+
 
 
     #/user/:id/schedule also seems to be gone
