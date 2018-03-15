@@ -182,6 +182,12 @@ def get_semesters(auth_string):
     return this_semester, next_semester
 
 
+def get_semester_before(auth_string, semester):
+    all_semesters = load("semesters", auth_string)['semesters']
+    asked_semester = [all_semesters[i-1]['title'] for i in range(1, len(all_semesters)) if all_semesters[i]['title'] == semester][0]
+    return asked_semester
+
+
 def debug_print_semesterstuff(auth_string, userid):
     print(semesters_with_courses(userid, auth_string))
     all_semesters = load("semesters", auth_string)['semesters']
@@ -204,7 +210,10 @@ def get_user_courses(auth_string, semester=None):
         all_semesters = load("semesters", auth_string)['semesters']
         semesterid = get(all_semesters, get_semester_name(semester))["semester_id"]
     s_courses = courses['courses']['study'] or []
-    w_courses = courses['courses']['work'] or []
+    try:
+        w_courses = courses['courses']['work'] or []
+    except KeyError:
+        w_courses = []
     w_courses.extend([i for i in s_courses if i["perms"] not in ["autor", "user"]])
     s_courses = [i for i in s_courses if i["perms"] in ["autor", "user"]]
     if semester:
@@ -290,6 +299,14 @@ def easify_coursename(name):
     i = re.sub(r"\bvi\b", "sechs", i)
     i = re.sub(r"\bvii\b", "sieben", i)
     i = re.sub(r"\bviii\b", "acht", i)
+    i = re.sub(r"\b1\b", "eins", i)
+    i = re.sub(r"\b2\b", "zwei", i)
+    i = re.sub(r"\b3\b", "drei", i)
+    i = re.sub(r"\b4\b", "vier", i)
+    i = re.sub(r"\b5\b", "fünf", i)
+    i = re.sub(r"\b6\b", "sechs", i)
+    i = re.sub(r"\b7\b", "sieben", i)
+    i = re.sub(r"\b8\b", "acht", i)
     i = i.replace("(Lecture + Tutorial)", "")
     i = i.replace("(Lecture + Practice)", "")
     j = re.sub("\(.*?\)", "", i).replace("(", "").replace(")", "")
@@ -340,17 +357,30 @@ def get_course_by_name(auth_string, name, semester=None, supress=False):
     if len(res) > 1:
         if not supress: raise MoreThan1Exception("course")
         else: return res
-    else:
+    elif len(res) == 1:
         return res[0]
+    else:
+        return
 
 
 def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=None):
-    one_course = get_course_by_name(auth_string, course_str, semester=semester, supress=True)
+    try:
+        one_course = get_course_by_name(auth_string, course_str, semester=semester, supress=False)
+    except MoreThan1Exception:
+        sem = get_semesters(auth_string)[0]
+        for i in range(10):
+            try:
+                one_course = get_course_by_name(auth_string, course_str, semester=sem, supress=False)
+                break
+            except MoreThan1Exception:
+                sem = get_semester_before(auth_string, sem)
 
     all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
     curr_time = round(time.time())
-
-    next_time = min(int(event["start"]) for event in all_times.values())
+    try:
+        next_time = min(int(event["start"]) for event in all_times.values())
+    except:
+        return "There are no future events at all for that class!"
     next_ev = [event for event in all_times.values() if event["start"] >= str(next_time)]
     Klausur = None
     Nachklausur = None
@@ -367,6 +397,7 @@ def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=N
     for curr in [Klausur, Nachklausur]:
         if curr:
             time_starts = curr["iso_start"][:curr["iso_start"].find("+")].replace("T", " at ")
+            time_starts = calendar.day_abbr[datetime.datetime.fromtimestamp(int(next_ev[1]["start"])).weekday()] + ", " + time_starts
             starts_in = str(datetime.timedelta(seconds=int(curr["start"]) - curr_time))[:-3]
             length = str(datetime.timedelta(seconds=int(curr["end"]) - int(curr["start"])))[:-3]
             txt += "The "+("exam" if curr == Klausur else "make-up exam")+" is in "+starts_in+" hours ("+time_starts+", in room "+curr["room"]+"). It takes "+length+" hours.\n"
@@ -401,7 +432,8 @@ if __name__ == '__main__':
 
     # print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
 
-    print(find_klausurtermin(auth_string, "Codierungstheorie und Kryptographie"))
+
+    print(find_klausurtermin(auth_string, "Mathematik für anwender II"))
 
 
 

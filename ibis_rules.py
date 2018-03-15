@@ -115,7 +115,7 @@ def integrate_secordq_clarify(IS, DOMAIN):
     tmp = Pred1(V.candidate[1], V.firstarg, createdfrom=V.que)
     IS.shared.qud.pop()
     IS.shared.qud.push(WhQ(tmp))
-
+    IS.private.agenda.push(Respond(WhQ(tmp)))
 
 
 @update_rule
