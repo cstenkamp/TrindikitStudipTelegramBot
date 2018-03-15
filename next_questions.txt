@@ -9,7 +9,8 @@ What is my next Session? / What is my next Session of <Kurs>? / What is my next 
 When is my next Session? / When is my next Session of <Kurs>? / When is my next Session of <semester>? / When is my next session of -> <semester>
 Where is my next Session? / Where is my next Session of <Kurs>? / Where is my next Session of <semester>? / Where is my next session of -> <semester>
 When is the exam of <Kurs>?
-
+What courses do I have left today?
+What courses do I have on <day>?
 
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
 -general info about next session of semester X get_session_info("all", auth_string, "SS18")                                                         What is my next session of SS18?

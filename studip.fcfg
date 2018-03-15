@@ -1,0 +1,100 @@
+% start USR
+
+
+# IBIS / domain-independent
+
+USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]
+
+ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
+ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
+ASK[sem=[Ask=?q, subtype=SecOrdQ, f=?f]] -> SecOrdQ[q=?q, f=?f]
+
+ASK[sem=[Ask=WhenIs, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenIs, f=given] Semester[]
+ASK[sem=[Ask=ClassesFor, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=ClassesFor, f=given] Semester[]
+
+ASK[sem=[Ask=WhatNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhatNextSecOrd, f=given] Semester[]
+ASK[sem=[Ask=WhatNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhatNextSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Semester[]
+ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
+ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=WhenExamSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenExamSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=CoursesOnSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=CoursesOnSecOrd, f=given] Date[]
+
+
+ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
+
+SHORTANS[ans=?ind] -> CAT[cat=?cat, ind=?ind]
+#SHORTANS[ans=[pred=?cat, ind=?ind]] -> CAT[cat=?cat, ind=?ind]
+
+YESNOANS[ans=yes] -> 'yes' | 'yeah'
+YESNOANS[ans=no] -> 'no' | 'nope'
+
+QUIT[] -> 'bye'
+
+IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
+
+# studip
+
+CMD[con=studip] -> 'studip'
+
+CMD[con=visa] -> 'visa'
+
+CMD[con=download] -> 'download'
+
+CMD[con=download2] -> 'download2'
+
+CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
+WHQ[q=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'In wievielen Tagen gehen [die] Vorlesungen los?' | 'In wievielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?' | 'DaysLectures' | 'How many days until [the] lectures start?'
+WHQ[q=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?'
+WHQ[q=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wievielen Tagen gehen [die] Ferien los?' | 'In wievielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?' | 'S'
+WHQ[q=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
+SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?'
+SecOrdQ[q=WhenIs, f=next_semester] -> 'Wann ist nächstes Semester?'
+SecOrdQ[q=WhenIs, f=this_semester] -> 'Wann ist dieses Semester?'
+SecOrdQ[q=WhenIs] -> 'Wann ist' | 'When is'
+
+Semester[f=given] -> '{semester}'
+
+SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'Was für Kurse hab ich in' | 'Was sind meine Kurse in' | 'Welche Kurse habe ich in' | 'What courses do I have in'
+
+WHQ[q=WhatNext] -> 'What is my next Session?'
+SecOrdQ[q=WhatNextSecOrd] -> 'What is my next session of' | 'What is the next session of'
+WHQ[q=WhereNext] -> 'Where is my next Session?'
+SecOrdQ[q=WhereNextSecOrd] -> 'Where is my next session of' | 'Where is the next session of'
+WHQ[q=WhenNext] -> 'When is my next Session?'
+SecOrdQ[q=WhenNextSecOrd] -> 'When is my next session of' | 'When is the next session of'
+
+Kurs[f=given] -> '{kurs}'
+
+SecOrdQ[q=WhenExamSecOrd] -> 'When is the exam of'
+
+
+SecOrdQ[q=CoursesOnSecOrd] -> 'What classes do I have on' | 'What classes do I have' | 'What courses do I have on' | 'What courses do I have'
+Date[f=given] -> '{date}'
+WHQ[q=CoursesLeft] -> 'What classes do I have left today?' | 'What courses do I have left today?'
+
+
+
+CAT[cat=coursename, ind=krypto] -> '{krypto}'
+
+
+# travel
+
+YNQ[q=needvisa] -> 'need-visa'
+
+WHQ[q=price] -> 'price'
+WHQ[q=price] -> 'I want to know how expensive a flight is.'
+
+CAT[cat=how, ind=plane] -> 'plane' | 'flight'
+CAT[cat=how, ind=train] -> 'train'
+
+CAT[cat=city, ind=london] -> 'london'
+CAT[cat=city, ind=paris]  -> 'paris'
+CAT[cat=city, ind=berlin] -> 'berlin'
+
+CAT[cat=class, ind=first]  -> 'first' | 'business'
+CAT[cat=class, ind=second] -> 'second' | 'economy'
+
+CAT[cat=day, ind=today]    -> 'today'
+CAT[cat=day, ind=tomorrow] -> 'tomorrow'

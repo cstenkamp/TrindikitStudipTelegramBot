@@ -1,12 +1,16 @@
 BASE_URL = 'https://studip.uni-osnabrueck.de/plugins.php/restipplugin/api/'
 
-from studip_downloader import *
 import time
 import datetime
 import calendar
 from dateutil import parser
 import pytz
 from copy import deepcopy
+import re
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+import json
+import sys
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################

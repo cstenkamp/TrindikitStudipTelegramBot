@@ -5,7 +5,6 @@ from ibis_types import *
 import trindikit
 import ibis_generals
 import codecs
-from studip_downloader import load, return_file, load_file2
 from singleUser_ibis import singleUser_download
 import inspect
 import functools
@@ -486,7 +485,7 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, StudIP_grammar):
 
 def loadIBIS():
     grammar = TravelGrammar()
-    grammar.loadGrammar(os.path.join(PATH,"travel.fcfg"))
+    grammar.loadGrammar(os.path.join(PATH,"studip.fcfg"))
     grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
     grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
     grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
