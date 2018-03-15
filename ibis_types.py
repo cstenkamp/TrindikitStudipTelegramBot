@@ -50,8 +50,8 @@ class Atomic(Type):
             if not isinstance(atom, bytes):
                 # assert atom[0].isalpha()
                 # assert all(ch.isalnum() or ch in "_-+: \n" for ch in atom)
-                atom = atom.replace("'", "`")
-                assert all(ch.isalnum() or ch in "_-+: \n.?()/!öüä,`" for ch in atom)
+                atom = atom.replace("'", "*")
+                assert all(ch.isalnum() or ch in "_-+: \n.?()/!öüä,*" for ch in atom)
         self.content = atom
     
     def __str__(self):

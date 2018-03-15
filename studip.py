@@ -94,7 +94,7 @@ def get_my_courses(sem_name, auth_string, IS):
     if len(s) > 2: txt += "Courses you take:\n"+s+"\n"
     if len(w) > 2: txt += "Courses you work for:\n"+w+"\n"
     txt = txt[:-1]
-    if len(txt) < 2: txt = "You don`t have any courses for that semester!"
+    if len(txt) < 2: txt = "You don't have any courses for that semester!"
     IS.shared.com.remove("semester", silent=True)
     return Prop(Pred1("ClassesForSemester", sem_name), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
 
