@@ -154,7 +154,10 @@ class CFG_Grammar(Grammar):
                 else:
                     range = DOMAIN.preds2[sem['Ask']] #range[1] ist die neue frage, range[0] der answer-typ
                     if sem.get("fulfilltype"): range = [i for i in range if i[0] == sem["fulfilltype"]]
-                    content = self.use_converters(IS, DOMAIN, sem["f"], range[0][0], NEXT_MOVES)
+                    try:
+                        content = self.use_converters(IS, DOMAIN, sem["f"], range[0][0], NEXT_MOVES) #TODO: dafuq, warum konvertier ich 2 mal?
+                    except:
+                        content = sem["f"]
                     return Ask(WhQ(Pred1(range[0][1], content, createdfrom=sem['Ask'])), askedby="USR")
         except:
             pass

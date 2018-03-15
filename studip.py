@@ -94,7 +94,7 @@ def get_my_courses(sem_name, auth_string, IS):
     if len(s) > 2: txt += "Courses you take:\n"+s+"\n"
     if len(w) > 2: txt += "Courses you work for:\n"+w+"\n"
     txt = txt[:-1]
-    if len(txt) < 2: txt = "You don't have any courses for that semester!"
+    if len(txt) < 2: txt = "You don`t have any courses for that semester!"
     IS.shared.com.remove("semester", silent=True)
     return Prop(Pred1("ClassesForSemester", sem_name), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
 
@@ -126,6 +126,28 @@ def klausur(auth_string, course_str, IS, semester=None):
     txt = find_klausurtermin(auth_string, course_str, timerel_courses=timerel_courses)
     return Prop(Pred1("WhenExam", course_str), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
 
+
+@executable_rule
+def test_credentials(auth_string, NEXT_MOVES):
+    try:
+        load_userid(auth_string, silent=False)
+    except AuthentificationError:
+        return State("These credentials are wrong!\nYou can re-enter them by sending /start"), NEXT_MOVES.push
+
+
+@executable_rule
+def classes_on(auth_string, IS, date=None, left=False):
+    assert date or left
+    if not ibis_generals.check_for_something(IS, "bel(timerel_courses)")[0]:
+        timerel_courses = get_timerelevant_courses(auth_string)
+        IS.private.bel.add(Knowledge(Pred1("timerel_courses"), timerel_courses, True, expires=round(time.time()) + 3600 * 72))
+    timerel_courses = ibis_generals.check_for_something(IS, "bel(timerel_courses)")[1] #danach ist es save da
+    if not left:
+        txt = get_courses_for_day(auth_string, date, None, timerel_courses)
+        return Prop(Pred1("CoursesOn", date), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
+    else:
+        txt = get_courses_for_day(auth_string, parse_date("today"), None, timerel_courses, round(time.time()))
+        return Prop(Pred1("CoursesLeft", date), Ind(txt), True, expires=round(time.time()) + 60), IS.private.bel.add
 
 
 
@@ -198,6 +220,8 @@ class studip_domain(ibis_generals.Domain):
             return "semester"
         if "kurs" in kwargs and answer in kwargs["kurs"]:
             return "kurs"
+        if answer[0] == "d" and all(ch.isnumeric() for ch in answer[1:]):
+            return "date"
 
     def collect_sort_info(self, forwhat, IS=None):
         try:
@@ -250,7 +274,11 @@ def create_domain():
               'semester': 'semester',
               'kurs': 'kurs',
               'WhenExam': 'string',
-              'WhenExamSecOrd': 'string'
+              'WhenExamSecOrd': 'string',
+              'CoursesOn': 'string',
+              'CoursesOnSecOrd': 'string',
+              'CoursesLeft': 'string',
+              'date': 'date'
               }
 
     preds2 = {'WhenIs': [['semester', 'WhenSemester']], #1st element is first ind needed, second is the resulting pred1
@@ -259,10 +287,12 @@ def create_domain():
               'WhereNextSecOrd': [['semester', 'WhereNextSem'], ['kurs', 'WhereNextKurs']],
               'WhenNextSecOrd': [['semester', 'WhenNextSem'], ['kurs', 'WhenNextKurs']],
               'WhenExamSecOrd': [['kurs', 'WhenExam']],
+              'CoursesOnSecOrd': [['date', 'CoursesOn']]
               }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
-                  'kurs': lambda auth_string, string: find_real_coursename(auth_string, string)}
+                  'kurs': lambda auth_string, string: find_real_coursename(auth_string, string),
+                  'date': lambda auth_string, string: str(parse_date(string))}
 
     means = 'plane', 'train'
     cities = 'paris', 'london', 'berlin'
@@ -303,7 +333,8 @@ def create_domain():
                     Findout("?x.password(x)"),
                     Inform("Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string."),
                     ExecuteFunc(make_authstring, "?x.username(x)", "?x.password(x)"),
-                    Inform("The Auth-string is: %s", ["com(auth_string)"]) #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
+                    Inform("The Auth-string is: %s", ["com(auth_string)"]), #wenn inform 2 params hat und der zweite "bel" ist, zieht der die info aus dem believes.
+                    ExecuteFunc(test_credentials, "?x.auth_string(x)")
                    ])
 
     #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
@@ -390,14 +421,17 @@ def create_domain():
                         [ExecuteFunc(partial(session_info, what="when"), one_course_str="?x.kurs(x)", auth_string="?x.auth_string(x)")])],
                         conditions=["com(auth_string)"])
 
-
     domain.add_plan("?x.y.WhenExamSecOrd(y)(x)",
                     [ExecuteFunc(klausur, auth_string="?x.auth_string(x)", course_str="?x.kurs(x)")],
                     conditions=["com(auth_string)"])
 
+    domain.add_plan("?x.y.CoursesOnSecOrd(y)(x)",
+                    [ExecuteFunc(classes_on, auth_string="?x.auth_string(x)", date="?x.date(x)")],
+                    conditions=["com(auth_string)"])
 
-
-
+    domain.add_plan("?x.CoursesLeft(x)",
+                    [ExecuteFunc(partial(classes_on, left=True), auth_string="?x.auth_string(x)")],
+                    conditions=["com(auth_string)"])
 
     return domain
 

@@ -19,6 +19,7 @@ ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextS
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Kurs[]
 ASK[sem=[Ask=WhenExamSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenExamSecOrd, f=given] Kurs[]
+ASK[sem=[Ask=CoursesOnSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=CoursesOnSecOrd, f=given] Date[]
 
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
@@ -44,9 +45,9 @@ CMD[con=download] -> 'download'
 CMD[con=download2] -> 'download2'
 
 CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
-WHQ[q=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?' | 'DaysLectures' | 'How many days until [the] lectures start?'
+WHQ[q=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'In wievielen Tagen gehen [die] Vorlesungen los?' | 'In wievielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?' | 'DaysLectures' | 'How many days until [the] lectures start?'
 WHQ[q=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?'
-WHQ[q=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?' | 'S'
+WHQ[q=DaysBreak] -> 'In wie vielen Tagen gehen [die] Semesterferien los?' | 'In wievielen Tagen gehen [die] Ferien los?' | 'In wievielen Tagen gehen [die] Semesterferien los?' | 'In wie vielen Tagen gehen [die] Ferien los?' | 'In how many days does [the] break start' | 'How many days until break?' | 'S'
 WHQ[q=WhenBreak] -> 'Wann gehen [die] Semesterferien los?' | 'Wann gehen [die] Ferien los?' | 'Wann sind [die] Semsterferien?' | 'When does [the] Break start' | 'When is Semesterbreak?'
 SecOrdQ[q=WhenIs] -> 'Wann ist ein Semester?'
 SecOrdQ[q=WhenIs, f=next_semester] -> 'Wann ist nächstes Semester?'
@@ -55,7 +56,7 @@ SecOrdQ[q=WhenIs] -> 'Wann ist' | 'When is'
 
 Semester[f=given] -> '{semester}'
 
-SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'Was sind meine Kurse in' | 'Welche Kurse habe ich in' | 'What courses do I have in'
+SecOrdQ[q=ClassesFor] -> 'Was für Kurse habe ich in' | 'Was für Kurse hab ich in' | 'Was sind meine Kurse in' | 'Welche Kurse habe ich in' | 'What courses do I have in'
 
 WHQ[q=WhatNext] -> 'What is my next Session?'
 SecOrdQ[q=WhatNextSecOrd] -> 'What is my next session of' | 'What is the next session of'
@@ -69,6 +70,9 @@ Kurs[f=given] -> '{kurs}'
 SecOrdQ[q=WhenExamSecOrd] -> 'When is the exam of'
 
 
+SecOrdQ[q=CoursesOnSecOrd] -> 'What classes do I have on' | 'What classes do I have' | 'What courses do I have on' | 'What courses do I have'
+Date[f=given] -> '{date}'
+WHQ[q=CoursesLeft] -> 'What classes do I have left today?' | 'What courses do I have left today?'
 
 
 

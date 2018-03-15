@@ -1,19 +1,12 @@
 BASE_URL = 'https://studip.uni-osnabrueck.de/plugins.php/restipplugin/api/'
 
-import codecs
-import json
-import re
-import sys
-import time
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
-import codecs
 from studip_downloader import *
-import os.path as p
-import os
 import time
 import datetime
 import calendar
+from dateutil import parser
+import pytz
+from copy import deepcopy
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################
@@ -84,12 +77,13 @@ def download_file(path, auth_string, check_credentials=False):
                 raise
 
 
-def load_userid(auth_string):
+def load_userid(auth_string, silent=True):
     try:
         userid = load('user', auth_string, check_credentials=True)['user']['user_id']
     except AuthentificationError:
         print("Credentials wrong!")
-        exit()
+        if not silent:
+            raise AuthentificationError
     return userid
 
 
@@ -261,7 +255,7 @@ def get_session_info(what, auth_string, semester=None, timerel_courses=None, one
     curr_time = round(time.time())
 
     if len(all_times) == 0:
-        return "You don't have any upcoming sessions"+(" at all" if not one_course_str and not semester else " for "+(one_course if one_course else semester))+"!"
+        return "You don`t have any upcoming sessions"+(" at all" if not one_course_str and not semester else " for "+(one_course if one_course else semester))+"!"
     next_time = min(int(event["start"]) for event in all_times.values())
     next_ev = [(kurs, event) for kurs, event in all_times.items() if event["start"] == str(next_time)][0] # -> dict(Kursname: Kurs)
     time_starts = next_ev[1]["iso_start"][:next_ev[1]["iso_start"].find("+")].replace("T", " at ")
@@ -404,7 +398,137 @@ def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=N
     return txt[:-1]
 
 
+class DateAmbiguousException(Exception):
+    pass
 
+
+def parse_date(datestr, asInt=True):
+    difference = 0
+    datestr = datestr.lower()
+    orig_str = deepcopy(datestr)
+    datestr = datestr.replace("um", "at")
+    datestr = datestr.replace("am", "").replace("sstag", "samstag")
+    if datestr in ["heute", "today"]:
+        datestr = round(time.time())
+    if datestr in ["tomorrow", "morgen"]:
+        datestr = round(time.time())+3600*24
+    if datestr in ["the day after tomorrow", "day after tomorrow", "übermorgen"]:
+        datestr = round(time.time())+3600*48
+    if datestr in ["überübermorgen", "über-übermorgen", "über-über-morgen"]:
+        datestr = round(time.time())+3600*72
+    if datestr in ["gestern", "yesterday"]:
+        datestr = round(time.time())-3600*24
+    if datestr in ["vorgestern", "the day before yesterday", "day before yesterday"]:
+        datestr = round(time.time())-3600*48
+    if not isinstance(datestr, (int, float)):
+        datestr = datestr.replace("january", "01").replace("januar", "01").replace("jan", "01")
+        datestr = datestr.replace("february", "02").replace("februar", "02").replace("feb", "02")
+        datestr = datestr.replace("march", "03").replace("märz", "03").replace("mrz", "03").replace("mar", "03")
+        datestr = datestr.replace("april", "04").replace("april", "04").replace("apr", "04")
+        datestr = datestr.replace("may", "05").replace("mai", "05")
+        datestr = datestr.replace("june", "06").replace("juni", "06").replace("jun", "06")
+        datestr = datestr.replace("july", "07").replace("juli", "07").replace("jul", "07")
+        datestr = datestr.replace("august", "08").replace("aug", "08")
+        datestr = datestr.replace("september", "09").replace("sep", "09")
+        datestr = datestr.replace("october", "10").replace("oktober", "10").replace("oct", "10").replace("okt", "10")
+        datestr = datestr.replace("november", "11").replace("nov", "11")
+        datestr = datestr.replace("december", "12").replace("dezember", "12").replace("dec", "12").replace("dez", "12")
+        datestr = datestr.replace("montag", "monday").replace("dienstag", "tuesday").replace("mittwoch", "wednesday")
+        datestr = datestr.replace("donnerstag", "thursday").replace("freitag", "friday").replace("samstag", "saturday").replace("sonntag", "sunday")
+        datestr = datestr.replace("nächste woche", "next week")
+        datestr = datestr.replace("next week", "next_week")
+        weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        tmpstr = datestr.split(" ")
+        if len(tmpstr) > 1:
+            datestr = [i for i in tmpstr if i in weekdays][0]
+            if datestr:
+                if any(i in ["last", "letzter", "letzten"] for i in tmpstr):
+                    difference += -3600*24*7
+                if any(i in ["next", "nächster", "nächsten", "kommender", "kommenden"] for i in tmpstr):
+                    pass
+                    # if datetime.datetime.fromtimestamp(time.time()).weekday() <= weekdays.index(datestr):
+                    #     difference = +3600*24*7
+                if weekdays.index(datestr) == datetime.datetime.fromtimestamp(time.time()).weekday() and any(i in ["next", "nächster", "nächsten", "kommender", "kommenden"] for i in tmpstr):
+                    difference += +3600*24*7
+                if any(i in ["last", "letzter", "letzten"] for i in tmpstr):
+                    if datetime.datetime.fromtimestamp(time.time()).weekday() <= weekdays.index(datestr):
+                        difference += -3600*24*7
+                if any(i in ["übernächster", "übernächsten"] for i in tmpstr):
+                    if datetime.datetime.fromtimestamp(time.time()).weekday() == weekdays.index(datestr):
+                        difference += +3600*24*14
+                    else:
+                        difference += +3600*24*7
+                if any(i in ["next_week"] for i in tmpstr):
+                    if datetime.datetime.fromtimestamp(time.time()).weekday() <= weekdays.index(datestr):
+                        difference += +3600 * 24 * 7
+
+    if isinstance(datestr, (int, float)) and datestr > 946688461:
+        datestr = str(datetime.datetime.fromtimestamp(round(datestr)))
+
+    datestr = re.sub(' +',' ',datestr)
+    unixtime = int(parser.parse(str(datestr)).date().strftime("%s"))+(3600 if not is_dst("Europe/Berlin") else 0)
+    unixtime += difference
+
+    if orig_str == calendar.day_name[datetime.datetime.fromtimestamp(time.time()).weekday()].lower():
+        raise DateAmbiguousException("Do you mean to say this or next "+datestr+"?")
+
+    if asInt:
+        return "d"+str(int(parser.parse(str(datestr)).date().strftime("%s"))+(3600 if not is_dst("Europe/Berlin") else 0))
+    return datetime.datetime.fromtimestamp(unixtime).date()
+
+
+def is_dst(zonename):
+    tz = pytz.timezone(zonename)
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    return now.astimezone(tz).dst() != datetime.timedelta(0)
+
+
+def get_courses_for_day(auth_string, day, semester=None, timerel_courses=None, aftertime=None):
+    if isinstance(day, str):
+        if day[0] == "d": day = day[1:]
+        day = int(day)
+    if aftertime: aftertime -= 60*16
+    if not (timerel_courses and not semester): #wenn nicht timerelevant-courses vom speicherstand genutzt wurde
+        if semester:
+            w_courses, s_courses = get_user_courses(auth_string, semester)
+        else:
+            w_courses, s_courses = get_user_courses(auth_string)
+        timerel_courses = w_courses + s_courses
+    day_end = day+24*3600-1
+    all_times = {}
+    rn_times = {}
+    for course in timerel_courses:
+        kurs = course["course_id"]
+        kursevents = load("courses/%s/events" % kurs, auth_string)
+        if all(int(event["start"]) > day_end or int(event["start"]) < day or event["canceled"] for event in kursevents["events"]): continue
+        if not aftertime:
+            all_times[course["name"]] = [event for event in kursevents["events"] if day <= int(event["start"]) <= day_end and not event["canceled"]]
+        else:
+            all_times[course["name"]] = [event for event in kursevents["events"] if aftertime <= int(event["start"]) <= day_end and not event["canceled"]]
+            rn_times[course["name"]] = [event for event in kursevents["events"] if int(event["start"]) <= aftertime <= int(event["end"]) and not event["canceled"]]
+
+    day = calendar.day_abbr[datetime.datetime.fromtimestamp(day).weekday()] + ", " + str(datetime.datetime.fromtimestamp(day).date())
+    srtd = []
+    for key, val in all_times.items():
+        for event in val:
+            length = str(datetime.timedelta(seconds=int(event["end"]) - int(event["start"])))[:-3]
+            srtd.append((event["start"], key, event["categories"], event["title"], event["room"], event["iso_start"][event["iso_start"].find("T")+1:event["iso_start"].find("+")], event["iso_end"][event["iso_end"].find("T")+1:event["iso_end"].find("+")], length))
+    if len(srtd) == 0 and not aftertime:
+        return "You don`t have any classes on "+str(day)+"!"
+    srtd = sorted(srtd, key=lambda item: int(item[0]))
+    txt = "\n".join(i[1] + " - "+i[2]+(("(topic: "+i[3]+")") if i[3] else "")+" from "+i[5]+" to "+i[6]+" ("+i[7]+"h)"+" in room "+i[4] for i in srtd)
+    if aftertime and len(rn_times) > 0:
+        srtd = []
+        for key, val in rn_times.items():
+            for event in val:
+                togo = str(datetime.timedelta(seconds=int(event["end"]) - (aftertime+60*16)))[:-3]
+                srtd.append((event["start"], key, event["categories"], event["title"], event["iso_end"][event["iso_end"].find("T")+1:event["iso_end"].find("+")], togo))
+        if len(srtd) == 0 and len(txt) == 0:
+            return "You don`t have any classes on today!"
+        txt2 = "Currently you are in:\n"+("\n".join(i[1] + " - "+i[2]+(("(topic: "+i[3]+")") if i[3] else "")+" until "+i[4]+" ("+i[5]+" hours to go)" for i in srtd))
+        return txt2 + ("\nYou have the following classes left today:\n"+txt if len(txt) > 0 else "You don`t have any classes left today.")
+    else:
+        return "You have the following classes on "+str(day)+":\n"+txt if len(txt) > 0 else "You don`t have any classes left today."
 
 
 
@@ -414,13 +538,13 @@ if __name__ == '__main__':
     # auth_string = codecs.encode(auth_bytes, 'base64').strip()
     # print(auth_string)
     auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
-    userid = load_userid(auth_string)
+    # userid = load_userid(auth_string)
 
     # timerel_courses = get_timerelevant_courses(auth_string)  #der wird beim ersten mal errechnet, für 72 Stunden gespeichert, und jedes mal wenn eine zeitabfrage OHNE SEMESTERANGABE KOMMT soll der das hier  nehmen stall all_courses
     timerel_courses = None
     # print(get_session_info("when", auth_string, "SS18", timerel_courses))
 
-    print(get_courses(auth_string, semester="")[0])
+    # print(get_courses(auth_string, semester="")[0])
 
     # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
                                                                             # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
@@ -433,10 +557,12 @@ if __name__ == '__main__':
     # print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
 
 
-    print(find_klausurtermin(auth_string, "Mathematik für anwender II"))
+    # print(find_klausurtermin(auth_string, "Mathematik für anwender II"))
 
 
+    # print(get_courses_for_day(auth_string, parse_date("monday"), None, timerel_courses, 1521453600))
 
+    print(get_courses_for_day(auth_string, parse_date("16.4.2018"), None, timerel_courses))
 
 
 

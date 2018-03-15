@@ -37,19 +37,20 @@ def handle_update(update, ibis):
             send_message("New user! You were added to the system", chat)
         else:
             send_message("New User that didn't send /start", chat)
+        send_message("DISCLAIMER:\nThis bot comes without any guarantees for correctness! DON`T RELY ON IT, especially not for your exam-dates etc! Failure is always a possibility!", chat)
         send_message("To use Stud.IP capabilities, start by sending the message 'studip' to the bot. After that, you must enter your Stud.IP username and password, such that you can use most of the functionalities of this bot", chat)
         user.state.IS.private.agenda.push(Greet())
         ibis.respond(user)
     else:
         if user.asked_restart or user.asked_stop:
-            if text == "yes":
+            if text.lower() == "yes":
                 user.state.reset_IS()
                 user.state.reset_MIVS()
                 send_message("Consider it done.", chat)
                 if user.asked_restart:
                     user.state.IS.private.agenda.push(Greet())
                     ibis.respond(user)
-            elif text == "no":
+            elif text.lower() == "no":
                 send_message("Ok, won't do", chat)
             else:
                 send_message("Count that as 'no'.", chat)

@@ -683,8 +683,8 @@ def find_knowledge_from_question(IS, DOMAIN):
             if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
                 for candidate in DOMAIN.preds2[str(topqud.createdfrom)]:
                     anotherquestion = Question("?x." + candidate[0] + "(x)")
-                    if DOMAIN.resolves(Answer(topqud.arg2).content, anotherquestion, IS=IS):
-                        prop.append(DOMAIN.combine(anotherquestion, Answer(topqud.arg2).content, IS=IS))
+                    if DOMAIN.resolves(Answer(str(topqud.arg2)).content, anotherquestion, IS=IS):
+                        prop.append(DOMAIN.combine(anotherquestion, Answer(str(topqud.arg2)).content, IS=IS))
     except:
         pass
     return prop
@@ -718,10 +718,12 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
 
     if "kwknowledge" in V._typedict:
         kwknowledge = {key: val.ind.content for key, val in V.kwknowledge.items()}
-        prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge], **kwknowledge)  # executes it!
+        res = V.move.content(DM, *[i.ind.content for i in V.knowledge], **kwknowledge)  # executes it!
     else:
-        prop, place = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
-    place(prop)
+        res = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
+    if res:
+        prop, place = res
+        place(prop)
     IS.private.plan.pop()
 
 
