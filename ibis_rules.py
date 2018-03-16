@@ -698,7 +698,8 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
     def V():
         move = IS.private.plan.top()
         if isinstance(move, ExecuteFunc):
-            mustknow = [Question(i) for i in move.params]+[Question(i) for i in move.kwparams.values()]
+            kwparams = [val for key,val in move.kwparams.items() if key != "optionals"]
+            mustknow = [Question(i) for i in move.params]+[Question(i) for i in kwparams]
 
             prop = find_knowledge_from_question(IS, DOMAIN)
             sources = list(IS.shared.com)+list(IS.private.bel)+list(prop)
@@ -711,21 +712,32 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
                 if all(alls):
                     if len(knowledge) > len(move.params): #dann sind die hinteren nämlich kw-args
                         kw = dict(zip(move.kwparams.keys(), knowledge[len(move.params):]))
-                        yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw)
+                        if "optionals" in move.kwparams.keys():
+                            optknowledge = {}
+                            optionals = move.kwparams["optionals"]
+                            for key,val in optionals.items():
+                                for knw in sources:
+                                    if DOMAIN.resolves(knw, Question(val)):
+                                        optknowledge[key] = knw
+                            yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw, optknowledge=optknowledge)
+                        else:
+                            yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw)
                     else:
                         yield R(knowledge=knowledge, move=move)
 
-
     if "kwknowledge" in V._typedict:
         kwknowledge = {key: val.ind.content for key, val in V.kwknowledge.items()}
+        if "optknowledge" in V._typedict: kwknowledge["optionals"] = V.optknowledge
         res = V.move.content(DM, *[i.ind.content for i in V.knowledge], **kwknowledge)  # executes it!
     else:
         res = V.move.content(DM, *[i.ind.content for i in V.knowledge]) #executes it!
-    if res:
+    if res and res != "failure":
         prop, place = res
         place(prop)
-    IS.private.plan.pop()
-
+    if res != "failure":
+        IS.private.plan.pop()
+        print("TODO: man muss in der funktion noch angeben können welche dinge er anschließend aufräumen soll (in diesem beispiel nicht auth_string), und er löscht die dann hier von den richtigen stellen")
+        print(V.move.kwparams)
 
 
 @update_rule

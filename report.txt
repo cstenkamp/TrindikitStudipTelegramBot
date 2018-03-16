@@ -1,1 +1,0 @@
--schreiben dass wenn man sowohl "Where is my next session of Scientific Programming in Python?" fragen kann als auch "Where is my next session of ", sodass er gegenfragt

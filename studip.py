@@ -24,11 +24,13 @@ else:
 def executable_rule(function):
     argkeys, varargs, varkw, defaults = inspect.getargspec(function)
     replacekeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
+    optionals = inspect.signature(function).parameters["optionals"].default if "optionals" in argkeys else None
 
     @functools.wraps(function)
     def wrappedfunc(*args, **kw):
         new_kw = dict((key, getattr(args[0], key, None)) for key in replacekeys) #args[0] ist der DM (der als parameter für update-rules speziell behandelt wird), hier werden alle gepacslockten daran gehängt
         new_kw = {**new_kw, **kw} #für die partials mit what
+        if not new_kw["optionals"]: new_kw["optionals"] = optionals
         result = function(*args[1:], **new_kw)
         return result
     return wrappedfunc
@@ -147,6 +149,25 @@ def classes_on(auth_string, IS, date=None, left=False):
     else:
         txt = get_courses_for_day(auth_string, parse_date("today"), None, timerel_courses, round(time.time()))
         return Prop(Pred1("CoursesLeft", date), Ind(txt), True, expires=round(time.time()) + 60), IS.private.bel.add
+
+
+@executable_rule
+def show_files(auth_string, course_str, IS, NEXT_MOVES, optionals={"semester": None}):
+    try:
+        if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content #TODO eine unpack-funktion, die bei "None" gar nichts macht und je nach typ richtig entpackt
+        file_list = list_course_files(auth_string, course_str, semester=optionals["semester"])
+    except MoreThan1Exception as e: #TODO: diese exception zu fangen per decorator!!
+        print("TODO - das hier als decorator")
+        possible_semesters = e.args[0].split(",")[1:]
+        what = e.args[0].split(",")[0]
+        postponed_plan = IS.private.plan.pop() #ersetzte es durch If(semester) []...
+        warning = State("You underspecified which course you mean! Do you mean "+course_str+" in "+" or ".join(possible_semesters)+"?")
+        NEXT_MOVES.push(warning)
+        IS.private.plan.push(If("?x."+what+"(x)",[postponed_plan]))
+        IS.private.plan.push(Findout('?x.'+what+'(x)'))
+        return "failure"
+    return Prop(Pred1("ListFiles", course_str), Ind(file_list), True, expires=round(time.time()) + 3600*0.5), IS.private.bel.add
+
 
 
 
@@ -277,7 +298,9 @@ def create_domain():
               'CoursesOn': 'string',
               'CoursesOnSecOrd': 'string',
               'CoursesLeft': 'string',
-              'date': 'date'
+              'date': 'date',
+              'ListFilesSecOrd': 'string',
+              'ListFiles': 'string'
               }
 
     preds2 = {'WhenIs': [['semester', 'WhenSemester']], #1st element is first ind needed, second is the resulting pred1
@@ -286,7 +309,8 @@ def create_domain():
               'WhereNextSecOrd': [['semester', 'WhereNextSem'], ['kurs', 'WhereNextKurs']],
               'WhenNextSecOrd': [['semester', 'WhenNextSem'], ['kurs', 'WhenNextKurs']],
               'WhenExamSecOrd': [['kurs', 'WhenExam']],
-              'CoursesOnSecOrd': [['date', 'CoursesOn']]
+              'CoursesOnSecOrd': [['date', 'CoursesOn']],
+              'ListFilesSecOrd': [['kurs', 'ListFiles']]
               }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
@@ -431,6 +455,14 @@ def create_domain():
     domain.add_plan("?x.CoursesLeft(x)",
                     [ExecuteFunc(partial(classes_on, left=True), auth_string="?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
+
+    ################################################# files II #########################################################
+
+    domain.add_plan("?x.y.ListFilesSecOrd(y)(x)",
+                    [ExecuteFunc(show_files, auth_string="?x.auth_string(x)", course_str="?x.kurs(x)", optionals={"semester": "?x.semester(x)"})],
+                    conditions=["com(auth_string)"])
+
+
 
     return domain
 

@@ -11,6 +11,7 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 import json
 import sys
+from singleUser_ibis import singleUser_download
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################
@@ -79,6 +80,15 @@ def download_file(path, auth_string, check_credentials=False):
                     raise
             else:
                 raise
+
+
+def download(auth_string, fid):
+    try:
+        content = download_file('documents/%s/download' % fid, auth_string)
+        return content
+    except HTTPError as e:
+        if e.code == 403:
+            raise Exception("Could not download!")
 
 
 def load_userid(auth_string, silent=True):
@@ -347,13 +357,16 @@ def find_real_coursename(auth_string, name, semester=""):
 class MoreThan1Exception(Exception):
     pass
 
+class MoreThan1SemesterException(MoreThan1Exception):
+    pass
+
 
 def get_course_by_name(auth_string, name, semester=None, supress=False):
     w_courses, s_courses = get_user_courses(auth_string, semester=semester)
     coursename = find_real_coursename(auth_string, name)
     res = [i for i in w_courses + s_courses if i['name'] == coursename]
     if len(res) > 1:
-        if not supress: raise MoreThan1Exception("course")
+        if not supress: raise MoreThan1SemesterException("semester,"+",".join(i["semester_name"] for i in res))
         else: return res
     elif len(res) == 1:
         return res[0]
@@ -364,13 +377,13 @@ def get_course_by_name(auth_string, name, semester=None, supress=False):
 def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=None):
     try:
         one_course = get_course_by_name(auth_string, course_str, semester=semester, supress=False)
-    except MoreThan1Exception:
+    except MoreThan1SemesterException:
         sem = get_semesters(auth_string)[0]
         for i in range(10):
             try:
                 one_course = get_course_by_name(auth_string, course_str, semester=sem, supress=False)
                 break
-            except MoreThan1Exception:
+            except MoreThan1SemesterException:
                 sem = get_semester_before(auth_string, sem)
 
     all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
@@ -535,6 +548,53 @@ def get_courses_for_day(auth_string, day, semester=None, timerel_courses=None, a
         return "You have the following classes on "+str(day)+":\n"+txt if len(txt) > 0 else "You don't have any classes left today."
 
 
+def debug_stuff(auth_string):
+    # timerel_courses = get_timerelevant_courses(auth_string)  #der wird beim ersten mal errechnet, für 72 Stunden gespeichert, und jedes mal wenn eine zeitabfrage OHNE SEMESTERANGABE KOMMT soll der das hier  nehmen stall all_courses
+    timerel_courses = None
+    # print(get_session_info("when", auth_string, "SS18", timerel_courses))
+    # print(get_courses(auth_string, semester="")[0])
+    # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
+                                                                            # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
+                                                                            # im optimalfall kann es das immer fangen, auch wenn diese funktion von einer anderen aufgerufen wird...
+                                                                            # und kann aus dem error-text ("course") ne frage ("?x.course(x)") erstellen
+    # print(get_session_info("what", auth_string, "", timerel_courses, "Informatik A")) # hier wird diese exception suppressed, weil get_session_info nur die zeitlich noch relevanten kurse interessiert
+                                                                                        # der fehler wird uns daher wohl erst bei document-api-routen begegnen
+    # print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
+    # print(find_klausurtermin(auth_string, "Mathematik für anwender II"))
+    # print(get_courses_for_day(auth_string, parse_date("monday"), None, timerel_courses, 1521453600))
+    print(get_courses_for_day(auth_string, parse_date("16.4.2018"), None, timerel_courses))
+
+
+########################################################################################################################
+############################################### Dateien & Downloads ####################################################
+########################################################################################################################
+
+def crawl(auth_string, kurs_id, what, filepath, folder_id):
+    if filepath.startswith("/"): filepath = filepath[1:]
+    documents = load("documents/"+kurs_id+"/folder"+("/"+folder_id if folder_id else ""), auth_string)
+    all_folders = {(filepath+"/" if filepath else "")+i["name"]: i["folder_id"] for i in documents[what]}
+    if all_folders:
+        for key, val in all_folders.items():
+            all_folders = {**all_folders, **crawl(auth_string, kurs_id, what, filepath+"/"+key, val)}
+    return all_folders
+
+
+def get_all_files(auth_string, course, semester=None):
+    kurs = get_course_by_name(auth_string, course, semester=semester)["course_id"]
+    all_folders = crawl(auth_string, kurs, "folders", "", "")
+    all_files = {}
+    for key, val in all_folders.items():
+        folder = load("documents/%s/folder/%s" % (kurs, val), auth_string)
+        if folder["documents"]:
+            all_files[key] = folder["documents"]
+    return all_files
+
+
+def list_course_files(auth_string, course, semester=None):
+    all_files = get_all_files(auth_string, course, semester=semester)
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    file_list = "\n".join(flatten([[foldername+"/"+curr["name"] for curr in foldercontent] for foldername, foldercontent in all_files.items()]))
+    return ("Files:\n"+file_list) if len(file_list) > 0 else "There are no files for that course at all!"
 
 
 if __name__ == '__main__':
@@ -544,29 +604,15 @@ if __name__ == '__main__':
     auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
     # userid = load_userid(auth_string)
 
-    # timerel_courses = get_timerelevant_courses(auth_string)  #der wird beim ersten mal errechnet, für 72 Stunden gespeichert, und jedes mal wenn eine zeitabfrage OHNE SEMESTERANGABE KOMMT soll der das hier  nehmen stall all_courses
-    timerel_courses = None
-    # print(get_session_info("when", auth_string, "SS18", timerel_courses))
+    # kurs = get_course_by_name(auth_string, "Datenbanksysteme", semester="SS17")["course_id"]
+    all_files = get_all_files(auth_string, "Codierungstheorie und Kryptographie")
 
-    # print(get_courses(auth_string, semester="")[0])
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    file_list = "\n".join(flatten([[foldername+"/"+curr["name"] for curr in foldercontent] for foldername, foldercontent in all_files.items()]))
+    print(file_list)
 
-    # print(get_course_by_name(auth_string, "datenbanksysteme", semester="")) # sooo, das throwed jetzt ne MoreThan1Excption("course") oder returned, falls es nur einen gab..
-                                                                            # das dialogsystem müsste diese exception fangen und dann nach semester fragen...
-                                                                            # im optimalfall kann es das immer fangen, auch wenn diese funktion von einer anderen aufgerufen wird...
-                                                                            # und kann aus dem error-text ("course") ne frage ("?x.course(x)") erstellen
-
-    # print(get_session_info("what", auth_string, "", timerel_courses, "Informatik A")) # hier wird diese exception suppressed, weil get_session_info nur die zeitlich noch relevanten kurse interessiert
-                                                                                        # der fehler wird uns daher wohl erst bei document-api-routen begegnen
-
-    # print(get_session_info("all", auth_string, "", timerel_courses, "Codierungstheorie und Kryptographie"))
-
-
-    # print(find_klausurtermin(auth_string, "Mathematik für anwender II"))
-
-
-    # print(get_courses_for_day(auth_string, parse_date("monday"), None, timerel_courses, 1521453600))
-
-    print(get_courses_for_day(auth_string, parse_date("16.4.2018"), None, timerel_courses))
+            # if curr["name"] == "Skript":
+            #     singleUser_download(curr["filename"], download(auth_string, curr["document_id"]))
 
 
 

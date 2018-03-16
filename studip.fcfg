@@ -19,7 +19,10 @@ ASK[sem=[Ask=WhereNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhereNextS
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Semester[]
 ASK[sem=[Ask=WhenNextSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenNextSecOrd, f=given] Kurs[]
 ASK[sem=[Ask=WhenExamSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=WhenExamSecOrd, f=given] Kurs[]
+
 ASK[sem=[Ask=CoursesOnSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=CoursesOnSecOrd, f=given] Date[]
+
+ASK[sem=[Ask=ListFilesSecOrd, subtype=SecOrdQ, f=given]] -> SecOrdQ[q=ListFilesSecOrd, f=given] Kurs[]
 
 
 ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
@@ -74,6 +77,7 @@ SecOrdQ[q=CoursesOnSecOrd] -> 'What classes do I have on' | 'What classes do I h
 Date[f=given] -> '{date}'
 WHQ[q=CoursesLeft] -> 'What classes do I have left today?' | 'What courses do I have left today?'
 
+SecOrdQ[q=ListFilesSecOrd] -> 'List all files in' | 'Show [me] all files in' | 'List all files from' | 'Show [me] all files from'
 
 
 CAT[cat=coursename, ind=krypto] -> '{krypto}'
