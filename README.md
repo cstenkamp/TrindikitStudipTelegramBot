@@ -9,7 +9,7 @@ This projects builds on the Python-implementation of the ISU approach, available
 
 ## Sample Conversation:
 
-U> /start
+U> /start<br/>
 S: To use Stud.IP capabilities, start by sending the message 'studip' to the bot. After that, you must enter your Stud.IP username and password, such that you can use most of the functionalities of this bot<br/>
 S: Hello.<br/>
 U> studip<br/>
