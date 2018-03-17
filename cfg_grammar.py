@@ -58,7 +58,8 @@ class CFG_Grammar(Grammar):
         """Parse an input string into a dialogue move or a set of moves."""
         try: return self.parseString(input, IS, DOMAIN, NEXT_MOVES)
         except: pass
-        try: return eval(input)
+        try:
+            if not all(i.isnumeric() for i in input): return eval(input)
         except: pass
         if anyString:
             return Answer(ShortAns(input))

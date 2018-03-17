@@ -1,5 +1,7 @@
 % start USR
 
+#TODO doch von der Dingsi trennen
+#TODO deutsche und englische grammatik, User kann aussuchen welche
 
 # IBIS / domain-independent
 
@@ -73,7 +75,7 @@ Kurs[f=given] -> '{kurs}'
 SecOrdQ[q=WhenExamSecOrd] -> 'When is the exam of'
 
 
-SecOrdQ[q=CoursesOnSecOrd] -> 'What classes do I have on' | 'What classes do I have' | 'What courses do I have on' | 'What courses do I have'
+SecOrdQ[q=CoursesOnSecOrd] -> 'What classes do I have on' | 'What classes do I have' | 'What courses do I have on' | 'What courses do I have' | 'Was für Kurse habe ich am' | 'Was für Kurse hab ich am'
 Date[f=given] -> '{date}'
 WHQ[q=CoursesLeft] -> 'What classes do I have left today?' | 'What courses do I have left today?'
 

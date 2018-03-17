@@ -605,7 +605,7 @@ if __name__ == '__main__':
     # userid = load_userid(auth_string)
 
     # kurs = get_course_by_name(auth_string, "Datenbanksysteme", semester="SS17")["course_id"]
-    all_files = get_all_files(auth_string, "Codierungstheorie und Kryptographie")
+    all_files = get_all_files(auth_string, "Datenbanksysteme")
 
     flatten = lambda l: [item for sublist in l for item in sublist]
     file_list = "\n".join(flatten([[foldername+"/"+curr["name"] for curr in foldercontent] for foldername, foldercontent in all_files.items()]))

@@ -52,7 +52,7 @@ def is_VLZeit(auth_string, NEXT_MOVES):
 
 
 @executable_rule
-def semesterdays(auth_string, what, NEXT_MOVES, IS):
+def semesterdays(auth_string, what, IS):
     all_semesters = load("semesters", auth_string)['semesters']
     this_semester = [i["title"] for i in all_semesters if int(i["begin"]) < time.time() < int(i["end"])][0]
     next_semester = [all_semesters[i+1]['title'] for i in range(len(all_semesters)) if all_semesters[i]['title'] == this_semester][0]
@@ -60,22 +60,17 @@ def semesterdays(auth_string, what, NEXT_MOVES, IS):
     if what == "db":
         if currently_seminars:
             return Prop(Pred1("DaysBreak"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time()) + 3600), IS.private.bel.add
-            # return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
         else:
             return Prop(Pred1("DaysBreak"), Ind("The break is right now!"), True, expires=round(time.time())+3600), IS.private.bel.add
-            # return State("The Break is right now!"), NEXT_MOVES.push
     elif what == "wb":
         return Prop(Pred1("WhenBreak"), Ind(str(get_semester_info(all_semesters, next_semester))), True, expires=round(time.time())+3600*240), IS.private.bel.add
     elif what == "wl":
         return Prop(Pred1("WhenLectures"), Ind(str(get_semester_info(all_semesters, next_semester))), True, expires=round(time.time()) + 3600 * 240), IS.private.bel.add
-        # return State(get_semester_info(all_semesters, next_semester)), NEXT_MOVES.push
     else: #what == "dl"
         if not currently_seminars:
             return Prop(Pred1("DaysLectures"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time())+3600), IS.private.bel.add
-            # return State(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), NEXT_MOVES.push
         else:
             return Prop(Pred1("DaysLectures"), Ind("There are lectures right now!"), True, expires=round(time.time())+3600), IS.private.bel.add
-            # return State("There are Lectures right now!"), NEXT_MOVES.push
 
 
 @executable_rule
@@ -132,6 +127,7 @@ def klausur(auth_string, course_str, IS, semester=None):
 def test_credentials(auth_string, NEXT_MOVES):
     try:
         load_userid(auth_string, silent=False)
+        return True
     except AuthentificationError:
         return State("These credentials are wrong!\nYou can re-enter them by sending /start"), NEXT_MOVES.push
 
@@ -151,22 +147,31 @@ def classes_on(auth_string, IS, date=None, left=False):
         return Prop(Pred1("CoursesLeft", date), Ind(txt), True, expires=round(time.time()) + 60), IS.private.bel.add
 
 
+def catchMoreThanOne(function):
+    @functools.wraps(function)
+    def wrappedfunc(*args, **kw):
+        ibis = args[0]
+        try:
+            return function(*args, **kw)
+        except MoreThan1Exception as e:
+            possible_semesters = e.args[0].split(",")[1:]
+            what = e.args[0].split(",")[0]
+            postponed_plan = ibis.IS.private.plan.pop()  # ersetzte es durch If(semester) []...
+            warning = State("You underspecified which course you mean! Do you mean " + kw["course_str"] + " in " + " or ".join(possible_semesters) + "?")
+            ibis.NEXT_MOVES.push(warning)
+            ibis.IS.private.plan.push(If("?x." + what + "(x)", [postponed_plan]))
+            ibis.IS.private.plan.push(Findout('?x.' + what + '(x)'))
+            return False
+        return function(*args, **kw)
+    return wrappedfunc
+
+
+@catchMoreThanOne
 @executable_rule
 def show_files(auth_string, course_str, IS, NEXT_MOVES, optionals={"semester": None}):
-    try:
-        if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content #TODO eine unpack-funktion, die bei "None" gar nichts macht und je nach typ richtig entpackt
-        file_list = list_course_files(auth_string, course_str, semester=optionals["semester"])
-    except MoreThan1Exception as e: #TODO: diese exception zu fangen per decorator!!
-        print("TODO - das hier als decorator")
-        possible_semesters = e.args[0].split(",")[1:]
-        what = e.args[0].split(",")[0]
-        postponed_plan = IS.private.plan.pop() #ersetzte es durch If(semester) []...
-        warning = State("You underspecified which course you mean! Do you mean "+course_str+" in "+" or ".join(possible_semesters)+"?")
-        NEXT_MOVES.push(warning)
-        IS.private.plan.push(If("?x."+what+"(x)",[postponed_plan]))
-        IS.private.plan.push(Findout('?x.'+what+'(x)'))
-        return "failure"
-    return Prop(Pred1("ListFiles", course_str), Ind(file_list), True, expires=round(time.time()) + 3600*0.5), IS.private.bel.add
+    if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content #TODO eine unpack-funktion, die bei "None" gar nichts macht und je nach typ richtig entpackt
+    file_list = list_course_files(auth_string, course_str, semester=optionals["semester"])
+    return Prop(Pred1("ListFiles", course_str), Ind(file_list), True, expires=round(time.time()) + 3600*0.5), IS.private.bel.add, ["course_str", "semester"]
 
 
 
