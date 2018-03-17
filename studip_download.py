@@ -639,7 +639,7 @@ if __name__ == '__main__':
     # auth_bytes = ('%s:%s' % ("cstenkamp", "pw")).encode('ascii')
     # auth_string = codecs.encode(auth_bytes, 'base64').strip()
     # print(auth_string)
-    auth_string = b'Y3N0ZW5rYW1wOmNoYW5nZXNfcGxlYXNl'
+    auth_string = b'AUTH_STRING'
     # userid = load_userid(auth_string)
 
     # kurs = get_course_by_name(auth_string, "Datenbanksysteme", semester="SS17")["course_id"]
