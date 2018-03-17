@@ -741,8 +741,8 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
     def V():
         move = IS.private.plan.top()
         if isinstance(move, ExecuteFunc):
-            kwparams = [val for key, val in move.kwparams.items() if key != "optionals"]
-            mustknow = [Question(i) for i in move.params] + [Question(i) for i in kwparams]
+            kwparams = {key: val for key, val in move.kwparams.items() if key != "optionals"}
+            mustknow = [Question(i) for i in move.params] + [Question(i) for i in kwparams.values()]
 
             prop = find_knowledge_from_question(IS, DOMAIN)
             sources = list(IS.shared.com) + list(IS.private.bel) + list(prop)
@@ -754,7 +754,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
                         alls[i] = True
                 if all(alls):
                     if len(knowledge) > len(move.params):  # dann sind die hinteren nämlich kw-args
-                        kw = dict(zip(move.kwparams.keys(), knowledge[len(move.params):]))
+                        kw = dict(zip(kwparams.keys(), knowledge[len(move.params):]))
                         if "optionals" in move.kwparams.keys():
                             optknowledge = {}
                             optionals = move.kwparams["optionals"]
@@ -775,11 +775,12 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
         res = V.move.content(DM, *[i.ind.content for i in V.knowledge], **kwknowledge)  # executes it!
     else:
         res = V.move.content(DM, *[i.ind.content for i in V.knowledge])  # executes it!
-    if res and len(res) >= 2:
+    if res and hasattr(res, "__len__") and len(res) >= 2:
         if len(res) == 3:
             prop, place, cleanup = res
         else:
             prop, place = res
+            cleanup = None
         place(prop)
         if cleanup:
             kwparams = {key: val for key, val in V.move.kwparams.items() if key != "optionals"}

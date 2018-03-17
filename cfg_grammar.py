@@ -280,8 +280,8 @@ class CFG_Grammar(Grammar):
             strings = re.findall("-> ?'(.*?)'", line) + re.findall("\| ?'(.*?)'", line)
             newstrings = []
             for curr in strings:
-                optionals = re.findall(r"\[[a-zA-Z]+?\]", curr)
-                curr = re.sub(r"\[([a-zA-Z]+?)\]", r"[*]", curr)
+                optionals = re.findall(r"\[[a-zA-Z ]+?\]", curr)
+                curr = re.sub(r"\[([a-zA-Z ]+?)\]", r"[*]", curr)
                 if len(optionals) > 0:
                     i = 0
                     while "[*]" in curr:

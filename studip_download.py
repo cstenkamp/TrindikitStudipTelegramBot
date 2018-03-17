@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 import json
 import sys
 from singleUser_ibis import singleUser_download
+from difflib import SequenceMatcher
+import settings
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################
@@ -371,7 +373,7 @@ def get_course_by_name(auth_string, name, semester=None, supress=False):
     elif len(res) == 1:
         return res[0]
     else:
-        return
+        return #TODO - wenn keiner passt den mit der höchsten similiarity vorschlagen! ("Did you mean...?")
 
 
 def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=None):
@@ -597,6 +599,42 @@ def list_course_files(auth_string, course, semester=None):
     return ("Files:\n"+file_list) if len(file_list) > 0 else "There are no files for that course at all!"
 
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+
+class MoreThan1FileException(MoreThan1Exception):
+    pass
+
+class NameAmbiguousException(Exception):
+    pass
+
+
+def download_studip_file(auth_string, course, filename, semester=None):
+    all_files = get_all_files(auth_string, course, semester=semester)
+    if "/" in filename:
+        filename = filename[filename.rfind("/")+1:]
+        filepath = filename[:filename.rfind("/")]
+    else:
+        filepath = ""
+    candidates = []
+    similiarities = []
+    for path, files in all_files.items():
+        if filepath and path != filepath:
+            continue
+        for i in files:
+            if i["name"] == filename:
+                candidates.append((path, i))
+            similiarities.append((path, i, max(similar(i["name"], filename), similar(i["filename"], filename))))
+    if len(candidates) > 1:
+        raise MoreThan1FileException("filename," + ",".join(i[0] + "/" + i[1]["name"] for i in candidates))
+    elif len(candidates) == 1:
+        return candidates[0][1]
+    else:
+        cands = [j[1]["name"] for j in sorted(similiarities, key = lambda i:i[2], reverse=True)[:3]]
+        raise NameAmbiguousException("filename," + ",".join(cands))
+
+
 if __name__ == '__main__':
     # auth_bytes = ('%s:%s' % ("cstenkamp", "pw")).encode('ascii')
     # auth_string = codecs.encode(auth_bytes, 'base64').strip()
@@ -605,11 +643,9 @@ if __name__ == '__main__':
     # userid = load_userid(auth_string)
 
     # kurs = get_course_by_name(auth_string, "Datenbanksysteme", semester="SS17")["course_id"]
-    all_files = get_all_files(auth_string, "Datenbanksysteme")
 
-    flatten = lambda l: [item for sublist in l for item in sublist]
-    file_list = "\n".join(flatten([[foldername+"/"+curr["name"] for curr in foldercontent] for foldername, foldercontent in all_files.items()]))
-    print(file_list)
+    print(download_studip_file(auth_string, "Codierungstheorie und Kryptographie", "Skript"))
+
 
             # if curr["name"] == "Skript":
             #     singleUser_download(curr["filename"], download(auth_string, curr["document_id"]))

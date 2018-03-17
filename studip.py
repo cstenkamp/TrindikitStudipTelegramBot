@@ -11,6 +11,8 @@ import functools
 from studip_download import *
 import time
 from functools import partial
+from threading import Thread
+import userDB
 
 if settings.MULTIUSER:
     import multiUser_ibis
@@ -21,20 +23,77 @@ else:
     import singleUser_ibis
 
 
+############################################# decorators for executable rules ##########################################
+
 def executable_rule(function):
     argkeys, varargs, varkw, defaults = inspect.getargspec(function)
-    replacekeys = [i for i in argkeys if i.isupper()] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
+    replacekeys = [i for i in argkeys if i.isupper() and i != "DM"] #IS, NEXT_MOVES, etc ist uppercase and will be replaced
+    usr = "DM" if "DM" in argkeys else None
     optionals = inspect.signature(function).parameters["optionals"].default if "optionals" in argkeys else None
 
     @functools.wraps(function)
     def wrappedfunc(*args, **kw):
         new_kw = dict((key, getattr(args[0], key, None)) for key in replacekeys) #args[0] ist der DM (der als parameter für update-rules speziell behandelt wird), hier werden alle gepacslockten daran gehängt
         new_kw = {**new_kw, **kw} #für die partials mit what
-        if not new_kw["optionals"]: new_kw["optionals"] = optionals
+        if usr: new_kw["DM"] = args[0]
+        try:
+            if not new_kw["optionals"]: new_kw["optionals"] = optionals
+        except: pass
         result = function(*args[1:], **new_kw)
         return result
     return wrappedfunc
 
+
+def catchMoreThanOne(function):
+    @functools.wraps(function)
+    def wrappedfunc(*args, **kw):
+        ibis = args[0]
+        try:
+            return function(*args, **kw)
+        except MoreThan1Exception as e:
+            possible_cands = e.args[0].split(",")[1:]
+            what = e.args[0].split(",")[0]
+            question = "?x." + what + "(x)"
+            ibis.IS.shared.com.remove(what, silent=True)
+            ibis.IS.private.bel.remove(what, silent=True)
+            postponed_plan = ibis.IS.private.plan.pop()  # ersetzte es durch If(semester) []...
+            if what == "semester":
+                warning = State("You underspecified which course you mean! Do you mean " + kw["course_str"] + " in " + " or ".join(possible_cands) + "?")
+            elif what == "filename":
+                warning = State("You underspecified which file you mean! Do you mean " + kw["filename"] + " in " + " or ".join(["'"+i+"'" for i in possible_cands]) + "?")
+            ibis.NEXT_MOVES.push(warning) #TODO - die kann man bestimmt zu telegram-links machen, sodass man beim draufklicken die direkt sendet!!!
+            ibis.IS.private.plan.push(If(question, [postponed_plan]))
+            ibis.IS.private.plan.push(Findout(question))
+            return False
+        return function(*args, **kw)
+    return wrappedfunc
+
+
+def catchNameAmbiguous(function):
+    @functools.wraps(function)
+    def wrappedfunc(*args, **kw):
+        ibis = args[0]
+        try:
+            return function(*args, **kw)
+        except NameAmbiguousException as e:
+            possible_cands = e.args[0].split(",")[1:]
+            what = e.args[0].split(",")[0]
+            question = "?x." + what + "(x)"
+            ibis.IS.shared.com.remove(what, silent=True)
+            ibis.IS.private.bel.remove(what, silent=True)
+            postponed_plan = ibis.IS.private.plan.pop()  # ersetzte es durch If(semester) []...
+            if what == "filename":
+                warning = State("There is no file with that name! Do you mean " + " or ".join(["'"+i+"'" for i in possible_cands]) + "?")
+            ibis.NEXT_MOVES.push(warning)
+            ibis.IS.private.plan.push(If(question, [postponed_plan]))
+            ibis.IS.private.plan.push(Findout(question))
+            return False
+        return function(*args, **kw)
+    return wrappedfunc
+
+########################################################################################################################
+#################################################### executable rules ##################################################
+########################################################################################################################
 
 @executable_rule
 def make_authstring(username, pw, IS):
@@ -147,65 +206,35 @@ def classes_on(auth_string, IS, date=None, left=False):
         return Prop(Pred1("CoursesLeft", date), Ind(txt), True, expires=round(time.time()) + 60), IS.private.bel.add
 
 
-def catchMoreThanOne(function):
-    @functools.wraps(function)
-    def wrappedfunc(*args, **kw):
-        ibis = args[0]
-        try:
-            return function(*args, **kw)
-        except MoreThan1Exception as e:
-            possible_semesters = e.args[0].split(",")[1:]
-            what = e.args[0].split(",")[0]
-            postponed_plan = ibis.IS.private.plan.pop()  # ersetzte es durch If(semester) []...
-            warning = State("You underspecified which course you mean! Do you mean " + kw["course_str"] + " in " + " or ".join(possible_semesters) + "?")
-            ibis.NEXT_MOVES.push(warning)
-            ibis.IS.private.plan.push(If("?x." + what + "(x)", [postponed_plan]))
-            ibis.IS.private.plan.push(Findout('?x.' + what + '(x)'))
-            return False
-        return function(*args, **kw)
-    return wrappedfunc
-
-
 @catchMoreThanOne
 @executable_rule
-def show_files(auth_string, course_str, IS, NEXT_MOVES, optionals={"semester": None}):
+def show_files(auth_string, course_str, IS, optionals={"semester": None}):
     if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content #TODO eine unpack-funktion, die bei "None" gar nichts macht und je nach typ richtig entpackt
     file_list = list_course_files(auth_string, course_str, semester=optionals["semester"])
     return Prop(Pred1("ListFiles", course_str), Ind(file_list), True, expires=round(time.time()) + 3600*0.5), IS.private.bel.add, ["course_str", "semester"]
 
 
-
-
+@catchNameAmbiguous
+@catchMoreThanOne
 @executable_rule
-def download_file(auth_string):
+def download_a_file(auth_string, course_str, filename, IS, DM, optionals={"semester": None}):
+    """"Download a file from Codierungstheorie und Kryptographie"""
+    if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content
+    file = download_studip_file(auth_string, course_str, filename, semester=optionals["semester"])
     if settings.MULTIUSER:
-        bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
-        try:
-            userid = load('user', auth_string)['user']['user_id']
-            file = return_file(userid, None, "Codierungstheorie und Kryptographie", None, "Skript", auth_string)
-            bothelper.send_file(settings.MY_CHAT_ID, file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
-        except SystemExit:
-            bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
+        chat_id = userDB.get_user_by_ID(DM.user_id)[0].chat_id
+        # bothelper.send_file(chat_id, file["filename"], download(auth_string, file["document_id"]))
+        thread = Thread(target=bothelper.send_file, args=(chat_id, file["filename"], download(auth_string, file["document_id"])))
+        thread.start()
     else:
-        try:
-            userid = load('user', auth_string)['user']['user_id']
-            file = return_file(userid, None, "Codierungstheorie und Kryptographie", None, "Skript", auth_string)
-            singleUser_download(file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
-        except SystemExit:
-            pass
+        singleUser_download(file["filename"], download(auth_string, file["document_id"]))
+
+    return Prop(Pred1("DownloadFile", course_str), Ind("The file you requested is on its way!"), True, expires=round(time.time()) + 30), IS.private.bel.add, ["course_str", "semester", "filename"]
 
 
-@executable_rule
-def download_file2(auth_string, coursename, filename):
-    print(auth_string, coursename, filename)
-    if settings.MULTIUSER:
-        bothelper.send_message("yep, will do", settings.MY_CHAT_ID)
-        try:
-            userid = load('user', auth_string)['user']['user_id']
-            file = return_file(userid, None, coursename, None, filename, auth_string)
-            bothelper.send_file(settings.MY_CHAT_ID, file[1]["filename"], load_file2(file[1]["document_id"], auth_string))
-        except SystemExit:
-            bothelper.send_message("Wrong Username/PW", settings.MY_CHAT_ID)
+########################################################################################################################
+################################################### grammar & domain ###################################################
+########################################################################################################################
 
 
 class StudIP_grammar(CFG_Grammar):
@@ -259,6 +288,8 @@ class studip_domain(ibis_generals.Domain):
             pass
         return None
 
+######################################################## domain ########################################################
+
 
 def create_domain():
     preds0 = 'return', 'needvisa', 'studip'
@@ -305,7 +336,9 @@ def create_domain():
               'CoursesLeft': 'string',
               'date': 'date',
               'ListFilesSecOrd': 'string',
-              'ListFiles': 'string'
+              'ListFiles': 'string',
+              'DownloadFileSecOrd': 'string',
+              'DownloadFile': 'string'  #TODO - dass man nicht mehr das ohne sec-ord angeben muss bei SecOrdQs!!
               }
 
     preds2 = {'WhenIs': [['semester', 'WhenSemester']], #1st element is first ind needed, second is the resulting pred1
@@ -315,7 +348,8 @@ def create_domain():
               'WhenNextSecOrd': [['semester', 'WhenNextSem'], ['kurs', 'WhenNextKurs']],
               'WhenExamSecOrd': [['kurs', 'WhenExam']],
               'CoursesOnSecOrd': [['date', 'CoursesOn']],
-              'ListFilesSecOrd': [['kurs', 'ListFiles']]
+              'ListFilesSecOrd': [['kurs', 'ListFiles']],
+              'DownloadFileSecOrd': [['kurs', 'DownloadFile']]
               }
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
@@ -366,23 +400,6 @@ def create_domain():
                    ])
 
     #allow to change password/username -- command dafür ist "change" mit nem argument, aka username/pw
-
-    ################################################# dateien ##########################################################
-
-    domain.add_plan("!(download)",
-                    [Findout("?x.coursename(x)"),
-                     ExecuteFunc(download_file, "?x.auth_string(x)")
-                    ], conditions = [
-                     "com(auth_string)"
-                    ])
-
-    domain.add_plan("!(download2)",
-                    [Findout("?x.coursename(x)"),
-                     Findout("?x.filename(x)"),
-                     ExecuteFunc(download_file2, "?x.auth_string(x)", "?x.coursename(x)", "?x.filename(x)")
-                    ], conditions = [
-                     "com(auth_string)"
-                    ])
 
     ################################################# zeiten ###########################################################
 
@@ -461,16 +478,24 @@ def create_domain():
                     [ExecuteFunc(partial(classes_on, left=True), auth_string="?x.auth_string(x)")],
                     conditions=["com(auth_string)"])
 
-    ################################################# files II #########################################################
+    ################################################# dateien (new) ####################################################
 
     domain.add_plan("?x.y.ListFilesSecOrd(y)(x)",
                     [ExecuteFunc(show_files, auth_string="?x.auth_string(x)", course_str="?x.kurs(x)", optionals={"semester": "?x.semester(x)"})],
                     conditions=["com(auth_string)"])
 
 
+    domain.add_plan("?x.y.DownloadFileSecOrd(y)(x)",
+                    [If("?x.kurs(x)",
+                        [Findout("?x.filename(x)"),
+                         ExecuteFunc(download_a_file, auth_string="?x.auth_string(x)", course_str="?x.kurs(x)", filename="?x.filename(x)", optionals={"semester": "?x.semester(x)"})],
+                        [Inform("The function was re-structured! You need to say 'Download from <course>'!")])],
+                    conditions=["com(auth_string)"])
+
 
     return domain
 
+############################################## useless stuff from travelgrammar ########################################
 
 class TravelDB(ibis_generals.Database):
 
@@ -518,6 +543,11 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, StudIP_grammar):
         except:
             pass
         return super(TravelGrammar, self).generateMove(move)
+
+
+########################################################################################################################
+############################################## generation-grammar ######################################################
+########################################################################################################################
 
 
 def loadIBIS():

@@ -141,7 +141,7 @@ class Domain(object):
         return self.preds1.get(question)
 
 
-    def add_plan(self, trigger, plan, conditions=[]):  #("?x.price(x)", [Findout("?x.how(x)")])
+    def add_plan(self, trigger, plan, conditions=[], overwrite=False):  #("?x.price(x)", [Findout("?x.how(x)")])
         """Add a plan to the domain."""
         assert isinstance(trigger, (Question, Command, str)), \
             "The plan trigger %s must be a Question" % trigger
@@ -159,8 +159,7 @@ class Domain(object):
                 pred1 = "?x."+candidate[1]+"(x)"
                 self.add_plan(pred1, plan, conditions)
 
-        assert trigger not in self.plans, \
-            "There is already a plan with trigger %s" % trigger
+        assert not (trigger in self.plans and not overwrite), "There is already a plan with trigger %s" % trigger
         # print("TRIGGERTYPE", type(trigger))
         trigger._typecheck(self)
         for m in plan:

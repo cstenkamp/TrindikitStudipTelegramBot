@@ -43,3 +43,11 @@ class User(db.Model):
         self.createdate = datetime.now()
         self.asked_restart = False
         self.asked_stop = False
+
+
+def get_user_by_ID(userID):
+    user = User.query.filter(User.id==userID).one_or_none()
+    if user != None:
+        state = ConversationState.query.filter(ConversationState.user_id == user.id).one_or_none()
+        return user, state
+    return None, None

@@ -11,6 +11,12 @@ Where is my next Session? / Where is my next Session of <Kurs>? / Where is my ne
 When is the exam of <Kurs>?
 What courses do I have left today?
 What courses do I have on <day>?
+List all files in <course>
+Download a file from <Kurs> -> [nach Bedarf <semester> ->] <filename> [nach Bedarf -> <correctedName>]
+
+
+
+
 
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?
 -general info about next session of semester X get_session_info("all", auth_string, "SS18")                                                         What is my next session of SS18?
