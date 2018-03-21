@@ -236,7 +236,6 @@ def download_a_file(auth_string, course_str, filename, IS, DM, optionals={"semes
 ################################################### grammar & domain ###################################################
 ########################################################################################################################
 
-
 class StudIP_grammar(CFG_Grammar):
 
     def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None):
@@ -288,7 +287,7 @@ class studip_domain(ibis_generals.Domain):
             pass
         return None
 
-######################################################## domain ########################################################
+######################################################## domain ########################################################g
 
 
 def create_domain():
@@ -341,6 +340,7 @@ def create_domain():
               'DownloadFile': 'string'  #TODO - dass man nicht mehr das ohne sec-ord angeben muss bei SecOrdQs!!
               }
 
+    #TODO - das wird higher-order-pred, wo das resultat auch ein weiteres HOPred sein kann!
     preds2 = {'WhenIs': [['semester', 'WhenSemester']], #1st element is first ind needed, second is the resulting pred1
               'ClassesFor': [['semester', 'ClassesForSemester']],
               'WhatNextSecOrd': [['semester', 'WhatNextSem'], ['kurs', 'WhatNextKurs']],
@@ -351,6 +351,8 @@ def create_domain():
               'ListFilesSecOrd': [['kurs', 'ListFiles']],
               'DownloadFileSecOrd': [['kurs', 'DownloadFile']]
               }
+
+    # TODO - einig werden ob die converters bei der grammar oder beim funktionsaufruf genutzt werden!
 
     converters = {'semester': lambda auth_string, string: get_relative_semester_name(string, *get_semesters(auth_string)),
                   'kurs': lambda auth_string, string: find_real_coursename(auth_string, string),
@@ -552,7 +554,7 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, StudIP_grammar):
 
 def loadIBIS():
     grammar = TravelGrammar()
-    grammar.loadGrammar(os.path.join(PATH,"studip.fcfg"))
+    grammar.loadGrammar(os.path.join(PATH,"grammars","studip.fcfg"))
     grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
     grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
     grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")

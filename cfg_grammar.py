@@ -43,6 +43,8 @@ else:
 class NotRecognizedException(Exception):
     pass
 
+#TODO - wenn gar nichts erkannt wird von allen possibilities die string-distance durchgehen (https://stackoverflow.com/questions/6690739/fuzzy-string-comparison-in-python-confused-with-which-library-to-use)
+
 class CFG_Grammar(Grammar):
     """CFG parser based on NLTK."""
     
@@ -182,14 +184,15 @@ class CFG_Grammar(Grammar):
         self.longstrings = {}
         self.variables = {}
         self.variablepath = {}
+        self.all_sents = set()
         with open(grammarFilename, "r", encoding="utf-8") as f:
             lines = [line for line in f]
         for i in range(len(lines)):
-            lines[i] = self.line_ops(lines[i], self.variablepath)
+            lines[i] = self.line_ops(lines[i], self.variablepath, self.all_sents)
             lines[i] = self.incorporate_optionals(lines[i])
             lines[i] = self.find_longstrings(lines[i])
             #other line-operations here (on line)
-
+        print(self.all_sents)
         preprocessed = "\n".join(lines)
         #other overall operations here (on preprocessed)
         for key,val in self.longstrings.items():
@@ -244,7 +247,7 @@ class CFG_Grammar(Grammar):
         return text
 
 
-    def line_ops(self, line, variablepath):
+    def line_ops(self, line, variablepath, all_sents):
         if not line.startswith('#') and "->" in line and "'" in line: #terminals
             strings = re.findall("-> ?'(.*?)'", line) + re.findall("\| ?'(.*?)'", line)
             for curr in strings:
@@ -252,6 +255,7 @@ class CFG_Grammar(Grammar):
                 tmp = self.find_variables(curr, line, self.variables)
                 if tmp: self.variablepath[self.rem_spaces(tmp[1])] = self.rem_spaces(tmp[0])
                 # other string-operations here (on strings, an array)
+                if any(line.startswith(i) for i in ["CMD", "WHQ", "SecOrdQ", "YNQ"]): all_sents.add(strings[0])
         elif not line.startswith('#') and "->" in line: #non-terminals:
             # print(line)
             l = re.sub("\[.*?\]", "", line).replace("[", "").replace("]", "")

@@ -14,8 +14,11 @@ What courses do I have on <day>?
 List all files in <course>
 Download a file from <Kurs> -> [nach Bedarf <semester> ->] <filename> [nach Bedarf -> <correctedName>]
 
+Prüfungsamt-Öffnungszeiten!! https://www.ikw.uni-osnabrueck.de/studiengaenge/pruefungsangelegenheiten.html
 
-
+Ein "forget it"-commando, was man sagen kann wenn er bspw nach semester fragt, um den grundzustand wieder herzustellen
+Ein "was kannst du"-Kommando!
+SecOrdQs/2-place-predicates überarbeiten, in ein multi-order-predicate (dass aus einem MultOrdQ eine weitere MultOrdQ wird, damit man zum beispiel "Download X from Y" sagen kann mit 2 variablen
 
 
 -general info about next session               get_session_info("all", auth_string, "", timerel_courses)                                            What is my next session?

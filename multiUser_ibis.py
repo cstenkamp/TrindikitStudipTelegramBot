@@ -57,11 +57,10 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueMa
     
     This is an abstract class: methods update and select are not implemented.
     """
-    def __init__(self, domain, database, grammar, funcpool=None):
+    def __init__(self, domain, database, grammar):
         self.DOMAIN = domain
         self.DATABASE = database
         self.GRAMMAR = grammar
-        self.FUNCPOOL = funcpool
 
 
     def init(self):

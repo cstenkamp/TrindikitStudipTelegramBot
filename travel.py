@@ -118,7 +118,7 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
 
 def loadIBIS():
     grammar = TravelGrammar()
-    grammar.loadGrammar(os.path.join(PATH,"travel.fcfg"))
+    grammar.loadGrammar(os.path.join(PATH,"grammars","travel.fcfg"))
     grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
     grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
     grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
