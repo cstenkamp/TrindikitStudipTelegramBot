@@ -111,9 +111,9 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
 
     This is an abstract class: methods update and select are not implemented.
     """
-    def __init__(self, domain, database, grammar):
+    def __init__(self, domain, apiConnector, grammar):
         self.DOMAIN = domain
-        self.DATABASE = database
+        self.APICONNECTOR = apiConnector
         self.GRAMMAR = grammar
 
     def init(self):  # called by DialogueManager.run
@@ -136,6 +136,9 @@ class IBIS(IBISController, IBISInfostate, StandardMIVS,  SimpleInput,     Simple
         if settings.VERBOSE["IS"] or settings.VERBOSE["MIVS"]:
             print("+------------------------ - -  -")
             print()
+
+    def getContext(self, *args, **kwargs):
+        return self.APICONNECTOR.getContext(*args, **kwargs)
 
 ######################################################################
 # IBIS-1

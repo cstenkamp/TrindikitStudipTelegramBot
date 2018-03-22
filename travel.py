@@ -1,12 +1,3 @@
-# -*- encoding: utf-8 -*-
-
-#
-# travel.py
-#
-# The author or authors of this code dedicate any and all 
-# copyright interest in this code to the public domain.
-
-
 import os
 import settings
 from cfg_grammar import *
@@ -22,7 +13,11 @@ else:
     import singleUser_ibis
 
 
-def create_domain():
+########################################################################################################################
+######################################################## DOMAIN ########################################################
+########################################################################################################################
+
+def create_travel_domain():
     preds0 = 'return', 'needvisa'
     # TODO - warum ist "return" ein zero-order-predicate? Dann ist es ja schon fulfilled - 0-order-predicates are propositions, aka sentences.
     # TODO - you can see the difference in the plan even: Findout(WhQ(Pred1('class'))), Findout(YNQ(Prop((Pred0('return'), None, True))))
@@ -49,7 +44,9 @@ def create_domain():
              'flight_class': classes,
              }
 
-    domain = ibis_generals.Domain(preds0, preds1, sorts)
+    domain = ibis_generals.Domain(preds0, preds1, None, sorts, None)
+
+    ######################################### originaler fluginformation-kack ##########################################
 
     domain.add_plan("?x.price(x)",
                    [Findout("?x.how(x)"),
@@ -71,16 +68,21 @@ def create_domain():
     return domain
 
 
+########################################################################################################################
+#################################################### API_CONNECTOR #####################################################
+########################################################################################################################
+
+
 class TravelDB(ibis_generals.Database):
 
     def __init__(self):
         self.entries = []
 
-    def consultDB(self, question, context):
-        depart_city = self.getContext(context, "depart_city")
-        dest_city = self.getContext(context, "dest_city")
-        day = self.getContext(context, "depart_day")
-        do_return = self.getContext(context, "return")
+    def consultDB(self, question, context, contextStr=""):
+        depart_city = self.getContext(context, "depart_city", contextStr)[1].content
+        dest_city = self.getContext(context, "dest_city", contextStr)[1].content
+        day = self.getContext(context, "depart_day", contextStr)[1].content
+        do_return = self.getContext(context, "return", contextStr)[1].content
         entry = self.lookupEntry(depart_city, dest_city, day, do_return)
         price = entry['price']
         return Prop(Pred1("price"), Ind(price), True)
@@ -91,17 +93,22 @@ class TravelDB(ibis_generals.Database):
                 return e
         assert False
 
-    def getContext(self, context, pred):
-        for prop in context:
-            if prop.pred.content == pred:
-                try:
-                    return prop.ind.content
-                except AttributeError: #NoneType
-                    return prop.yes #bei Yes-No-Questions
-        assert False
-
     def addEntry(self, entry):
         self.entries.append(entry)
+
+
+def create_travel_APIConnector():
+    database = TravelDB()
+    database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})
+    database.addEntry({'price': '345', 'from': 'paris', 'to': 'london', 'day': 'today', 'return': False})
+    database.addEntry({'price': '432', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': True})
+    return database
+
+
+########################################################################################################################
+######################################################## GRAMMAR #######################################################
+########################################################################################################################
+
 
 
 class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
@@ -116,30 +123,24 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
             return super(TravelGrammar, self).generateMove(move)
 
 
-def loadIBIS():
+def create_travel_grammar(lan="en"):
     grammar = TravelGrammar()
-    grammar.loadGrammar(os.path.join(PATH,"grammars","travel.fcfg"))
-    grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
-    grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
-    grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
-    grammar.addForm("Ask('?x.depart_day(x)')", "When do you want to leave?")
-    grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
-    grammar.addForm("Ask('?x.class(x)')", "First or second class?")
-    grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
+    grammar.loadGrammar(os.path.join(PATH,"grammars","travel"+"_"+lan+".fcfg"))
+    if lan == "en":
+        grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
+        grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
+        grammar.addForm("Ask('?x.depart_city(x)')", "From where are you leaving?")
+        grammar.addForm("Ask('?x.depart_day(x)')", "When do you want to leave?")
+        grammar.addForm("Ask('?x.return_day(x)')", "When do you want to return?")
+        grammar.addForm("Ask('?x.class(x)')", "First or second class?")
+        grammar.addForm("Ask('?return()')", "Do you want a return ticket?")
+    return grammar
 
-    database = TravelDB()
-    database.addEntry({'price': '232', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': False})
-    database.addEntry({'price': '345', 'from': 'paris', 'to': 'london', 'day': 'today', 'return': False})
-    database.addEntry({'price': '432', 'from': 'berlin', 'to': 'paris', 'day': 'today', 'return': True})
 
-    domain = create_domain()
 
-    if settings.MULTIUSER:
-        ibis = multiUser_ibis.IBIS2(domain, database, grammar)
-    else:
-        ibis = singleUser_ibis.IBIS1(domain, database, grammar)
-    return ibis
-
+########################################################################################################################
+########################################################################################################################
+########################################################################################################################
 
 
 # Följande måste klaras av såsmåningom:
@@ -163,15 +164,3 @@ def loadIBIS():
 #
 #    If("change-contact-name(?x)", [assume_shared("view-contact-name(?x)"), ...])
 
-
-######################################################################
-# Running the dialogue system
-######################################################################
-
-if __name__=='__main__':
-    if not settings.MULTIUSER:
-        ibis = loadIBIS()
-        ibis.init()
-        ibis.control()
-    else:
-        print("Multiuser is on")

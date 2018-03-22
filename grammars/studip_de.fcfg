@@ -46,8 +46,6 @@ IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
 
 CMD[con=studip] -> 'studip'
 
-CMD[con=visa] -> 'visa'
-
 CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'
 WHQ[q=DaysLectures] -> 'In wie vielen Tagen gehen [die] Vorlesungen los?' | 'In wie vielen Tagen geht das Semester los?' | 'In wievielen Tagen gehen [die] Vorlesungen los?' | 'In wievielen Tagen geht das Semester los?' | 'How many days until [the] Semester [starts]?' | 'In how many days does [the] Semester start?' | 'DaysLectures' | 'How many days until [the] lectures start?' | 'In wie vielen Tagen fangen [die] Vorlesungen an?' | 'In wie vielen Tagen fängt das Semester an?'
 WHQ[q=WhenLectures] -> 'Wann gehen [die] Vorlesungen los?' | 'Wann geht das Semester los?' | 'When does [the] Semester start?' | 'Wann fängt das Semester an?'
@@ -83,25 +81,5 @@ SecOrdQ[q=DownloadFileSecOrd] -> 'Download [a file] from'
 WHQ[q=DownloadFile] -> 'Download'
 
 
-CAT[cat=coursename, ind=krypto] -> '{krypto}'
+# CAT[cat=coursename, ind=krypto] -> '{krypto}'
 
-
-# travel
-
-YNQ[q=needvisa] -> 'need-visa'
-
-WHQ[q=price] -> 'price'
-WHQ[q=price] -> 'I want to know how expensive a flight is.'
-
-CAT[cat=how, ind=plane] -> 'plane' | 'flight'
-CAT[cat=how, ind=train] -> 'train'
-
-CAT[cat=city, ind=london] -> 'london'
-CAT[cat=city, ind=paris]  -> 'paris'
-CAT[cat=city, ind=berlin] -> 'berlin'
-
-CAT[cat=class, ind=first]  -> 'first' | 'business'
-CAT[cat=class, ind=second] -> 'second' | 'economy'
-
-CAT[cat=day, ind=today]    -> 'today'
-CAT[cat=day, ind=tomorrow] -> 'tomorrow'

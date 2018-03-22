@@ -48,7 +48,7 @@ class Grammar(object): #wird überschrieben von (s.u.) und dann nochmal in trave
                 str += "."
         return str
 
-    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None): #Haupt-Sache von cfg_grammar überschrieben wird
+    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, APICONNECTOR, anyString=False, moves=None): #Haupt-Sache von cfg_grammar überschrieben wird
         """Parse an input string into a dialogue move or a set of moves."""
         try: return eval(input) #parses a string as a python expression (eval("1+2") =3)
         except: pass
@@ -79,7 +79,7 @@ class SimpleGenGrammar(Grammar):
         except:
             s = str(move)
             try: output = self.forms[s]
-            except KeyError: output = s
+            except KeyError: output = unpack(move) #TODO das hier stattdessen mit der unpack-funktion!!!
         return output
 
     def generateICM(self, move): #Interactive Communication Management
@@ -96,17 +96,62 @@ class SimpleGenGrammar(Grammar):
     #as explanation (“Sorry, Paris is not a valid destination city”)
 
 ######################################################################
-# IBIS database
+# IBIS API-Connector & Database
 ######################################################################
 
-class Database(object):
-    """An IBIS database, meant to be subclassed."""
-    
+class API_Connector(object):
+    """An IBIS API_Connector, meant to be subclassed."""
+
+    def answerQuestion(self, question, context):
+        raise NotImplementedError
+
+    def getContext(self, IS, pred, contextStr=""):
+        if pred.startswith("bel("): #TODO - das könnte bald ohne gehen
+            contextStr = "bel"
+            pred = pred[4:-1]
+        elif pred.startswith("com("):
+            contextStr = "com"
+            pred = pred[4:-1]
+
+        if contextStr=="bel":
+            for prop in IS.private.bel:
+                if isinstance(prop, (Knowledge, Prop)):
+                    if prop.pred.content == pred:     #TODO str(prop.content[0]) == pred) wars vorher
+                        return True, self.getProp(prop)
+        elif contextStr=="com":
+            for prop in IS.shared.com:
+                if isinstance(prop, (Knowledge, Prop)):
+                    if prop.pred.content == pred:    #TODO das mit unpack
+                        return True, self.getProp(prop)
+        else:
+            tmp = self.getContext(IS, pred, "bel")
+            if tmp[0]:
+                return tmp
+            else:
+                return self.getContext(IS, pred, "com")
+        return False, None
+
+
+    def getProp(self, prop):
+        try:
+            return prop.ind #prop.ind.content #war mal prop.content[1] ->falls es nicht klappt #TODO sollte prop.ind.content sein, sonst klappt auch travel nicht!!!!!
+        except AttributeError:  # NoneType
+            return prop.yes
+
+
+
+class Database(API_Connector):
+    """An IBIS database, subclass of IBIS-APIConnector, meant to be subclassed."""
+
     def consultDB(self, question, context):
         """Looks up the answer to 'question', given the propositions
-        in the 'context' set. Returns a proposition. 
+        in the 'context' set. Returns a proposition.
         """
         raise NotImplementedError
+
+    def answerQuestion(self, question, context):
+        return self.answerQuestion(question, context)
+
 
 ######################################################################
 # IBIS domain
@@ -126,7 +171,7 @@ class Domain(object):
     def __init__(self, preds0, preds1, preds2, sorts, converters):
         self.preds0 = set(preds0)                           # return
         self.preds1 = dict(preds1)                          # city, day-of, ...
-        self.preds2 = dict(preds2)
+        self.preds2 = dict(preds2) if preds2 else None
         self.sorts = dict(sorts)                            # {'city': ('paris', 'london', 'berlin')}
         self.inds = dict((ind,sort) for sort in self.sorts 
                          for ind in self.sorts[sort])       # {'berlin': 'city', 'train': 'means', 'today': 'day', 'tuesday': 'day', ...}
@@ -169,11 +214,11 @@ class Domain(object):
         else:
             self.plans[trigger] = {"plan": tuple(plan), "conditions": tuple(conditions)}
 
-    def collect_sort_info(self, forwhat, IS=None):
+    def collect_sort_info(self, forwhat, APICONNECTOR, IS=None):
         return None
 
 
-    def relevant(self, answer, question, IS=None, verbose=False):
+    def relevant(self, answer, question, APICONNECTOR, IS=None, verbose=False):
         """True if 'answer' is relevant to 'question'."""
         if isinstance(answer, Answer):
             answer = answer.content
@@ -193,7 +238,7 @@ class Domain(object):
                     return answer.pred == question.pred
             elif not isinstance(answer, YesNo):  #bleibt nur ShortAns selbst
                 sort1 = self.get_sort_from_question(question.pred.content)
-                sortinfo = self.collect_sort_info(sort1, IS) or {}
+                sortinfo = self.collect_sort_info(sort1, APICONNECTOR, IS) or {}
                 sort2 = self.get_sort_from_ind(answer.ind.content, **sortinfo)
                 return (sort1 and sort2 and sort1 == sort2) or sort1 == "string" #letzterer Fall ist freetextquestion
         elif isinstance(question, YNQ):
@@ -209,9 +254,9 @@ class Domain(object):
             return any(answer == ynq.prop for ynq in question.ynqs)
 
 
-    def resolves(self, answer, question, IS=None):
+    def resolves(self, answer, question, APICONNECTOR, IS=None):
         """True if 'question' is resolved by 'answer'."""
-        if self.relevant(answer, question, IS=IS):
+        if self.relevant(answer, question, APICONNECTOR, IS=IS):
             if isinstance(answer, Answer):
                 answer = answer.content
             if isinstance(question, YNQ):
@@ -220,11 +265,11 @@ class Domain(object):
         return False
 
 
-    def combine(self, question, answer, IS=None):
+    def combine(self, question, answer, APICONNECTOR, IS=None):
         """Return the proposition that is the result of combining 'question' 
         with 'answer'. This presupposes that 'answer' is relevant to 'question'.
         """
-        assert self.relevant(answer, question, IS=IS)
+        assert self.relevant(answer, question, APICONNECTOR, IS=IS)
         if isinstance(question, WhQ):
             if isinstance(answer, ShortAns):
                 prop = question.pred.apply(answer.ind)
@@ -240,11 +285,11 @@ class Domain(object):
         return answer
 
 
-    def get_plan(self, question, IS):
+    def get_plan(self, question, IS, APICONNECTOR):
         """Return (a new copy of) the plan that is relevant to 'question', 
         or None if there is no relevant plan.
         """
-        missings = self.check_for_plan(question, IS)
+        missings = self.check_for_plan(question, IS, APICONNECTOR)
         if len(missings) > 0:
             return False, missings
         planstack = stack(PlanConstructor)
@@ -255,7 +300,7 @@ class Domain(object):
         return True, planstack
 
 
-    def check_for_plan(self, question, IS):
+    def check_for_plan(self, question, IS, APICONNECTOR):
         plan = self.plans.get(question)
         if plan is not None:
             if len(plan.get("conditions", [])) == 0:
@@ -264,7 +309,7 @@ class Domain(object):
                 mustbe = [False] * len(plan.get("conditions"))
                 relevants = {}
                 for ind, cond in enumerate(plan.get("conditions")):
-                    must, cont = check_for_something(IS, cond)
+                    must, cont = APICONNECTOR.getContext(IS, cond)
                     mustbe[ind] = must
                     relevants[cond] = cont
                 if all(mustbe):
@@ -276,23 +321,3 @@ class Domain(object):
         return []
 
 
-def check_for_something(IS, something):
-    if something.startswith("bel("):
-        relevantpart = something[4:-1]
-        for j in IS.private.bel:
-            if isinstance(j, (Knowledge, Prop)):
-                if str(j.content[0]) == relevantpart:
-                    return True, j.content[1]
-    elif something.startswith("com("):
-        relevantpart = something[4:-1]
-        for j in IS.shared.com:
-            if isinstance(j, (Knowledge, Prop)):
-                if str(j.content[0]) == relevantpart:
-                    return True, j.content[1]
-    else:
-        tmp = check_for_something(IS, "bel("+something+")")
-        if tmp[0]:
-            return tmp
-        else:
-            return check_for_something(IS, "com("+something+")")
-    return False, None

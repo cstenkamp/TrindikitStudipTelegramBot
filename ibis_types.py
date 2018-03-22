@@ -20,7 +20,7 @@
 # If not, see <http://www.gnu.org/licenses/>.
 
 from trindikit import Type, is_sequence, Move, SingletonMove
-from types import FunctionType
+from types import FunctionType, MethodType
 import functools
 import time
 
@@ -92,7 +92,7 @@ class Pred1(Atomic):
         return self.content.__str__()
 
     def __repr__(self):
-        if hasattr(self, "arg2"):
+        if hasattr(self, "arg2") and self.arg2:
             return "Pred1(" + self.content + ", " + self.arg2 if isinstance(self.arg2, str) else self.arg2.content + ")"
         else:
             return "Pred1("+self.content+")"
@@ -217,6 +217,9 @@ class Knowledge(Ans):
     def __init__(self, pred, ind=None, yes=True, expires=None):
         assert (isinstance(pred, (Pred0, Pred1, Pred2, str)))
         self.content = pred, ind, yes
+        self.pred = pred
+        self.ind = ind
+        self.yes = yes
         self.expires = expires
     def __hash__(self):
         return hash((type(self), self.content[0], str(self.content[1]), self.content[2]))
@@ -618,16 +621,16 @@ class Raise(PlanConstructor):
 # Complex plan constructs
 
 class ExecuteFunc(PlanConstructor):
-    contentclass = (FunctionType, functools.partial)
+    contentclass = (FunctionType, functools.partial, MethodType)
 
     def __init__(self, funcname, *params, **kwparams):
-        assert isinstance(funcname, (FunctionType, functools.partial))
+        assert isinstance(funcname, self.contentclass)
         self.content = funcname
         self.params = params
         self.kwparams = kwparams
 
     def __str__(self):
-        return "ExecuteFunc('%s') needing params %s" % (self.content.__str__(), self.params)
+        return "ExecuteFunc('%s') needing params %s" % (self.content.__name__, self.params)
 
 
 class Inform(PlanConstructor):
@@ -675,3 +678,17 @@ class If(PlanConstructor):
         return "If('%s', %s, %s)" % (self.cond.__str__(),
                                      self.iftrue.__str__(),
                                      self.iffalse.__str__())
+
+
+
+def unpack(what):
+    # print(".                        unpacking", what, type(what))
+    if type(what) == Answer:
+        return unpack(what.content)
+    elif type(what) == Prop:
+        return unpack(what.ind)
+    elif type(what) == Pred1:
+        return unpack(what.content)
+    elif type(what) == Ind:
+        return unpack(what.content)
+    return str(what)

@@ -106,14 +106,14 @@ def integrate_usr_impr(IS):
 
 
 @update_rule
-def integrate_secordq_clarify(IS, DOMAIN):
+def integrate_secordq_clarify(IS, DOMAIN, APICONNECTOR):
     @precondition
     def V():
         que = IS.shared.qud.top()
         if isinstance(que, SecOrdQ):
             # que ist bspw SecOrdQ(Pred2(WhenIs, ['semester', 'WhenSemester'])), arg1[0] ist dann semester. Wenn das im IS ist, dann mach draus arg1[1]
             for candidate in que.content.arg1:
-                tmp = ibis_generals.check_for_something(IS, candidate[0])
+                tmp = APICONNECTOR.getContext(IS, candidate[0])
                 if tmp[0]:
                     yield R(que=que, firstarg=tmp[1], candidate=candidate)
                     break
@@ -125,7 +125,7 @@ def integrate_secordq_clarify(IS, DOMAIN):
 
 
 @update_rule
-def integrate_answer(IS, DOMAIN):
+def integrate_answer(IS, DOMAIN, APICONNECTOR):
     """Integrate an Answer move.
 
     If the answer is relevant to the top question on the qud,
@@ -137,10 +137,10 @@ def integrate_answer(IS, DOMAIN):
         que = IS.shared.qud.top()
         for move in IS.shared.lu.moves:
             if isinstance(move, Answer):
-                if DOMAIN.relevant(move.content, que, IS=IS):
+                if DOMAIN.relevant(move.content, que, APICONNECTOR, IS=IS):
                     yield R(que=que, ans=move.content)
 
-    prop = DOMAIN.combine(V.que, V.ans, IS=IS)
+    prop = DOMAIN.combine(V.que, V.ans, APICONNECTOR, IS=IS)
     IS.shared.com.add(prop)
     IS.private.bel.remove(prop, silent=True)
 
@@ -198,7 +198,7 @@ def integrate_usr_quit(IS):
 # Downdating the QUD
 
 @update_rule
-def downdate_qud(IS, DOMAIN):
+def downdate_qud(IS, DOMAIN, APICONNECTOR):
     """Downdate the QUD.
 
     If the topmost question on /shared/qud is resolved by
@@ -209,14 +209,14 @@ def downdate_qud(IS, DOMAIN):
     def V():
         que = IS.shared.qud.top()
         for prop in IS.shared.com:
-            if DOMAIN.resolves(prop, que):
+            if DOMAIN.resolves(prop, que, APICONNECTOR):
                 yield R(que=que, prop=prop)
 
     IS.shared.qud.pop()
 
 
 @update_rule
-def downdate_qud_commands(IS, DOMAIN):
+def downdate_qud_commands(IS, DOMAIN, APICONNECTOR):
     """Downdate the QUD.
 
     If the topmost question on /shared/qud is resolved by
@@ -229,7 +229,7 @@ def downdate_qud_commands(IS, DOMAIN):
         if isinstance(que, Command):
             cmdresolvees = DOMAIN.plans.get(que, False)
             if cmdresolvees:
-                doesresolve = [[DOMAIN.resolves(prop, move.content) for prop in IS.shared.com] for move in cmdresolvees
+                doesresolve = [[DOMAIN.resolves(prop, move.content, APICONNECTOR) for prop in IS.shared.com] for move in cmdresolvees
                                if isinstance(move, Question)]
                 allresolved = all([any(i) for i in doesresolve])
                 # print([i.content for i in cmdresolvees])
@@ -252,14 +252,14 @@ def downdate_qud_commands(IS, DOMAIN):
 
 # muss for find_plan kommen!
 @update_rule
-def clarify_pred2(IS, DOMAIN, NEXT_MOVES):
+def clarify_pred2(IS, DOMAIN, NEXT_MOVES, APICONNECTOR):
     @precondition
     def V():
         move = IS.private.agenda.top()
         if isinstance(move, ClarifyPred2):
             que = "?x." + move.content.content.arg1[0][
                 0] + "(x)"  # TODO - er fragt jetzt immer nach der ERSTEN möglichkeit das zu fulfillen, das kann unintended sein
-            resolved = any(DOMAIN.resolves(prop, que) for prop in IS.private.bel)
+            resolved = any(DOMAIN.resolves(prop, que, APICONNECTOR) for prop in IS.private.bel)
             if not resolved:
                 yield R(move=move, question=que)
 
@@ -269,7 +269,7 @@ def clarify_pred2(IS, DOMAIN, NEXT_MOVES):
 # Finding plans
 
 @update_rule
-def find_plan1(IS, DOMAIN, NEXT_MOVES):
+def find_plan1(IS, DOMAIN, NEXT_MOVES, APICONNECTOR):
     """Find a dialogue plan for resolving a question.
 
     If there is a Respond move first in /private/agenda, and
@@ -287,9 +287,9 @@ def find_plan1(IS, DOMAIN, NEXT_MOVES):
             move = scnd
 
         if isinstance(move, (Respond, ClarifyPred2)):
-            resolved = any(DOMAIN.resolves(prop, move.content) for prop in IS.private.bel)
+            resolved = any(DOMAIN.resolves(prop, move.content, APICONNECTOR) for prop in IS.private.bel)
             if not resolved:
-                plan = DOMAIN.get_plan(move.content, IS)
+                plan = DOMAIN.get_plan(move.content, IS, APICONNECTOR)
                 if plan[0] and plan[1]:
                     yield R(move=move, plan=plan[1], wasSecond=(move == scnd))
                 elif not plan[0]:
@@ -303,7 +303,7 @@ def find_plan1(IS, DOMAIN, NEXT_MOVES):
 
 
 @update_rule
-def find_plan2(IS, DOMAIN, NEXT_MOVES):
+def find_plan2(IS, DOMAIN, NEXT_MOVES, APICONNECTOR):
     """Find a dialogue plan for resolving a question.
 
     If there is a Respond move first in /private/agenda, and
@@ -321,10 +321,10 @@ def find_plan2(IS, DOMAIN, NEXT_MOVES):
             move = scnd
 
         if isinstance(move, (Respond, ClarifyPred2)):
-            resolved = any(DOMAIN.resolves(prop, move.content) for prop in IS.private.bel)
+            resolved = any(DOMAIN.resolves(prop, move.content, APICONNECTOR) for prop in IS.private.bel)
             if resolved:
                 for prop in IS.private.bel:
-                    if DOMAIN.resolves(prop, move.content):
+                    if DOMAIN.resolves(prop, move.content, APICONNECTOR):
                         yield R(move=move, answer=prop)
 
     IS.private.agenda.pop()
@@ -334,7 +334,7 @@ def find_plan2(IS, DOMAIN, NEXT_MOVES):
 # Executing plans
 
 @update_rule
-def execute_if(IS, DOMAIN):
+def execute_if(IS, DOMAIN, APICONNECTOR):
     """Execute an If(...) plan construct.
 
     If the topmost construct in /private/plan is an If,
@@ -353,8 +353,8 @@ def execute_if(IS, DOMAIN):
                 else:
                     yield R(test=move.cond, success=False, subplan=move.iffalse)
             elif isinstance(move.cond, WhQ):  # dann prüft er lediglich ob das wissen dazu da ist
-                sources = list(IS.shared.com) + list(IS.private.bel) + list(find_knowledge_from_question(IS, DOMAIN))
-                if any(DOMAIN.resolves(candidate, move.cond) for candidate in sources):
+                sources = list(IS.shared.com) + list(IS.private.bel) + list(find_knowledge_from_question(IS, DOMAIN, APICONNECTOR))
+                if any(DOMAIN.resolves(candidate, move.cond, APICONNECTOR) for candidate in sources):
                     yield R(test=move.cond, success=True, subplan=move.iftrue)
                 else:
                     yield R(test=move.cond, success=False, subplan=move.iffalse)
@@ -365,7 +365,7 @@ def execute_if(IS, DOMAIN):
 
 
 @update_rule
-def remove_findout(IS, DOMAIN):
+def remove_findout(IS, DOMAIN, APICONNECTOR):
     """Remove a resolved Findout from the current plan.
 
     If the topmost move in /private/plan is a Findout,
@@ -378,14 +378,14 @@ def remove_findout(IS, DOMAIN):
         move = IS.private.plan.top()
         if isinstance(move, Findout):
             for prop in IS.shared.com:
-                if DOMAIN.resolves(prop, move.content):
+                if DOMAIN.resolves(prop, move.content, APICONNECTOR):
                     yield R(move=move, prop=prop)
 
     IS.private.plan.pop()
 
 
 @update_rule
-def exec_consultDB(IS, DATABASE):
+def exec_consultDB(IS, APICONNECTOR):
     """Consult the database for the answer to a question.
 
     If the topmost move in /private/plan is a ConsultDB,
@@ -396,17 +396,18 @@ def exec_consultDB(IS, DATABASE):
 
     @precondition
     def V():
-        move = IS.private.plan.top()
-        if isinstance(move, ConsultDB):
-            yield R(move=move)
+        if isinstance(APICONNECTOR, ibis_generals.Database):
+            move = IS.private.plan.top()
+            if isinstance(move, ConsultDB):
+                yield R(move=move)
 
-    prop = DATABASE.consultDB(V.move.content, IS.shared.com)
+    prop = APICONNECTOR.consultDB(V.move.content, IS, "com")
     IS.private.bel.add(prop)
     IS.private.plan.pop()
 
 
 @update_rule
-def recover_plan(IS, DOMAIN):
+def recover_plan(IS, DOMAIN, APICONNECTOR):
     """Recover a plan matching the topmost question in the QUD.
 
     If both /private/agenda and /private/plan are empty,
@@ -419,7 +420,7 @@ def recover_plan(IS, DOMAIN):
     def V():
         if not IS.private.agenda and not IS.private.plan:
             que = IS.shared.qud.top()
-            plan = DOMAIN.get_plan(que, IS)
+            plan = DOMAIN.get_plan(que, IS, APICONNECTOR)
             if plan[0] and plan[1]:
                 yield R(que=que, plan=plan[1])
 
@@ -429,7 +430,7 @@ def recover_plan(IS, DOMAIN):
 
 
 @update_rule
-def remove_raise(IS, DOMAIN):
+def remove_raise(IS, DOMAIN, APICONNECTOR):
     """Remove a resolved Raise move from the current plan.
 
     If the topmost move in /private/plan is a Raise,
@@ -442,7 +443,7 @@ def remove_raise(IS, DOMAIN):
         move = IS.private.plan.top()
         if isinstance(move, Raise):
             for prop in IS.shared.com:
-                if DOMAIN.resolves(prop, move.content):
+                if DOMAIN.resolves(prop, move.content, APICONNECTOR):
                     yield R(move=move, prop=prop)
 
     IS.private.plan.pop()
@@ -472,7 +473,7 @@ def select_from_plan(IS):
 
 
 @update_rule
-def select_respond(IS, DOMAIN):
+def select_respond(IS, DOMAIN, APICONNECTOR):
     """Answer a question on the QUD.
 
     If both /private/agenda and /private/plan are empty, and there
@@ -487,14 +488,14 @@ def select_respond(IS, DOMAIN):
             que = IS.shared.qud.top()
             for prop in IS.private.bel:
                 # if prop not in IS.shared.com: #I get warum das nicht so sein sollte, aber wenn das hier ist fragt er halt mich sachen die ich ihn frage, weil statt select_respond halt reraise_issue triggert
-                if DOMAIN.relevant(prop, que):
+                if DOMAIN.relevant(prop, que, APICONNECTOR):
                     yield R(que=que, prop=prop)
 
     IS.private.agenda.push(Respond(V.que))
 
 
 @update_rule
-def reraise_issue(IS, DOMAIN):
+def reraise_issue(IS, DOMAIN, APICONNECTOR):
     """Reraise the topmost question on the QUD.
 
     If there is no dialogue plan for the topmost question on
@@ -505,7 +506,7 @@ def reraise_issue(IS, DOMAIN):
     @precondition
     def V():
         que = IS.shared.qud.top()
-        tmp = DOMAIN.get_plan(que, IS)
+        tmp = DOMAIN.get_plan(que, IS, APICONNECTOR)
         if tmp[0] and not tmp[1] and isinstance(que,
                                                 Question):  # vorher hat get_plan nur den planstack returned, jetzt muss sowohl die erste True sein als auch der planstack != None für not(tmp)
             yield R(que=que)
@@ -584,7 +585,7 @@ def reselect_ask(IS, NEXT_MOVES):
 
 
 @update_rule
-def select_answer(IS, DOMAIN, NEXT_MOVES):
+def select_answer(IS, DOMAIN, NEXT_MOVES, APICONNECTOR):
     """Select an Answer move from the agenda.
 
     If the topmost move in /private/agenda is a Respond, and there
@@ -606,7 +607,7 @@ def select_answer(IS, DOMAIN, NEXT_MOVES):
         if isinstance(move, Respond):
             for prop in IS.private.bel:
                 # if prop not in IS.shared.com: #siehe select_respond
-                if DOMAIN.relevant(prop, move.content):
+                if DOMAIN.relevant(prop, move.content, APICONNECTOR):
                     yield R(prop=prop)
 
     NEXT_MOVES.push(Answer(V.prop))
@@ -673,7 +674,7 @@ def exec_inform(IS, NEXT_MOVES):
                     index = -1
                     for i in move.replacers:
                         index += 1
-                        if i.startswith("bel("):
+                        if i.startswith("bel("): #TODO - hier APICONNECTOR und getContext verwenden!
                             relevantpart = i[4:-1]
                             for j in IS.private.bel:
                                 if isinstance(j, Prop):
@@ -720,7 +721,7 @@ def powerset(L, fixedLen=False, incShuffles=True):
         return flatten([list(itertools.permutations(i)) for i in pset])
 
 
-def find_knowledge_from_question(IS, DOMAIN):
+def find_knowledge_from_question(IS, DOMAIN, APICONNECTOR):
     prop = []
     try:
         if isinstance(IS.shared.qud.top(), WhQ):
@@ -728,15 +729,15 @@ def find_knowledge_from_question(IS, DOMAIN):
             if isinstance(topqud, Pred1) and hasattr(topqud, "createdfrom") and isinstance(topqud.createdfrom, str):
                 for candidate in DOMAIN.preds2[str(topqud.createdfrom)]:
                     anotherquestion = Question("?x." + candidate[0] + "(x)")
-                    if DOMAIN.resolves(Answer(str(topqud.arg2)).content, anotherquestion, IS=IS):
-                        prop.append(DOMAIN.combine(anotherquestion, Answer(str(topqud.arg2)).content, IS=IS))
+                    if DOMAIN.resolves(Answer(str(topqud.arg2)).content, anotherquestion, APICONNECTOR, IS=IS):
+                        prop.append(DOMAIN.combine(anotherquestion, Answer(str(topqud.arg2)).content, APICONNECTOR, IS=IS))
     except:
         pass
     return prop
 
 
 @update_rule
-def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
+def exec_func(IS, DOMAIN, NEXT_MOVES, DM, APICONNECTOR):
     @precondition
     def V():
         move = IS.private.plan.top()
@@ -744,13 +745,13 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
             kwparams = {key: val for key, val in move.kwparams.items() if key != "optionals"}
             mustknow = [Question(i) for i in move.params] + [Question(i) for i in kwparams.values()]
 
-            prop = find_knowledge_from_question(IS, DOMAIN)
+            prop = find_knowledge_from_question(IS, DOMAIN, APICONNECTOR)
             sources = list(IS.shared.com) + list(IS.private.bel) + list(prop)
             knowledgecombos = powerset(sources, fixedLen=len(mustknow), incShuffles=True)
             for knowledge in knowledgecombos:
                 alls = [False] * len(mustknow)
                 for i in range(len(mustknow)):
-                    if DOMAIN.resolves(knowledge[i], mustknow[i]):
+                    if DOMAIN.resolves(knowledge[i], mustknow[i], APICONNECTOR):
                         alls[i] = True
                 if all(alls):
                     if len(knowledge) > len(move.params):  # dann sind die hinteren nämlich kw-args
@@ -760,7 +761,7 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
                             optionals = move.kwparams["optionals"]
                             for key, val in optionals.items():
                                 for knw in sources:
-                                    if DOMAIN.resolves(knw, Question(val)):
+                                    if DOMAIN.resolves(knw, Question(val), APICONNECTOR):
                                         optknowledge[key] = knw
                             yield R(knowledge=knowledge[:len(move.params)], move=move, kwknowledge=kw,
                                     optknowledge=optknowledge)
@@ -794,14 +795,14 @@ def exec_func(IS, DOMAIN, NEXT_MOVES, DM):
 
 
 @update_rule
-def mention_command_conditions(IS, DOMAIN):
+def mention_command_conditions(IS, DOMAIN, APICONNECTOR):
     @precondition
     def V():
         cmd = IS.shared.qud.top()
-        if len(DOMAIN.check_for_plan(cmd, IS)) > 0 and isinstance(cmd, Command) and cmd.new:
+        if len(DOMAIN.check_for_plan(cmd, IS, APICONNECTOR)) > 0 and isinstance(cmd, Command) and cmd.new:
             yield R(cmd=cmd)
 
-    missings = DOMAIN.check_for_plan(V.cmd, IS)
+    missings = DOMAIN.check_for_plan(V.cmd, IS, APICONNECTOR)
     string = ", ".join(["%s"] * len(missings))
     string = "The plan for this cannot be conducted yet, as the following Information is missing: " + string
     IS.private.agenda.push(Inform(string, missings))

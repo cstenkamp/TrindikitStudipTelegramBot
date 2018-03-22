@@ -1,0 +1,43 @@
+% start USR
+
+
+# IBIS / domain-independent
+
+USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]
+
+ASK[sem=[Ask=?q, subtype=WHQ]] -> WHQ[q=?q]
+ASK[sem=[Ask=?q, subtype=YNQ]] -> YNQ[q=?q]
+
+
+ANSWER[sem=[Answer=?ans]] -> SHORTANS[ans=?ans] | YESNOANS[ans=?ans]
+
+SHORTANS[ans=?ind] -> CAT[cat=?cat, ind=?ind]
+
+YESNOANS[ans=yes] -> 'yes' | 'yeah'
+YESNOANS[ans=no] -> 'no' | 'nope'
+
+QUIT[] -> 'bye'
+
+IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
+
+CMD[con=visa] -> 'visa'
+
+# travel
+
+YNQ[q=needvisa] -> 'need-visa'
+
+WHQ[q=price] -> 'price'
+WHQ[q=price] -> 'I want to know how expensive a flight is.'
+
+CAT[cat=how, ind=plane] -> 'plane' | 'flight'
+CAT[cat=how, ind=train] -> 'train'
+
+CAT[cat=city, ind=london] -> 'london'
+CAT[cat=city, ind=paris]  -> 'paris'
+CAT[cat=city, ind=berlin] -> 'berlin'
+
+CAT[cat=class, ind=first]  -> 'first' | 'business'
+CAT[cat=class, ind=second] -> 'second' | 'economy'
+
+CAT[cat=day, ind=today]    -> 'today'
+CAT[cat=day, ind=tomorrow] -> 'tomorrow'

@@ -410,7 +410,7 @@ def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=N
     for curr in [Klausur, Nachklausur]:
         if curr:
             time_starts = curr["iso_start"][:curr["iso_start"].find("+")].replace("T", " at ")
-            time_starts = calendar.day_abbr[datetime.datetime.fromtimestamp(int(next_ev[1]["start"])).weekday()] + ", " + time_starts
+            time_starts = calendar.day_abbr[datetime.datetime.fromtimestamp(int(next_ev[0]["start"])).weekday()] + ", " + time_starts
             starts_in = str(datetime.timedelta(seconds=int(curr["start"]) - curr_time))[:-3]
             length = str(datetime.timedelta(seconds=int(curr["end"]) - int(curr["start"])))[:-3]
             txt += "The "+("exam" if curr == Klausur else "make-up exam")+" is in "+starts_in+" hours ("+time_starts+", in room "+curr["room"]+"). It takes "+length+" hours.\n"
@@ -545,7 +545,7 @@ def get_courses_for_day(auth_string, day, semester=None, timerel_courses=None, a
         if len(srtd) == 0 and len(txt) == 0:
             return "You don't have any classes on today!"
         txt2 = "Currently you are in:\n"+("\n".join(i[1] + " - "+i[2]+(("(topic: "+i[3]+")") if i[3] else "")+" until "+i[4]+" ("+i[5]+" hours to go)" for i in srtd))
-        return txt2 + ("\nYou have the following classes left today:\n"+txt if len(txt) > 0 else "You don't have any classes left today.")
+        return txt2 + ("\nYou have the following classes left today:\n"+txt if len(txt) > 0 else "\nYou don't have any classes left after that.")
     else:
         return "You have the following classes on "+str(day)+":\n"+txt if len(txt) > 0 else "You don't have any classes left today."
 

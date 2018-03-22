@@ -729,7 +729,7 @@ def update_rule(function):
                 if "DM" in argkeys: new_kw["DM"] = args[0] #DM steht jetzt für die DialogManager-Instanz. Eine Regel kann DM als param haben, um selbst DM an ihre kinder weiter zu geben
             else:
                 # für multiple users müsste args[1] der aktuelle User sein, dann könnte man für das new_kw die sachen von args[1] ziehen
-                globals = set(argkeys).intersection(set(["DATABASE", "DOMAIN", "GRAMMAR", "USER"]))
+                globals = set(argkeys).intersection(set(["APICONNECTOR", "DOMAIN", "GRAMMAR", "USER"]))
                 globals_kw =  dict((key, getattr(args[0], key, None)) for key in globals) #domain, database, grammar sind für alle user selb
                 specifics_kw = dict((key, getattr(args[1].state, key, None)) for key in set(argkeys).difference(globals).difference(set(["USER", "DM"])))
                 user_kw = dict((key, args[1]) for key in set(argkeys).intersection(set(["USER"])))
@@ -947,7 +947,7 @@ def freetextquestion(IS, DOMAIN):
     return isString
 
 
-def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper mergen, sodass er es in singleuser printet und in multiuser als telegram-nachricht sendet
+def handle_command(cmd, IS, APICONNECTOR): #TODO: das hier mit den commands von bothelper mergen, sodass er es in singleuser printet und in multiuser als telegram-nachricht sendet
     if cmd == "/showIS":
         print(IS.pformat())
         print("")
@@ -964,9 +964,9 @@ def handle_command(cmd, IS): #TODO: das hier mit den commands von bothelper merg
         import ibis_generals
         from studip import get_timerelevant_courses
         import time
-        auth_string = ibis_generals.check_for_something(IS, "auth_string")[1].content
+        auth_string = APICONNECTOR.getContext(IS, "auth_string")[1].content
         IS.private.bel.add(Knowledge(Pred1("timerel_courses"), get_timerelevant_courses(auth_string), True, expires=round(time.time()) + 3600 * 72))
-        if ibis_generals.check_for_something(IS, "bel(timerel_courses)")[0]:
+        if APICONNECTOR.getContext(IS, "timerel_courses", "bel")[0]:
             print("SUCESSFULL!")
         else:
             print("not sucessful! :(")
@@ -983,7 +983,7 @@ class SimpleInput(object):
 
 
     @update_rule
-    def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, NEXT_MOVES, GRAMMAR):
+    def interpret(INPUT, LATEST_MOVES, IS, DOMAIN, NEXT_MOVES, APICONNECTOR, GRAMMAR):
         """Convert an INPUT string to a set of LATEST_MOVES.
         
         Calls GRAMMAR.interpret to convert the string in INPUT
@@ -992,7 +992,7 @@ class SimpleInput(object):
         old_moves = deepcopy(LATEST_MOVES)
         LATEST_MOVES.clear()
         if INPUT.value != '':
-            move_or_moves = GRAMMAR.interpret(INPUT.get(), IS, DOMAIN, NEXT_MOVES, anyString = freetextquestion(IS,DOMAIN), moves=old_moves)
+            move_or_moves = GRAMMAR.interpret(INPUT.get(), IS, DOMAIN, NEXT_MOVES, APICONNECTOR, anyString = freetextquestion(IS,DOMAIN), moves=old_moves)
             if INPUT.value == "exit" or INPUT.value == "reset":
                 return INPUT.value
             elif not move_or_moves: #geeez, ich will nen ANN nutzen dass per NLI text-->Speech act macht
@@ -1006,7 +1006,7 @@ class SimpleInput(object):
 
 
     @update_rule
-    def input(INPUT, LATEST_SPEAKER, IS):
+    def input(INPUT, LATEST_SPEAKER, IS, APICONNECTOR):
         """Inputs a string from standard input.
         
         The string is put in INPUT, and LATEST_SPEAKER is set to USR.
@@ -1020,7 +1020,7 @@ class SimpleInput(object):
             if not str.startswith("/"):
                 break
             else:
-                handle_command(str, IS)
+                handle_command(str, IS, APICONNECTOR)
 
         INPUT.set(str)
         LATEST_SPEAKER.set(Speaker.USR)

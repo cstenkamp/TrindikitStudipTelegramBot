@@ -57,9 +57,9 @@ class MultiUserIBIS(IBISController,  SimpleInput,     TGramOutput,    DialogueMa
     
     This is an abstract class: methods update and select are not implemented.
     """
-    def __init__(self, domain, database, grammar):
+    def __init__(self, domain, apiConnector, grammar):
         self.DOMAIN = domain
-        self.DATABASE = database
+        self.APICONNECTOR = apiConnector
         self.GRAMMAR = grammar
 
 

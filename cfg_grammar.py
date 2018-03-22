@@ -56,7 +56,7 @@ class CFG_Grammar(Grammar):
         self.parser = MyParser(nltk.grammar.FeatureGrammar.fromstring(preprocessed), trace=settings.VERBOSE["Parse"])
 
 
-    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, anyString=False, moves=None): #überschreibe ich nochmal in studip
+    def interpret(self, input, IS, DOMAIN, NEXT_MOVES, APICONNECTOR, anyString=False, moves=None): #überschreibe ich nochmal in studip
         """Parse an input string into a dialogue move or a set of moves."""
         try: return self.parseString(input, IS, DOMAIN, NEXT_MOVES)
         except: pass
@@ -246,6 +246,9 @@ class CFG_Grammar(Grammar):
             text = text[:-1]
         return text
 
+    def remove_bracks(self, str):
+        return re.sub(' +',' ',re.sub("\[.*?\]", "", str).replace("[", "").replace("]", ""))
+
 
     def line_ops(self, line, variablepath, all_sents):
         if not line.startswith('#') and "->" in line and "'" in line: #terminals
@@ -255,7 +258,7 @@ class CFG_Grammar(Grammar):
                 tmp = self.find_variables(curr, line, self.variables)
                 if tmp: self.variablepath[self.rem_spaces(tmp[1])] = self.rem_spaces(tmp[0])
                 # other string-operations here (on strings, an array)
-                if any(line.startswith(i) for i in ["CMD", "WHQ", "SecOrdQ", "YNQ"]): all_sents.add(strings[0])
+                if any(line.startswith(i) for i in ["CMD", "WHQ", "SecOrdQ", "YNQ"]): all_sents.add(self.remove_bracks(strings[0]))
         elif not line.startswith('#') and "->" in line: #non-terminals:
             # print(line)
             l = re.sub("\[.*?\]", "", line).replace("[", "").replace("]", "")
