@@ -964,7 +964,7 @@ def handle_command(cmd, IS, APICONNECTOR): #TODO: das hier mit den commands von 
         import ibis_generals
         from studip import get_timerelevant_courses
         import time
-        auth_string = APICONNECTOR.getContext(IS, "auth_string")[1].content
+        auth_string = APICONNECTOR.getContext(IS, "auth_string")[1]
         IS.private.bel.add(Knowledge(Pred1("timerel_courses"), get_timerelevant_courses(auth_string), True, expires=round(time.time()) + 3600 * 72))
         if APICONNECTOR.getContext(IS, "timerel_courses", "bel")[0]:
             print("SUCESSFULL!")

@@ -156,6 +156,8 @@ class Studip_Connector(ibis_generals.API_Connector):
     @executable_rule
     def get_my_courses(self, sem_name, auth_string, IS):
         w_courses, s_courses = get_user_courses(auth_string, semester=sem_name)
+        w_courses = sorted(w_courses, key=lambda x: x["name"])
+        s_courses = sorted(s_courses, key=lambda x: x["name"])
         s = " "+"\n ".join([i["name"] + " (" + (i["event_number"] if i["event_number"] else "None") + ")" for i in s_courses]) if s_courses else ""
         w = " "+"\n ".join([i["name"] + " (" + (i["event_number"] if i["event_number"] else "None") + ")" for i in w_courses]) if w_courses else ""
         txt = ""
@@ -187,11 +189,7 @@ class Studip_Connector(ibis_generals.API_Connector):
 
     @executable_rule
     def klausur(self, auth_string, course_str, IS, semester=None):
-        if not self.getContext(IS, "timerel_courses", "bel")[0]:
-            timerel_courses = get_timerelevant_courses(auth_string)
-            IS.private.bel.add(Knowledge(Pred1("timerel_courses"), timerel_courses, True, expires=round(time.time()) + 3600 * 72))
-        timerel_courses = self.getContext(IS, "timerel_courses", "bel")[1] #danach ist es save da
-        txt = find_klausurtermin(auth_string, course_str, timerel_courses=timerel_courses)
+        txt = find_klausurtermin(auth_string, course_str, semester=semester)
         return Prop(Pred1("WhenExam", course_str), Ind(txt), True, expires=round(time.time()) + 3600 * 24), IS.private.bel.add
 
 
@@ -244,6 +242,12 @@ class Studip_Connector(ibis_generals.API_Connector):
 
         return Prop(Pred1("DownloadFile", course_str), Ind("The file you requested is on its way!"), True, expires=round(time.time()) + 30), IS.private.bel.add, ["course_str", "semester", "filename"]
 
+    @executable_rule
+    def show_commands(self, NEXT_MOVES, GRAMMAR):
+        commands = "Try one of the following commands:\n"+"\n".join(sorted(GRAMMAR.all_sents))
+        return State(commands), NEXT_MOVES.push
+
+
 
 def create_studip_APIConnector():
     return Studip_Connector()
@@ -263,7 +267,7 @@ class StudIP_grammar(CFG_Grammar):
                 try:
                     tmp = APICONNECTOR.getContext(IS, "auth_string")
                     if tmp[0]: #dann kann "this" und "next" nachgucken
-                        this, next = get_semesters(tmp[1].content)
+                        this, next = get_semesters(tmp[1])   #ASDF überall wo getContext gecalled wird im ergebnis[1] das .content entfernen
                         return Answer(ShortAns(Ind(get_relative_semester_name(input, this, next)), True))
                     else:
                         return Answer(ShortAns(Ind(get_semester_name(input)), True))
@@ -273,7 +277,7 @@ class StudIP_grammar(CFG_Grammar):
                 try:
                     tmp = APICONNECTOR.getContext(IS, "auth_string")
                     if tmp[0]: #dann kann "this" und "next" nachgucken
-                        name = find_real_coursename(tmp[1].content, input)
+                        name = find_real_coursename(tmp[1], input)
                         if name:
                             return Answer(ShortAns(Ind(name), True))
                 except ValueError:
@@ -317,7 +321,7 @@ class Studip_domain(ibis_generals.Domain):
             if forwhat == "kurs":
                 auth_string = APICONNECTOR.getContext(IS, "auth_string")
                 if auth_string[0]:
-                    auth_string = auth_string[1].content
+                    auth_string = auth_string[1]
                     return {"kurs": get_courses(auth_string, semester="")[0]}
         except:
             pass
@@ -408,6 +412,10 @@ def create_studip_domain(APICONNECTOR):
     domain = Studip_domain(preds0, preds1, preds2, sorts, converters)
 
     ######################################### elementares (anmelden) ###################################################
+
+    domain.add_plan("!(YouCan)",
+                    [ExecuteFunc(APICONNECTOR.show_commands)])
+
 
     domain.add_plan("!(studip)",
                    [Findout("?x.username(x)"),

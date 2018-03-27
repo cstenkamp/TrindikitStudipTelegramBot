@@ -79,10 +79,10 @@ class TravelDB(ibis_generals.Database):
         self.entries = []
 
     def consultDB(self, question, context, contextStr=""):
-        depart_city = self.getContext(context, "depart_city", contextStr)[1].content
-        dest_city = self.getContext(context, "dest_city", contextStr)[1].content
-        day = self.getContext(context, "depart_day", contextStr)[1].content
-        do_return = self.getContext(context, "return", contextStr)[1].content
+        depart_city = self.getContext(context, "depart_city", contextStr)[1]
+        dest_city = self.getContext(context, "dest_city", contextStr)[1]
+        day = self.getContext(context, "depart_day", contextStr)[1]
+        do_return = self.getContext(context, "return", contextStr)[1]
         entry = self.lookupEntry(depart_city, dest_city, day, do_return)
         price = entry['price']
         return Prop(Pred1("price"), Ind(price), True)

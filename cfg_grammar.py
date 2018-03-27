@@ -68,33 +68,38 @@ class CFG_Grammar(Grammar):
         return set([])
 
 
+    def partial_parse(self, tokens, IS, DOMAIN, NEXT_MOVES):
+        typstringlist = self.parser.partial_parse(tokens, self.neighbours) #TODO der partialparser muss besser sodass er ne einduetige antwort zurückgibt >.<
+        for i, (typ, string) in enumerate(typstringlist):
+            string2 = string.replace("_", " ").replace("?", "")
+            # print("STRING", string)
+            try:
+                converted = self.use_converters(IS, DOMAIN, string2, typ)
+                break
+            except NotRecognizedException as e:
+                if i < len(typstringlist):
+                    pass
+                else:
+                    NEXT_MOVES.push(State("I did not recognize the " + typ + " you queried!"))
+                    raise e
+        # print("CONVERTED", converted)
+        tokens = " ".join(tokens).replace(string, "{"+typ+"}").split(" ")
+        # print("NEU ZU PARSEN:", tokens)
+        trees = next(self.parser.parse(tokens))
+        root = trees[0].label()
+        root = deepcopy(dict(root))
+        if root["sem"]["f"] == "given": root["sem"]["f"] = converted
+        root["sem"]["fulfilltype"] = typ
+        return root, converted, tokens
+
+
     def parseString(self, input, IS, DOMAIN, NEXT_MOVES):
         tokens = self.preprocess_input(input).split()
         try:
             trees = next(self.parser.parse(tokens))  # http://www.nltk.org/book/ch09.html
             root = trees[0].label()
         except:
-            typstringlist = self.parser.partial_parse(tokens, self.neighbours) #TODO der partialparser muss besser sodass er ne einduetige antwort zurückgibt >.<
-            for i, (typ, string) in enumerate(typstringlist):
-                string2 = string.replace("_", " ").replace("?", "")
-                # print("STRING", string)
-                try:
-                    converted = self.use_converters(IS, DOMAIN, string2, typ, NEXT_MOVES)
-                    break
-                except NotRecognizedException as e:
-                    if i < len(typstringlist):
-                        pass
-                    else:
-                        NEXT_MOVES.push(State("I did not recognize the " + typ + " you queried!"))
-                        raise e
-            # print("CONVERTED", converted)
-            tokens = " ".join(tokens).replace(string, "{"+typ+"}").split(" ")
-            # print("NEU ZU PARSEN:", tokens)
-            trees = next(self.parser.parse(tokens))
-            root = trees[0].label()
-            root = deepcopy(dict(root))
-            if root["sem"]["f"] == "given": root["sem"]["f"] = converted
-            root["sem"]["fulfilltype"] = typ
+            root, converted, tokens = self.partial_parse(tokens, IS, DOMAIN, NEXT_MOVES)
         try:
             return self.sem2move(root['sem'], IS, DOMAIN, NEXT_MOVES)
         except:
@@ -106,7 +111,7 @@ class CFG_Grammar(Grammar):
         return ""
 
 
-    def use_converters(self, IS, DOMAIN, string, answertype, NEXT_MOVES):
+    def use_converters(self, IS, DOMAIN, string, answertype):
         try:
             auth_string = IS.shared.com.get("auth_string").content[1].content
             content = DOMAIN.converters[answertype](auth_string, string)
@@ -158,7 +163,7 @@ class CFG_Grammar(Grammar):
                     range = DOMAIN.preds2[sem['Ask']] #range[1] ist die neue frage, range[0] der answer-typ
                     if sem.get("fulfilltype"): range = [i for i in range if i[0] == sem["fulfilltype"]]
                     try:
-                        content = self.use_converters(IS, DOMAIN, sem["f"], range[0][0], NEXT_MOVES) #TODO: dafuq, warum konvertier ich 2 mal?
+                        content = self.use_converters(IS, DOMAIN, sem["f"], range[0][0]) #TODO: dafuq, warum konvertier ich 2 mal?
                     except:
                         content = sem["f"]
                     return Ask(WhQ(Pred1(range[0][1], content, createdfrom=sem['Ask'])), askedby="USR")
@@ -192,7 +197,12 @@ class CFG_Grammar(Grammar):
             lines[i] = self.incorporate_optionals(lines[i])
             lines[i] = self.find_longstrings(lines[i])
             #other line-operations here (on line)
-        print(self.all_sents)
+        for i in list(self.all_sents):
+            # print(self.preprocess_input(i+" something").split())
+            # print(self.partial_parse()) #TODO - sobald das partial-parsen einduetig nur die wirklich möglichen returned (sobald ich darin die phrase-structure-teile drin hab) dann auch die richtigen nutzen um hier wann ist {semester} vorzusclhagen #asdf
+            pass
+
+
         preprocessed = "\n".join(lines)
         #other overall operations here (on preprocessed)
         for key,val in self.longstrings.items():

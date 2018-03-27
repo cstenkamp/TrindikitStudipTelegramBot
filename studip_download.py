@@ -14,6 +14,7 @@ import sys
 from singleUser_ibis import singleUser_download
 from difflib import SequenceMatcher
 import settings
+import codecs
 
 ########################################################################################################################
 #################################### von der api bereitgestellte sinnvolle routen ######################################
@@ -376,11 +377,11 @@ def get_course_by_name(auth_string, name, semester=None, supress=False):
         return #TODO - wenn keiner passt den mit der höchsten similiarity vorschlagen! ("Did you mean...?")
 
 
-def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=None):
+def find_klausurtermin(auth_string, course_str, semester=None):
     try:
         one_course = get_course_by_name(auth_string, course_str, semester=semester, supress=False)
     except MoreThan1SemesterException:
-        sem = get_semesters(auth_string)[0]
+        sem = get_semesters(auth_string)[1]
         for i in range(10):
             try:
                 one_course = get_course_by_name(auth_string, course_str, semester=sem, supress=False)
@@ -388,7 +389,7 @@ def find_klausurtermin(auth_string, course_str, semester=None, timerel_courses=N
             except MoreThan1SemesterException:
                 sem = get_semester_before(auth_string, sem)
 
-    all_times = get_alltimes(auth_string, semester, timerel_courses, one_course)[0]
+    all_times = get_alltimes(auth_string, semester, None, one_course)[0]
     curr_time = round(time.time())
     try:
         next_time = min(int(event["start"]) for event in all_times.values())
@@ -644,7 +645,9 @@ if __name__ == '__main__':
 
     # kurs = get_course_by_name(auth_string, "Datenbanksysteme", semester="SS17")["course_id"]
 
-    print(download_studip_file(auth_string, "Codierungstheorie und Kryptographie", "Skript"))
+    # print(download_studip_file(auth_string, "Codierungstheorie und Kryptographie", "Skript"))
+
+    print(find_klausurtermin(auth_string, "Datenbanksysteme", "SS18"))
 
 
             # if curr["name"] == "Skript":

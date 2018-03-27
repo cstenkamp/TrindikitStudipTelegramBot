@@ -45,6 +45,7 @@ IMPERATIVE[sem=[Command=?con]] -> CMD[con=?con]
 # studip
 
 CMD[con=studip] -> 'studip'
+CMD[con=YouCan] -> 'Was kannst du?'
 
 
 CMD[con=Vorlesungszeit] -> 'Vorlesungszeit' | 'Ist [gerade] Vorlesungszeit?' | 'Lectures?' | 'Are [currently] lectures?' | 'Are [there] [any] lectures [right] now?'

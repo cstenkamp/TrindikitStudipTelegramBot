@@ -1,3 +1,4 @@
+ER KANN:
 Ist gerade Vorlesungszeit?
 In wie vielen Tagen geht das Semester los?
 Wann geht das Semester los?
@@ -14,6 +15,10 @@ What courses do I have on <day>?
 List all files in <course>
 Download a file from <Kurs> -> [nach Bedarf <semester> ->] <filename> [nach Bedarf -> <correctedName>]
 
+
+
+ER SOLL
+"are there new files in"
 Prüfungsamt-Öffnungszeiten!! https://www.ikw.uni-osnabrueck.de/studiengaenge/pruefungsangelegenheiten.html
 
 Ein "forget it"-commando, was man sagen kann wenn er bspw nach semester fragt, um den grundzustand wieder herzustellen

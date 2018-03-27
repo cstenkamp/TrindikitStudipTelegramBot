@@ -36,7 +36,7 @@ def loadIBIS(forwhat, language):
 
 if __name__=='__main__':
     if not settings.MULTIUSER:
-        ibis = loadIBIS("travel", "en")
+        ibis = loadIBIS(settings.USE_GRAMMAR, settings.GRAMMAR_LAN)
         ibis.init()
         ibis.control()
     else:

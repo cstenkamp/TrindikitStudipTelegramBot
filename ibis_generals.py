@@ -134,9 +134,12 @@ class API_Connector(object):
 
     def getProp(self, prop):
         try:
-            return prop.ind #prop.ind.content #war mal prop.content[1] ->falls es nicht klappt #TODO sollte prop.ind.content sein, sonst klappt auch travel nicht!!!!!
+            return prop.ind.content #prop.ind.content #war mal prop.content[1] ->falls es nicht klappt #TODO sollte prop.ind.content sein, sonst klappt auch travel nicht!!!!!
         except AttributeError:  # NoneType
-            return prop.yes
+            if isinstance(prop, Prop):
+                return prop.yes
+            elif isinstance(prop, Knowledge):
+                return prop.ind
 
 
 
