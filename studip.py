@@ -131,7 +131,7 @@ class Studip_Connector(ibis_generals.API_Connector):
         currently_seminars = not (time.time() < int(get(all_semesters, this_semester)['seminars_begin']) or time.time() > int(get(all_semesters, this_semester)['seminars_end']))
         if what == "db":
             if currently_seminars:
-                return Prop(Pred1("DaysBreak"), Ind(str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time()) + 3600), IS.private.bel.add
+                return Prop(Pred1("DaysBreak"), Ind("In "+str(many_days(all_semesters, this_semester, next_semester, currently_seminars))+" days"), True, expires=round(time.time()) + 3600), IS.private.bel.add
             else:
                 return Prop(Pred1("DaysBreak"), Ind("The break is right now!"), True, expires=round(time.time())+3600), IS.private.bel.add
         elif what == "wb":
