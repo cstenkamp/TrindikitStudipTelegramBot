@@ -166,21 +166,30 @@ def check_commands():
 
             filename = os.path.join(settings.PATH, "test_strings/", dom+"_"+lan)
             if os.path.exists(filename):
-                with open(filename, "r") as file:
-                    tmp = ""
-                    firsttime = True
-                    for i in file:
-                        if i.startswith("---"):
-                            yield ibis, tmp
-                            tmp = ""
-                            firsttime = False
-                        elif i.startswith("<restart>"):
-                            ibis = loadIBIS(dom, lan)
-                            ibis.init()
-                        else:
-                            if firsttime or (not firsttime and i != "S: Hello.\n"):
-                                tmp += i
-                    yield ibis, tmp
+                for i in collect_string(filename):
+                    if i == "<restart>":
+                        ibis = loadIBIS(dom, lan)
+                        ibis.init()
+                    else:
+                        yield ibis, i
+            return #TODO REMOVE ME
+
+
+def collect_string(filename):
+    with open(filename, "r") as file:
+        tmp = ""
+        firsttime = True
+        for i in file:
+            if i.startswith("---"):
+                yield tmp
+                tmp = ""
+                firsttime = False
+            elif i.startswith("<restart>"):
+                return "<restart>"
+            else:
+                if firsttime or (not firsttime and i != "S: Hello.\n"):
+                    tmp += i
+        yield tmp
 
 
 def sent_short(sent):
@@ -206,3 +215,38 @@ if __name__=='__main__':
     print("Amount of errors:"+str(fail_count)+"/"+str(ges_count))
 
     #TODO mit dem "Was kannst du?"-commando die tests selbst auf completeness prüfen
+
+
+
+########################################################################################################################
+############################################ for pytest, not running ###################################################
+########################################################################################################################
+
+
+def test_travel_en():
+    ibis = loadIBIS("travel", "en")
+    ibis.init()
+
+    filename = os.path.join(settings.PATH, "test_strings/travel_en")
+    if os.path.exists(filename):
+        for i in collect_string(filename):
+            if i == "<restart>":
+                ibis = loadIBIS("travel", "en")
+                ibis.init()
+            else:
+                check_sentence(ibis, i)
+
+
+
+def test_studip_en():
+    ibis = loadIBIS("travel", "en")
+    ibis.init()
+
+    filename = os.path.join(settings.PATH, "test_strings/travel_en")
+    if os.path.exists(filename):
+        for i in collect_string(filename):
+            if i == "<restart>":
+                ibis = loadIBIS("travel", "en")
+                ibis.init()
+            else:
+                check_sentence(ibis, i)
