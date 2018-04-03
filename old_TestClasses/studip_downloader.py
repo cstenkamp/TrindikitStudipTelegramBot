@@ -51,7 +51,7 @@ def download_file(path, auth_string):
             if e.code != 401:
                 raise
             else:
-                if path == 'user': #TODO change this as it is not anymore "the first time" iff path==user
+                if path == 'user': #RESOLVED change this as it is not anymore "the first time" iff path==user
                     # we sometimes get error 401 for no reason
                     # but this is the first request the script sends, so
                     # credentials may simply be wrong
@@ -166,7 +166,7 @@ def return_file(userid, semester, course, folder, name, auth_string):
         courses = [i for i in load('user/%s/courses' % userid, auth_string)['courses']['study']]
     else:
         courses = [i for i in load('user/%s/courses' % userid, auth_string)['courses']['study'] if i[
-            'semester_name' == CURR_SEMESTER]]  # TODO - das semester_name == muss auch noch auf 200 verschiedene Arten gehen
+            'semester_name' == CURR_SEMESTER]]  # RESOLVED - das semester_name == muss auch noch auf 200 verschiedene Arten gehen
 
     demanded = []
     for course in courses:

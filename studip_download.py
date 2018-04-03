@@ -100,7 +100,7 @@ def load_userid(auth_string, silent=True):
     except AuthentificationError:
         print("Credentials wrong!")
         if not silent:
-            raise AuthentificationError
+            raise AuthentificationError #TODO auch bei silent sollte er dann nach 2-3 prüfungen fehler returnen und fragen ob das passwort sich geändert hat
     return userid
 
 

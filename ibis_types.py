@@ -170,8 +170,6 @@ class Sentence(Type):
     def __getnewargs__(self): #https://stackoverflow.com/questions/37753425/cannot-unpickle-pickled-object sonst kann man nicht picklen/unpicklen
         return (self.content, )
 
-    # def __repr__(self):
-    #     return self.content.__repr__()
 
 
 ######################################################################
@@ -210,8 +208,7 @@ class Ans(Sentence):
         else:
             return Sentence.__new__(cls, ans, *args, **kw)
 
-    # def __repr__(self):
-    #     return self.content.__repr__()
+
 
 class Knowledge(Ans):
     def __init__(self, pred, ind=None, yes=True, expires=None):

@@ -214,7 +214,7 @@ def downdate_qud(IS, DOMAIN, APICONNECTOR):
 
     IS.shared.qud.pop()
 
-
+#TODO domain.resolves,combine,relevant sollten den APICONNECTOR als standard=None haben, sodass er ihn nur als arg nimmt wenn er ihn wirklich braucht
 @update_rule
 def downdate_qud_commands(IS, DOMAIN, APICONNECTOR):
     """Downdate the QUD.
@@ -257,8 +257,7 @@ def clarify_pred2(IS, DOMAIN, NEXT_MOVES, APICONNECTOR):
     def V():
         move = IS.private.agenda.top()
         if isinstance(move, ClarifyPred2):
-            que = "?x." + move.content.content.arg1[0][
-                0] + "(x)"  # TODO - er fragt jetzt immer nach der ERSTEN möglichkeit das zu fulfillen, das kann unintended sein
+            que = "?x." + move.content.content.arg1[0][0] + "(x)"  # TODO - er fragt jetzt immer nach der ERSTEN möglichkeit das zu fulfillen, das kann unintended sein (wird besser mit besserem partial-parser)
             resolved = any(DOMAIN.resolves(prop, que, APICONNECTOR) for prop in IS.private.bel)
             if not resolved:
                 yield R(move=move, question=que)

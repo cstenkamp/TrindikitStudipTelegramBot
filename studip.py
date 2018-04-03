@@ -220,7 +220,7 @@ class Studip_Connector(ibis_generals.API_Connector):
     @catchMoreThanOne
     @executable_rule
     def show_files(self, auth_string, course_str, IS, optionals={"semester": None}):
-        if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content #TODO eine unpack-funktion, die bei "None" gar nichts macht und je nach typ richtig entpackt
+        if optionals["semester"] != None: optionals["semester"] = unpack(optionals["semester"])
         file_list = list_course_files(auth_string, course_str, semester=optionals["semester"])
         return Prop(Pred1("ListFiles", course_str), Ind(file_list), True, expires=round(time.time()) + 3600*0.5), IS.private.bel.add, ["course_str", "semester"]
 
@@ -230,7 +230,7 @@ class Studip_Connector(ibis_generals.API_Connector):
     @executable_rule
     def download_a_file(self, auth_string, course_str, filename, IS, DM, optionals={"semester": None}):
         """"Download a file from Codierungstheorie und Kryptographie"""
-        if optionals["semester"] != None: optionals["semester"] = optionals["semester"].content[1].content
+        if optionals["semester"] != None: optionals["semester"] = unpack(optionals["semester"])
         file = download_studip_file(auth_string, course_str, filename, semester=optionals["semester"])
         if settings.MULTIUSER:
             chat_id = userDB.get_user_by_ID(DM.user_id)[0].chat_id
@@ -267,7 +267,7 @@ class StudIP_grammar(CFG_Grammar):
                 try:
                     tmp = APICONNECTOR.getContext(IS, "auth_string")
                     if tmp[0]: #dann kann "this" und "next" nachgucken
-                        this, next = get_semesters(tmp[1])   #ASDF überall wo getContext gecalled wird im ergebnis[1] das .content entfernen
+                        this, next = get_semesters(tmp[1])
                         return Answer(ShortAns(Ind(get_relative_semester_name(input, this, next)), True))
                     else:
                         return Answer(ShortAns(Ind(get_semester_name(input)), True))
@@ -331,8 +331,8 @@ class Studip_domain(ibis_generals.Domain):
 def create_studip_domain(APICONNECTOR):
     preds0 = 'return', 'needvisa', 'studip'
     # TODO - warum ist "return" ein zero-order-predicate? Dann ist es ja schon fulfilled - 0-order-predicates are propositions, aka sentences.
-    # TODO - you can see the difference in the plan even: Findout(WhQ(Pred1('class'))), Findout(YNQ(Prop((Pred0('return'), None, True))))
-    # TODO - The YNQ does already has the answer, and is thus a Proposition, and YNQs can be converted from that. Why is such a thing not a 1-place-predicate of the domain Boolean?
+    #      - you can see the difference in the plan even: Findout(WhQ(Pred1('class'))), Findout(YNQ(Prop((Pred0('return'), None, True))))
+    #      - The YNQ does already has the answer, and is thus a Proposition, and YNQs can be converted from that. Why is such a thing not a 1-place-predicate of the domain Boolean?
     # --- main ding das mich stört: warum ist es YNQ(Prop((Pred0('return'), None, True))) und nicht YNQ(Pred0('return')) --> warum muss es nochmal in ner Prop sein wo noch Truth-value bei ist
 
     preds1 = {'price': 'int',

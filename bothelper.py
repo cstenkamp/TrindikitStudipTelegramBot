@@ -69,6 +69,7 @@ def handle_update(update, ibis):
         else:
             ibis.handle_message(text, user)
 
+        #TODO der user muss noch sprache auswählen können im Multi-User-Modus!
 
     user.state.save_IS_to_DB()
     user.state.save_MIVS_to_DB()

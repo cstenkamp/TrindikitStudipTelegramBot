@@ -1,10 +1,5 @@
 % start USR
 
-#TODO doch von der Travel-grammar trennen
-#TODO deutsche und englische grammatik, User kann aussuchen welche
-#TODO mit spitzen klammern alternativen (download <of/from>), ähnlich wie jetzt optionale
-#TODO optionalitäten auch innerhalb eines wort[e]s (hab[e])
-
 # IBIS / domain-independent
 
 USR[sem=?s] -> ANSWER[sem=?s] | ASK[sem=?s] | QUIT[] | IMPERATIVE[sem=?s]

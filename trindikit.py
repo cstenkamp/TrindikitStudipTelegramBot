@@ -918,6 +918,7 @@ class SimpleOutput(DialogueManager):
             OUTPUT.set(GRAMMAR.generate([NEXT_MOVES.elements[0]]))
 
 
+
     @update_rule
     def output(NEXT_MOVES, OUTPUT, LATEST_SPEAKER, LATEST_MOVES):
         """Print the string in OUTPUT to standard output.
@@ -1002,7 +1003,7 @@ class SimpleInput(object):
             elif isinstance(move_or_moves, Move):
                 LATEST_MOVES.add(move_or_moves)
             else:
-                LATEST_MOVES.update(move_or_moves) #TODO typerror builtin_function_or_method is object not iterable
+                LATEST_MOVES.update(move_or_moves)
 
 
     @update_rule
