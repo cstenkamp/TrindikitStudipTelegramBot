@@ -3,11 +3,11 @@
 *.pkl
 *.sqlite
 *.db
-settings.py
 Working_Version_DigitalOcean/*
 copy_newest/*
 .pytest_cache/*
 test_strings/*
+set_vars.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

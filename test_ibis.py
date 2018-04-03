@@ -239,14 +239,14 @@ def test_travel_en():
 
 
 def test_studip_en():
-    ibis = loadIBIS("travel", "en")
+    ibis = loadIBIS("studip", "en")
     ibis.init()
 
-    filename = os.path.join(settings.PATH, "test_strings/travel_en")
+    filename = os.path.join(settings.PATH, "test_strings/studip_en")
     if os.path.exists(filename):
         for i in collect_string(filename):
             if i == "<restart>":
-                ibis = loadIBIS("travel", "en")
+                ibis = loadIBIS("studip", "en")
                 ibis.init()
             else:
                 check_sentence(ibis, i)
