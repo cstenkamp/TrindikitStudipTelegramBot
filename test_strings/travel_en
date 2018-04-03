@@ -1,0 +1,19 @@
+S: Hello.
+U> price
+S: How do you want to travel?
+U> plane
+S: Where do you want to go?
+U> paris
+S: From where are you leaving?
+U> berlin
+S: When do you want to leave?
+U> tody
+S: I heard you say tody.
+S: I don't understand.
+S: When do you want to leave?
+U> today
+S: First or second class?
+U> first
+S: Do you want a return ticket?
+U> no
+S: The price is 232.

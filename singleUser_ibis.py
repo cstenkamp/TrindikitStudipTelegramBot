@@ -4,9 +4,6 @@ import os.path as p
 import os
 from trindikit import set
 
-SAVE_IS = False
-USE_SAVED = True
-
 ######################################################################
 # IBIS information state
 ######################################################################
@@ -14,7 +11,7 @@ USE_SAVED = True
 class IBISInfostate(DialogueManager):
     def init_IS(self):
         """Definition of the IBIS information state."""
-        if USE_SAVED:
+        if settings.USE_SAVED:
             self.pload_IS("CurrState.pkl")
         else:
             self.reset_IS()
@@ -161,7 +158,7 @@ class IBIS1(IBIS):
         repeat(self.exec_plan())
         maybe(self.downdate_qud2())
         maybe(self.finalize_IS())
-        if SAVE_IS:
+        if settings.SAVE_IS:
             self.psave_IS("CurrState.pkl")
 
     # rule_group returns "lambda self: do(self, *rules)" with rules specified here... NOT ANYMORE:

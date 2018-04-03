@@ -36,9 +36,16 @@ DBPATH = '/var/www/studIPBot/'
 DBNAME = "user_states.db"
 
 
+################################################## FOR SINGLEUSER ######################################################
+
+SAVE_IS = False
+USE_SAVED = True
+
+########################################################################################################################
+
 # if MULTIUSER:
 #     PATH = "/var/www/studIPBot"
 # else:
 #     PATH = "/home/chris/Documents/Projects/Trindikit"
 
-PATH = os.path.dirname(sys.argv[0])
+PATH = os.path.dirname(__file__)

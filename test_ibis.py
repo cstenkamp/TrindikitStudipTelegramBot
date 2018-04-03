@@ -5,6 +5,7 @@ import os
 
 import studip
 import travel
+import re
 
 ######################################################################
 # Overwritten classes - DM must contain the generator, and the IO must be replaced
@@ -67,12 +68,15 @@ class DebugOutput(SimpleOutput):
 
 
 #alles genauso wie das IBIS, aber überschreibe Output mit DebugOutput und diesem DialogueManager, der IO hat
-class IBIS(DebugOutput, singleUser_ibis.IBIS, IBISController, singleUser_ibis.IBISInfostate, StandardMIVS,  SimpleInput,    DialogueManager):
+class IBIS(DebugOutput, singleUser_ibis.IBIS, IBISController, singleUser_ibis.IBISInfostate, StandardMIVS, SimpleInput, DialogueManager):
     pass
 
 
 class IBIS3(IBIS, singleUser_ibis.IBIS1): #inherit the rule_groups and the update-loop from singeUser.IBIS1
-    pass
+    def __init__(self, *args, **kwargs):
+        settings.SAVE_IS = False
+        settings.USE_SAVED = False
+        super().__init__(*args, **kwargs)
 
 
 
@@ -172,7 +176,14 @@ def check_commands():
                         ibis.init()
                     else:
                         yield ibis, i
-            return #TODO REMOVE ME
+
+
+def preprocess(string):
+    vars = [i[1:] for i in re.findall('(\$[a-zA-Z_]*)', string)]
+    for i in vars:
+        if i in os.environ:
+            string = string.replace("$"+i, os.environ[i])
+    return string
 
 
 def collect_string(filename):
@@ -188,7 +199,7 @@ def collect_string(filename):
                 return "<restart>"
             else:
                 if firsttime or (not firsttime and i != "S: Hello.\n"):
-                    tmp += i
+                    tmp += preprocess(i)
         yield tmp
 
 
