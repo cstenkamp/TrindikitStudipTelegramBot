@@ -1,0 +1,173 @@
+S: Hello.
+U> studip
+S: Before we start, I need to know your username. What is it?
+U> cstenkamp
+S: Next up, your password please.
+U> $STUDIPBOT_STUDIP_PW
+S: Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string.
+S: The Auth-string is: b'$STUDIPBOT_AUTH_STRING'.
+---
+S: Hello.
+U> Was kannst du?
+S: Try one of the following commands:
+Download
+Download from
+In wie vielen Tagen gehen Semesterferien los?
+In wie vielen Tagen gehen Vorlesungen los?
+List all files in
+Vorlesungszeit
+Wann gehen Semesterferien los?
+Wann gehen Vorlesungen los?
+Wann ist
+Wann ist dieses Semester?
+Wann ist ein Semester?
+Wann ist nächstes Semester?
+Was für Kurse habe ich in
+Was kannst du?
+What classes do I have left today?
+What classes do I have on
+What is my next Session?
+What is my next session of
+When is my next Session?
+When is my next session of
+When is the exam of
+Where is my next Session?
+Where is my next session of
+studip.
+---
+U> Download
+S: The function was re-structured! You need to say 'Download from <course>'!
+---
+U> Download from Codierungstheorie und Kryptographie
+S: Which file from that course do you want to download?
+U> Skasf
+S: There is no file with that name! Do you mean 'Aufgaben zur Klausurvorbereitung' or 'Skript' or 'Kapitel über AES'?
+S: Which file from that course do you want to download?
+U> Skript
+S: The file you requested is on its way!
+---
+U> In wie vielen Tagen gehen Semesterferien los?
+S: In ## days.
+---
+U> In wie vielen Tagen gehen Vorlesungen los?
+S: There are lectures right now!
+---
+U> List all files in Natural Language Processing
+S: Files:
+Allgemeiner Dateiordner/Deposit License
+Allgemeiner Dateiordner/Evaluation Results
+Allgemeiner Dateiordner/Grading Sheet
+Allgemeiner Dateiordner/Introductory Slides
+Allgemeiner Dateiordner/LNCS LaTeX template
+Allgemeiner Dateiordner/Proceedings
+Allgemeiner Dateiordner/Schedule
+Allgemeiner Dateiordner/Ten simple rules for making good oral presentations
+Allgemeiner Dateiordner/Ten simple rules for structuring papers
+Allgemeiner Dateiordner/Topic assignment.
+---
+U> Wann gehen Semesterferien los?
+S: In Semester: WS 2018/19
+Begin of Semester: 2018-10-01
+Begin of Lectures: 2018-10-22
+End of Lectures: 2019-02-09
+End of Semester: 2019-03-31.
+---
+U> Wann gehen Vorlesungen los?
+S: Semester: WS 2018/19
+Begin of Semester: 2018-10-01
+Begin of Lectures: 2018-10-22
+End of Lectures: 2019-02-09
+End of Semester: 2019-03-31.
+---
+U> Wann ist ss18?
+S: Semester: SS 2018
+Begin of Semester: 2018-04-01
+Begin of Lectures: 2018-04-03
+End of Lectures: 2018-07-07
+End of Semester: 2018-09-30.
+---
+<restart>
+---
+S: Hello.
+U> studip
+S: Before we start, I need to know your username. What is it?
+U> cstenkamp
+S: Next up, your password please.
+U> thank_you
+S: Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string.
+S: The Auth-string is: b'$STUDIPBOT_AUTH_STRING'.
+---
+U> Wann ist dieses Semester?
+S: Semester: SS 2018
+Begin of Semester: 2018-04-01
+Begin of Lectures: 2018-04-03
+End of Lectures: 2018-07-07
+End of Semester: 2018-09-30.
+---
+U> Wann ist ein Semester?
+S: Which semester?
+U> SS18
+S: Semester: SS 2018
+Begin of Semester: 2018-04-01
+Begin of Lectures: 2018-04-03
+End of Lectures: 2018-07-07
+End of Semester: 2018-09-30.
+---
+U> Was für Kurse habe ich in ss18?
+S: Courses you take:
+Applied Generalized Linear Models (8.3312)
+Aspects of knowledge representation in artificial general intelligence (8.3081)
+Datenbanksysteme (6.604)
+Einführung in die Arbeitspsychologie (8.11421)
+Interdisciplinary Course:  Understanding Learning in Deep Neural Networks (Part I) (8.3362)
+Mathematik für Anwender II (6.050)
+Neurodynamics (Lecture + Tutorial) (8.3047)
+Study Project: Product identification from images and videos (Part II) (8.3341)
+Syntactic Parsing - Theory and Practice (8.3360)
+Courses you work for:
+Scientific programming in Python (8.3323).
+---
+U> What classes do I have left today?
+S: You don*t have any classes left today.
+---
+U> Vorlesungszeit
+S: Yes.
+---
+<restart>
+---
+S: Hello.
+U> studip
+S: Before we start, I need to know your username. What is it?
+U> cstenkamp
+S: Next up, your password please.
+U> thank_you
+S: Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string.
+S: The Auth-string is: b'$STUDIPBOT_AUTH_STRING'.
+---
+U> What classes do I have on Saturday?
+S: You don*t have any classes on Sat, 2018-##-##!
+---
+U> What is my next Session?
+S: Your next session is a &
+---
+U> What is my next session of Scientific Programming in Python?
+S: Your next session of Scientific programming in Python is a Sitzung. It starts in # days, ##:##:## hours (###, ####-##-## at ##:00:00) and takes #:00 hours. It is in room ##/###.
+---
+U> When is my next Session?
+S: ###, 2018-##-## at ##:##:00 (in ##:##:## hours).
+---
+U> When is my next session of Scientific Programming in Python?
+S: Mon, 2018-04-09 at 14:00:00 (in # days, ##:##:## hours).
+---
+U> When is the exam of Datenbanksysteme?
+S: Unfortunately, there is no information about exams for this course on Stud.IP!
+---
+U> Where is my next session of Datenbanksysteme?
+S: room 32/102.
+---
+U> wann ist nächstes semester?
+S: Semester: WS 2018/19
+Begin of Semester: 2018-10-01
+Begin of Lectures: 2018-10-22
+End of Lectures: 2019-02-09
+End of Semester: 2019-03-31.

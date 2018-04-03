@@ -385,6 +385,8 @@ def find_klausurtermin(auth_string, course_str, semester=None):
         for i in range(10):
             try:
                 one_course = get_course_by_name(auth_string, course_str, semester=sem, supress=False)
+                if one_course == None:
+                    raise MoreThan1SemesterException
                 break
             except MoreThan1SemesterException:
                 sem = get_semester_before(auth_string, sem)
@@ -544,7 +546,7 @@ def get_courses_for_day(auth_string, day, semester=None, timerel_courses=None, a
                 togo = str(datetime.timedelta(seconds=int(event["end"]) - (aftertime+60*16)))[:-3]
                 srtd.append((event["start"], key, event["categories"], event["title"], event["iso_end"][event["iso_end"].find("T")+1:event["iso_end"].find("+")], togo))
         if len(srtd) == 0 and len(txt) == 0:
-            return "You don't have any classes on today!"
+            return "You don't have any classes left today."
         txt2 = "Currently you are in:\n"+("\n".join(i[1] + " - "+i[2]+(("(topic: "+i[3]+")") if i[3] else "")+" until "+i[4]+" ("+i[5]+" hours to go)" for i in srtd))
         return txt2 + ("\nYou have the following classes left today:\n"+txt if len(txt) > 0 else "\nYou don't have any classes left after that.")
     else:

@@ -138,8 +138,12 @@ def check_sentence(ibis, sentence):
                     try:
                         tmp = list(nextSentence)
                         for i in range(len(nextSentence)):
+                            if tmp[i] == "&":
+                                tmp = tmp[:i]
+                                next_system_sent = next_system_sent[:i]
+                                break
                             if tmp[i] == "#":
-                                tmp[i] = next_system_sent[i]
+                                tmp[i] = next_system_sent[i] if i <= len(next_system_sent) else "X"
                         nextSentence = "".join(tmp)
                         assert nextSentence == next_system_sent
                     except AssertionError as e:
@@ -196,7 +200,7 @@ def collect_string(filename):
                 tmp = ""
                 firsttime = False
             elif i.startswith("<restart>"):
-                return "<restart>"
+                yield "<restart>"
             else:
                 if firsttime or (not firsttime and i != "S: Hello.\n"):
                     tmp += preprocess(i)
@@ -217,7 +221,7 @@ if __name__=='__main__':
         try:
             check_sentence(ibis, sent)
         except AssertionError:
-            print("The following sentence sucked:", sent_short(sent))
+            print("The following sentence sucked:", sent_short(sent), file=sys.stderr)
             fail_count += 1
         else:
             print("The following sentence worked:", sent_short(sent))
