@@ -5,13 +5,6 @@ from ibis_types import Findout, If, ConsultDB, Ind
 import trindikit
 import ibis_generals
 
-if settings.MULTIUSER:
-    import multiUser_ibis
-    PATH = "/var/www/studIPBot"
-else:
-    PATH = "/home/chris/Documents/UNI/sem_9/dialog_systems/Projekt/My_Trindikit/"
-    import singleUser_ibis
-
 
 ########################################################################################################################
 ######################################################## DOMAIN ########################################################
@@ -125,7 +118,7 @@ class TravelGrammar(ibis_generals.SimpleGenGrammar, CFG_Grammar):
 
 def create_travel_grammar(lan="en"):
     grammar = TravelGrammar()
-    grammar.loadGrammar(os.path.join(PATH,"grammars","travel"+"_"+lan+".fcfg"))
+    grammar.loadGrammar(os.path.join(settings.PATH,"grammars","travel"+"_"+lan+".fcfg"))
     if lan == "en":
         grammar.addForm("Ask('?x.how(x)')", "How do you want to travel?")
         grammar.addForm("Ask('?x.dest_city(x)')", "Where do you want to go?")
