@@ -151,19 +151,19 @@ U> What is my next Session?
 S: Your next session is a &
 ---
 U> What is my next session of Scientific Programming in Python?
-S: Your next session of Scientific programming in Python is a Sitzung. It starts in # days, ##:##:## hours (###, ####-##-## at ##:00:00) and takes #:00 hours. It is in room ##/###.
+S: Your next session of Scientific programming in Python is a Sitzung. It starts in &
 ---
 U> When is my next Session?
-S: ###, 2018-##-## at ##:##:00 (in ##:##:## hours).
+S: ###, 2018-##-## at ##:##:00 (in &
 ---
 U> When is my next session of Scientific Programming in Python?
-S: Mon, 2018-04-09 at 14:00:00 (in # days, ##:##:## hours).
+S: ###, 2018-##-## at ##:##:00 (in &
 ---
 U> When is the exam of Datenbanksysteme?
 S: Unfortunately, there is no information about exams for this course on Stud.IP!
 ---
 U> Where is my next session of Datenbanksysteme?
-S: room 32/102.
+S: room ##/###.
 ---
 U> wann ist nächstes semester?
 S: Semester: WS 2018/19
