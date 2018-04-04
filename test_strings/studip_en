@@ -93,7 +93,7 @@ U> studip
 S: Before we start, I need to know your username. What is it?
 U> cstenkamp
 S: Next up, your password please.
-U> thank_you
+U> $STUDIPBOT_STUDIP_PW
 S: Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string.
 S: The Auth-string is: b'$STUDIPBOT_AUTH_STRING'.
 ---
@@ -140,7 +140,7 @@ U> studip
 S: Before we start, I need to know your username. What is it?
 U> cstenkamp
 S: Next up, your password please.
-U> thank_you
+U> $STUDIPBOT_STUDIP_PW
 S: Unfortunately, to have access to your StudIP-Files, I have to save the username and pw. The only thing I can do is to obfuscate the Username and PW to a Hex-string.
 S: The Auth-string is: b'$STUDIPBOT_AUTH_STRING'.
 ---
