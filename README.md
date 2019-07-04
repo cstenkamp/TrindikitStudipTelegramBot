@@ -9,7 +9,7 @@ This projects builds on the Python-implementation of the ISU approach, available
 * (relatively short) Report of the project: http://www.cstenkamp.de/StudipTelegramBot_report.pdf
 * Information State Approach intro: http://www.cstenkamp.de/ISA_presentation.pdf
 * Paper for the original Trindikit-Python implementation: http://www.cse.chalmers.se/~peb/pubs/Ljunglof2009a%20-%20trindikit.py%20An%20open-source%20Python%20library.pdf
-
+* Link to the bot itself: https://t.me/uos_studip_bot
 ## Sample Conversation:
 
 U> /start<br/>
